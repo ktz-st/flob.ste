@@ -1,0 +1,21 @@
+const SPR_SCREEN_FRAME_COUNT = 1;
+const SPR_SCREEN_FRAMES : array[0..0] of TSteSpriteFrame = (
+    (widthPx:16; heightPx:16; rowWords:1; maskOffset:0; dataOffset:16; paletteOffset:0; paletteCount:1)
+);
+
+const SPR_SCREEN_WORDS : array[0..79] of word=(
+  $FFFF,$FFFF,$C003,$C003,$3C00,$3C00,$3000,$3000,
+  $0000,$0000,$0000,$0000,$C003,$C003,$FFFF,$FFFF,
+  $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000,
+  $3FFC,$0000,$0000,$0000,$3FFC,$0000,$0000,$0000,
+  $C3FF,$0000,$0000,$0000,$C3FF,$0000,$0000,$0000,
+  $CFFF,$0000,$0000,$0000,$CFFF,$0000,$0000,$0000,
+  $FFFF,$0000,$0000,$0000,$FFFF,$0000,$0000,$0000,
+  $FFFF,$0000,$0000,$0000,$FFFF,$0000,$0000,$0000,
+  $3FFC,$0000,$0000,$0000,$3FFC,$0000,$0000,$0000,
+  $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000
+);
+
+const SPR_SCREEN_PALS : array[0..0] of word=(
+  $0002
+);

@@ -1,0 +1,17 @@
+const SPR_MAP_FRAME_COUNT = 1;
+const SPR_MAP_FRAMES : array[0..0] of TSteSpriteFrame = (
+    (widthPx:16; heightPx:16; rowWords:1; maskOffset:0; dataOffset:16; paletteOffset:0; paletteCount:0)
+);
+
+const SPR_MAP_WORDS : array[0..79] of word=(
+  $C00F,$C00F,$0003,$0003,$0000,$0000,$0000,$0000,
+  $00CC,$00CC,$0030,$0030,$00CC,$00CC,$C000,$C000,
+  $0000,$0000,$3FF0,$3FF0,$0000,$0000,$3FF0,$3FF0,
+  $3FC0,$3FC0,$C03C,$FFFC,$3FC0,$3FC0,$C03C,$FFFC,
+  $3FC0,$3FC0,$C03F,$FFFF,$3FC0,$3FC0,$C03F,$FFFF,
+  $3FFC,$3FFC,$C003,$FFFF,$3FFC,$3FFC,$C003,$FFFF,
+  $3F30,$3F30,$C003,$FF33,$3F30,$3F30,$C003,$FF33,
+  $3FCC,$3FCC,$C003,$FFCF,$3FCC,$3FCC,$C003,$FFCF,
+  $3F30,$3F30,$C003,$FF33,$3F30,$3F30,$C003,$FF33,
+  $00FC,$00FC,$3F03,$3FFF,$00FC,$00FC,$3F03,$3FFF
+);

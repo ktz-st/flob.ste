@@ -1,0 +1,45 @@
+{
+  "name": "spider2",
+  "source": "/Users/kriss/GCC.ELF/flob/assets/pmg sources/spider2.lsy",
+  "frames": 2,
+  "height": 18,
+  "gap": 7,
+  "logical_width": 15,
+  "preview_scale_x": 2,
+  "preview_scale_y": 1,
+  "preview_width": 30,
+  "preview_height": 18,
+  "cell_width": 32,
+  "cell_height": 32,
+  "columns": 2,
+  "rows": 1,
+  "uses_p1": true,
+  "frames_meta": [
+    {
+      "frame": 0,
+      "x": 0,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "content_w": 15,
+      "content_h": 18,
+      "preview_w": 30,
+      "preview_h": 18,
+      "p0_color": 20,
+      "p1_color": 20
+    },
+    {
+      "frame": 1,
+      "x": 32,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "content_w": 15,
+      "content_h": 18,
+      "preview_w": 30,
+      "preview_h": 18,
+      "p0_color": 20,
+      "p1_color": 20
+    }
+  ]
+}

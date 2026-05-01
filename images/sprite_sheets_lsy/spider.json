@@ -1,0 +1,71 @@
+{
+  "name": "spider",
+  "source": "/Users/kriss/GCC.ELF/flob/assets/pmg sources/spider.lsy",
+  "frames": 4,
+  "height": 26,
+  "gap": 7,
+  "logical_width": 15,
+  "preview_scale_x": 2,
+  "preview_scale_y": 1,
+  "preview_width": 30,
+  "preview_height": 26,
+  "cell_width": 32,
+  "cell_height": 32,
+  "columns": 4,
+  "rows": 1,
+  "uses_p1": true,
+  "frames_meta": [
+    {
+      "frame": 0,
+      "x": 0,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "content_w": 15,
+      "content_h": 26,
+      "preview_w": 30,
+      "preview_h": 26,
+      "p0_color": 0,
+      "p1_color": 0
+    },
+    {
+      "frame": 1,
+      "x": 32,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "content_w": 15,
+      "content_h": 26,
+      "preview_w": 30,
+      "preview_h": 26,
+      "p0_color": 0,
+      "p1_color": 0
+    },
+    {
+      "frame": 2,
+      "x": 64,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "content_w": 15,
+      "content_h": 26,
+      "preview_w": 30,
+      "preview_h": 26,
+      "p0_color": 0,
+      "p1_color": 0
+    },
+    {
+      "frame": 3,
+      "x": 96,
+      "y": 0,
+      "w": 32,
+      "h": 32,
+      "content_w": 15,
+      "content_h": 26,
+      "preview_w": 30,
+      "preview_h": 26,
+      "p0_color": 0,
+      "p1_color": 0
+    }
+  ]
+}

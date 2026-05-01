@@ -1,0 +1,497 @@
+{
+  "name": "flob",
+  "source": "/Users/kriss/GCC.ELF/flob/assets/sprites.asm",
+  "frames": 16,
+  "height": 8,
+  "gap": 0,
+  "logical_width": 8,
+  "preview_scale_x": 2,
+  "preview_scale_y": 2,
+  "cell_width": 16,
+  "cell_height": 16,
+  "columns": 8,
+  "rows": 2,
+  "uses_p1": true,
+  "frames_meta": [
+    {
+      "frame": 0,
+      "name_p0": "f_flob0_left",
+      "name_p1": "f_flob1_left",
+      "x": 0,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 1,
+      "name_p0": "f_flob0_right",
+      "name_p1": "f_flob1_right",
+      "x": 16,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 2,
+      "name_p0": "f_flob0_left_",
+      "name_p1": "f_flob1_left_",
+      "x": 32,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 3,
+      "name_p0": "f_flob0_right_",
+      "name_p1": "f_flob1_right_",
+      "x": 48,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 4,
+      "name_p0": "f_flob0_left_fall",
+      "name_p1": "f_flob1_left_fall",
+      "x": 64,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 5,
+      "name_p0": "f_flob0_right_fall",
+      "name_p1": "f_flob1_right_fall",
+      "x": 80,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 6,
+      "name_p0": "f_flob0_left_splat",
+      "name_p1": "f_flob1_left_splat",
+      "x": 96,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 7,
+      "name_p0": "f_flob0_right_splat",
+      "name_p1": "f_flob1_right_splat",
+      "x": 112,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 8,
+      "name_p0": "f_flob0_left_move",
+      "name_p1": "f_flob1_left_move",
+      "x": 0,
+      "y": 16,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 9,
+      "name_p0": "f_flob0_right_move",
+      "name_p1": "f_flob1_right_move",
+      "x": 16,
+      "y": 16,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 10,
+      "name_p0": "f_flob0_poof1",
+      "name_p1": "f_flob1_poof1",
+      "x": 32,
+      "y": 16,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 11,
+      "name_p0": "f_flob0_poof1",
+      "name_p1": "f_flob1_poof1",
+      "x": 48,
+      "y": 16,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 12,
+      "name_p0": "f_flob0_poof2",
+      "name_p1": "f_flob1_poof2",
+      "x": 64,
+      "y": 16,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 13,
+      "name_p0": "f_flob0_poof2",
+      "name_p1": "f_flob1_poof2",
+      "x": 80,
+      "y": 16,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 14,
+      "name_p0": "f_flob_poof3",
+      "name_p1": "f_flob_poof4",
+      "x": 96,
+      "y": 16,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    },
+    {
+      "frame": 15,
+      "name_p0": "f_flob_poof3",
+      "name_p1": "f_flob_poof4",
+      "x": 112,
+      "y": 16,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 8,
+      "preview_w": 16,
+      "preview_h": 16,
+      "p0_color": 52,
+      "p1_color": 56,
+      "p0_rgb": [
+        60,
+        68,
+        10
+      ],
+      "p1_rgb": [
+        121,
+        136,
+        20
+      ],
+      "overlap_rgb": [
+        114,
+        126,
+        39
+      ]
+    }
+  ]
+}

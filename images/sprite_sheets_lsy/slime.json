@@ -1,0 +1,39 @@
+{
+  "name": "slime",
+  "source": "manual slime sheet",
+  "frames": 2,
+  "height": 16,
+  "gap": 0,
+  "logical_width": 16,
+  "preview_scale_x": 1,
+  "preview_scale_y": 1,
+  "cell_width": 16,
+  "cell_height": 16,
+  "columns": 2,
+  "rows": 1,
+  "uses_p1": false,
+  "frames_meta": [
+    {
+      "frame": 0,
+      "x": 0,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 7,
+      "preview_w": 16,
+      "preview_h": 16
+    },
+    {
+      "frame": 1,
+      "x": 16,
+      "y": 0,
+      "w": 16,
+      "h": 16,
+      "content_w": 8,
+      "content_h": 7,
+      "preview_w": 16,
+      "preview_h": 16
+    }
+  ]
+}
