@@ -81,11 +81,7 @@ def atari_color_to_rgb(value: int) -> tuple[int, int, int]:
 
 
 def mix_rgb(a: tuple[int, int, int], b: tuple[int, int, int]) -> tuple[int, int, int]:
-    return (
-        min(255, (a[0] + b[0]) // 2 + 24),
-        min(255, (a[1] + b[1]) // 2 + 24),
-        min(255, (a[2] + b[2]) // 2 + 24),
-    )
+    return (255, 255, 255)
 
 
 def parse_consts() -> dict[str, int]:

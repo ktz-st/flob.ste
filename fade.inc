@@ -54,7 +54,7 @@ begin
     for step := 0 to frames do begin
         FadePalSTE(@srcPal[0], target, @fadeTmpPal[0], step, frames);
         xbios_setpalette(@fadeTmpPal[0]);
-        xbios_vsync;
+        VSync;
     end;
     xbios_setpalette(target);
 end;

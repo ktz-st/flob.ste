@@ -70,6 +70,3 @@ begin
     Inc(gameRuns);
     StoreStats;
 end;
-
-// Flash-specific stubs – not needed on STE
-procedure EraseSector(sector: byte); begin end;

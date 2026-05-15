@@ -1,0 +1,35 @@
+const SPR_SPRITE_ELECTRO3_P1_FRAME_COUNT = 6;
+const SPR_SPRITE_ELECTRO3_P1_FRAMES : array[0..5] of TSteSpriteFrame = (
+    (widthPx:16; heightPx:6; rowWords:1; maskOffset:0; dataOffset:6; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:6; rowWords:1; maskOffset:30; dataOffset:36; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:6; rowWords:1; maskOffset:60; dataOffset:66; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:6; rowWords:1; maskOffset:90; dataOffset:96; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:6; rowWords:1; maskOffset:120; dataOffset:126; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:6; rowWords:1; maskOffset:150; dataOffset:156; paletteOffset:0; paletteCount:0)
+);
+
+const SPR_SPRITE_ELECTRO3_P1_WORDS : array[0..179] of word=(
+  $0FC3,$0FC3,$C3F0,$C3F0,$0FC3,$0FC3,$F03C,$F03C,
+  $F03C,$0000,$F03C,$F03C,$F03C,$0000,$3C0F,$3C0F,
+  $3C0F,$0000,$3C0F,$3C0F,$3C0F,$0000,$F03C,$F03C,
+  $F03C,$0000,$F03C,$F03C,$F03C,$0000,$C30F,$C30F,
+  $F0C3,$F0C3,$C30F,$C30F,$3CF0,$0000,$0000,$3CF0,
+  $3CF0,$0000,$0000,$3CF0,$0F3C,$0000,$0000,$0F3C,
+  $0F3C,$0000,$0000,$0F3C,$3CF0,$0000,$0000,$3CF0,
+  $3CF0,$0000,$0000,$3CF0,$F03F,$F03F,$FC0F,$FC0F,
+  $F03F,$F03F,$0FC0,$0FC0,$0FC0,$0000,$0FC0,$0FC0,
+  $0FC0,$0000,$03F0,$03F0,$03F0,$0000,$03F0,$03F0,
+  $03F0,$0000,$0FC0,$0FC0,$0FC0,$0000,$0FC0,$0FC0,
+  $0FC0,$0000,$0FC3,$0FC3,$C3F0,$C3F0,$0FC3,$0FC3,
+  $F03C,$F03C,$F03C,$0000,$F03C,$F03C,$F03C,$0000,
+  $3C0F,$3C0F,$3C0F,$0000,$3C0F,$3C0F,$3C0F,$0000,
+  $F03C,$F03C,$F03C,$0000,$F03C,$F03C,$F03C,$0000,
+  $C30F,$C30F,$F0C3,$F0C3,$C30F,$C30F,$3CF0,$0000,
+  $0000,$3CF0,$3CF0,$0000,$0000,$3CF0,$0F3C,$0000,
+  $0000,$0F3C,$0F3C,$0000,$0000,$0F3C,$3CF0,$0000,
+  $0000,$3CF0,$3CF0,$0000,$0000,$3CF0,$F03F,$F03F,
+  $FC0F,$FC0F,$F03F,$F03F,$0FC0,$0FC0,$0FC0,$0000,
+  $0FC0,$0FC0,$0FC0,$0000,$03F0,$03F0,$03F0,$0000,
+  $03F0,$03F0,$03F0,$0000,$0FC0,$0FC0,$0FC0,$0000,
+  $0FC0,$0FC0,$0FC0,$0000
+);

@@ -1,0 +1,189 @@
+#!/usr/bin/env python3
+"""
+Generate Pascal achievement definitions from the original Atari 8-bit ASM data.
+
+The runtime uses the first 12 records as per-world achievements and records
+12..23 as global achievements, matching the original CheckAchievements flow.
+"""
+
+from __future__ import annotations
+
+import ast
+import re
+from pathlib import Path
+
+FLOB_SRC = Path("/Users/kriss/GCC.ELF/flob")
+FLOB_STE = Path("/Users/kriss/GCC.ELF/flob-ste")
+SRC = FLOB_SRC / "assets" / "achievements.asm"
+OUT = FLOB_STE / "assets" / "achievements.inc"
+
+DTA_RE = re.compile(r"^\s*dta\s+(.+)$", re.IGNORECASE)
+STRING_RE = re.compile(r'^\s*(\d+)\s*,\s*"([^"]*)"\s*$')
+
+CONST_VALUES = {
+    "IS_GREATER": 0,
+    "IS_LESSER": 1,
+    "TRESHOLD_TIME_REACHED": 2,
+    "TRESHOLD_SCORE_REACHED": 3,
+}
+
+
+def strip_comment(line: str) -> str:
+    if ";" in line:
+        line = line.split(";", 1)[0]
+    return line.strip()
+
+
+def split_csv(expr: str) -> list[str]:
+    parts: list[str] = []
+    current: list[str] = []
+    in_quote = False
+    depth = 0
+    for ch in expr:
+        if ch == '"':
+            in_quote = not in_quote
+            current.append(ch)
+            continue
+        if not in_quote:
+            if ch == "(":
+                depth += 1
+            elif ch == ")" and depth > 0:
+                depth -= 1
+            elif ch == "," and depth == 0:
+                parts.append("".join(current).strip())
+                current = []
+                continue
+        current.append(ch)
+    token = "".join(current).strip()
+    if token:
+        parts.append(token)
+    return parts
+
+
+def eval_int_expr(expr: str) -> int:
+    expr = expr.strip()
+    if expr.startswith("$"):
+        return int(expr[1:], 16)
+    if expr in CONST_VALUES:
+        return CONST_VALUES[expr]
+
+    tree = ast.parse(expr, mode="eval")
+
+    def visit(node: ast.AST) -> int:
+        if isinstance(node, ast.Expression):
+            return visit(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, int):
+            return node.value
+        if isinstance(node, ast.BinOp):
+            left = visit(node.left)
+            right = visit(node.right)
+            if isinstance(node.op, ast.Add):
+                return left + right
+            if isinstance(node.op, ast.Sub):
+                return left - right
+            if isinstance(node.op, ast.Mult):
+                return left * right
+        raise ValueError(f"Unsupported expression: {expr}")
+
+    return visit(tree)
+
+
+def parse_dta_payload(payload: str) -> tuple[str, object]:
+    payload = payload.strip()
+    string_match = STRING_RE.match(payload)
+    if string_match:
+        declared_len = int(string_match.group(1))
+        text = string_match.group(2)
+        if declared_len != len(text.rstrip()):
+            # The original stores a Pascal shortstring length followed by a
+            # padded 20-byte text. We keep the visible text length from ASM,
+            # but preserve padding inside the Pascal literal.
+            pass
+        return ("string", text)
+
+    if payload.lower().startswith("f(") and payload.endswith(")"):
+        return ("cardinal", eval_int_expr(payload[2:-1]))
+
+    return ("byte", eval_int_expr(payload))
+
+
+def parse_achievements() -> list[dict[str, object]]:
+    tokens: list[tuple[str, object]] = []
+    for raw_line in SRC.read_text().splitlines():
+        line = strip_comment(raw_line)
+        if not line or line.lower().startswith("icl"):
+            continue
+        match = DTA_RE.match(line)
+        if not match:
+            continue
+        tokens.append(parse_dta_payload(match.group(1)))
+
+    if len(tokens) % 5 != 0:
+        raise ValueError(f"Achievement token count should be divisible by 5, got {len(tokens)}")
+
+    achievements: list[dict[str, object]] = []
+    for i in range(0, len(tokens), 5):
+        name_kind, name = tokens[i]
+        desc_kind, desc = tokens[i + 1]
+        value_kind, value = tokens[i + 2]
+        oper_kind, oper = tokens[i + 3]
+        threshold_kind, threshold = tokens[i + 4]
+        if (name_kind, desc_kind, value_kind, oper_kind, threshold_kind) != (
+            "string",
+            "string",
+            "byte",
+            "byte",
+            "cardinal",
+        ):
+            raise ValueError(f"Unexpected achievement field sequence at token {i}")
+        achievements.append(
+            {
+                "name": name,
+                "desc": desc,
+                "value": value,
+                "oper": oper,
+                "threshold": threshold,
+            }
+        )
+
+    if len(achievements) != 24:
+        raise ValueError(f"Expected 24 achievement definitions, got {len(achievements)}")
+    return achievements
+
+
+def pas_string(text: str) -> str:
+    return "'" + text.replace("'", "''") + "'"
+
+
+def write_pascal(achievements: list[dict[str, object]]) -> None:
+    lines = [
+        "// Generated by generate_achievements.py from flob/assets/achievements.asm",
+        "const",
+        "    ACHIEVEMENT_DEF_COUNT = 24;",
+        "    ACHIEVEMENT_DEFS: array[0..ACHIEVEMENT_DEF_COUNT - 1] of TAchievement = (",
+    ]
+    for idx, ach in enumerate(achievements):
+        comma = "," if idx < len(achievements) - 1 else ""
+        lines.extend(
+            [
+                "        (",
+                f"            name: {pas_string(str(ach['name']))};",
+                f"            desc: {pas_string(str(ach['desc']))};",
+                f"            value: {int(ach['value'])};",
+                f"            oper: {int(ach['oper'])};",
+                f"            treshold: {int(ach['threshold'])}",
+                f"        ){comma}",
+            ]
+        )
+    lines.append("    );")
+    lines.append("")
+    OUT.write_text("\n".join(lines))
+
+
+def main() -> None:
+    write_pascal(parse_achievements())
+    print(f"Wrote {OUT}")
+
+
+if __name__ == "__main__":
+    main()

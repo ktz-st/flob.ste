@@ -1,0 +1,48 @@
+const SPR_SPRITE_JAN_DROP_P1_FRAME_COUNT = 12;
+const SPR_SPRITE_JAN_DROP_P1_FRAMES : array[0..11] of TSteSpriteFrame = (
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:0; dataOffset:4; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:20; dataOffset:24; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:40; dataOffset:44; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:60; dataOffset:64; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:80; dataOffset:84; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:100; dataOffset:104; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:120; dataOffset:124; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:140; dataOffset:144; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:160; dataOffset:164; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:180; dataOffset:184; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:200; dataOffset:204; paletteOffset:0; paletteCount:0),
+    (widthPx:16; heightPx:4; rowWords:1; maskOffset:220; dataOffset:224; paletteOffset:0; paletteCount:0)
+);
+
+const SPR_SPRITE_JAN_DROP_P1_WORDS : array[0..239] of word=(
+  $FFFF,$FFFF,$FFFF,$FFFF,$0000,$0000,$0000,$0000,
+  $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000,
+  $0000,$0000,$0000,$0000,$F3FF,$F3FF,$FFFF,$FFFF,
+  $0C00,$0000,$0C00,$0C00,$0C00,$0000,$0C00,$0C00,
+  $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000,
+  $F3FF,$F3FF,$F3FF,$F3FF,$0C00,$0000,$0C00,$0C00,
+  $0C00,$0000,$0C00,$0C00,$0C00,$0000,$0C00,$0C00,
+  $0C00,$0000,$0C00,$0C00,$CCFF,$CCFF,$F3FF,$F3FF,
+  $3300,$0000,$3300,$3300,$3300,$0000,$3300,$3300,
+  $0C00,$0000,$0C00,$0C00,$0C00,$0000,$0C00,$0C00,
+  $F3FF,$F3FF,$CCFF,$CCFF,$0C00,$0000,$0C00,$0C00,
+  $0C00,$0000,$0C00,$0C00,$3300,$0000,$3300,$3300,
+  $3300,$0000,$3300,$3300,$FFFF,$FFFF,$F3FF,$F3FF,
+  $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000,
+  $0C00,$0000,$0C00,$0C00,$0C00,$0000,$0C00,$0C00,
+  $FFFF,$FFFF,$FFFF,$FFFF,$0000,$0000,$0000,$0000,
+  $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000,
+  $0000,$0000,$0000,$0000,$FFFF,$FFFF,$F3FF,$F3FF,
+  $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000,
+  $0C00,$0000,$0C00,$0C00,$0C00,$0000,$0C00,$0C00,
+  $F3FF,$F3FF,$F3FF,$F3FF,$0C00,$0000,$0C00,$0C00,
+  $0C00,$0000,$0C00,$0C00,$0C00,$0000,$0C00,$0C00,
+  $0C00,$0000,$0C00,$0C00,$F3FF,$F3FF,$CCFF,$CCFF,
+  $0C00,$0000,$0C00,$0C00,$0C00,$0000,$0C00,$0C00,
+  $3300,$0000,$3300,$3300,$3300,$0000,$3300,$3300,
+  $CCFF,$CCFF,$F3FF,$F3FF,$3300,$0000,$3300,$3300,
+  $3300,$0000,$3300,$3300,$0C00,$0000,$0C00,$0C00,
+  $0C00,$0000,$0C00,$0C00,$F3FF,$F3FF,$FFFF,$FFFF,
+  $0C00,$0000,$0C00,$0C00,$0C00,$0000,$0C00,$0C00,
+  $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000
+);

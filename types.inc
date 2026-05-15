@@ -91,7 +91,7 @@ end;
 type TSprites = record
     state: byte;
     gap: byte;
-    PMGwidth: array[0..1] of byte;
+    spriteWidth: array[0..1] of byte;
     stype: array[0..1] of byte;
     flipable: array[0..1] of byte;
     x: array[0..1] of byte;

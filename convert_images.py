@@ -112,8 +112,15 @@ def bytes_to_pascal_array(name: str, data: bytes) -> str:
 
 def gif_to_collision_bytes(gif_path: Path) -> bytes:
     """
-    Extract original 160x80 2bpp palette indices (0..3) from room GIF and pack
-    them as 4 pixels per byte, matching Atari GetPix semantics.
+    Extract original 160x80 2bpp palette indices (0..3) from room GIF, normalise
+    by luminance and pack as 4 pixels per byte, matching Atari/STE GetPix semantics.
+
+    GIF palettes are often shuffled (colour order is not guaranteed).  We sort the
+    four palette entries darkest→brightest so the output always has:
+        0 = background / air        (black)
+        1 = dark decoration         (not solid, not lethal)
+        2 = solid ground            (GROUND_COLLISION_COLOR = 2)
+        3 = danger / lethal         (DANGER_COLLISION_COLOR = 3)
     """
     from PIL import Image
 
@@ -121,17 +128,25 @@ def gif_to_collision_bytes(gif_path: Path) -> bytes:
     if im.mode != 'P':
         im = im.convert('P')
     if im.size != (160, 80):
-        raise RuntimeError(f'{gif_path}: expected 160x80, got {im.size}')
+        return None   # non-room image (title, credits, etc.) — no collision data
+
+    # Build luminance-sorted remap for the first 4 palette entries.
+    pal = im.getpalette() or []
+    def lum(i: int) -> int:
+        r, g, b = pal[i * 3], pal[i * 3 + 1], pal[i * 3 + 2]
+        return r * 299 + g * 587 + b * 114          # Rec.601, no division needed
+    sorted_src = sorted(range(4), key=lum)          # sorted_src[new] = old index
+    remap = {old: new for new, old in enumerate(sorted_src)}
 
     data = list(im.getdata())
     out = bytearray()
     for y in range(80):
         row = data[y * 160:(y + 1) * 160]
         for x in range(0, 160, 4):
-            p0 = row[x + 0] & 3
-            p1 = row[x + 1] & 3
-            p2 = row[x + 2] & 3
-            p3 = row[x + 3] & 3
+            p0 = remap.get(row[x + 0] & 3, 0)
+            p1 = remap.get(row[x + 1] & 3, 0)
+            p2 = remap.get(row[x + 2] & 3, 0)
+            p3 = remap.get(row[x + 3] & 3, 0)
             out.append((p0 << 6) | (p1 << 4) | (p2 << 2) | p3)
     return bytes(out)
 
@@ -153,8 +168,9 @@ def convert_image(gif_path: Path, out_dir: Path, name: str) -> tuple:
         f.write(bytes_to_pascal_array(f'{name}_PAL', palette))
         f.write('\n')
         f.write(bytes_to_pascal_array(name, compressed))
-        f.write('\n')
-        f.write(bytes_to_pascal_array(f'{name}_COL', collision))
+        if collision is not None:
+            f.write('\n')
+            f.write(bytes_to_pascal_array(f'{name}_COL', collision))
 
     return len(raw), len(compressed)
 

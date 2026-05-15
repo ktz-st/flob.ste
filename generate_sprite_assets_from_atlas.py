@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Generate STE-native masked sprite assets from the unified indexed atlas.
+Generate STE-native masked sprite assets from the indexed sprite atlas.
 
 Input:
-  flob-ste/images/sprite_atlas/all_sprites.png
-  flob-ste/images/sprite_atlas/all_sprites.json
+  flob-ste/images/sprite_atlas/used_sprites.png
+  flob-ste/images/sprite_atlas/used_sprites.json
 
 Output:
   flob-ste/generated/sprite_assets_atlas/*.inc
@@ -14,6 +14,7 @@ Output:
 
 from __future__ import annotations
 
+import argparse
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -22,8 +23,7 @@ from PIL import Image
 
 ROOT = Path("/Users/kriss/GCC.ELF")
 FLOB_STE = ROOT / "flob-ste"
-ATLAS_JSON = FLOB_STE / "images" / "sprite_atlas" / "all_sprites.json"
-ATLAS_PNG = FLOB_STE / "images" / "sprite_atlas" / "all_sprites.png"
+DEFAULT_ATLAS_NAME = "used_sprites"
 OUT_DIR = FLOB_STE / "generated" / "sprite_assets_atlas"
 MASTER_INC = FLOB_STE / "generated" / "sprite_assets_atlas.inc"
 PALETTE_INC = FLOB_STE / "generated" / "sprite_atlas_palette.inc"
@@ -85,16 +85,38 @@ def pack_masked_words(width: int, height: int, indices: list[int]) -> tuple[int,
     return row_words, mask_words, gfx_words
 
 
-def main() -> None:
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--atlas",
+        default=DEFAULT_ATLAS_NAME,
+        help="Atlas basename under images/sprite_atlas, without .png/.json",
+    )
+    return parser.parse_args()
 
-    meta = json.loads(ATLAS_JSON.read_text())
-    atlas = Image.open(ATLAS_PNG)
+
+def main() -> None:
+    args = parse_args()
+    atlas_json = FLOB_STE / "images" / "sprite_atlas" / f"{args.atlas}.json"
+    atlas_png = FLOB_STE / "images" / "sprite_atlas" / f"{args.atlas}.png"
+
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    for old_inc in OUT_DIR.glob("*.inc"):
+        old_inc.unlink()
+
+    meta = json.loads(atlas_json.read_text())
+    atlas = Image.open(atlas_png)
     if atlas.mode != "P":
         raise ValueError("Atlas must be indexed PNG (mode P)")
     atlas_px = atlas.load()
 
-    palette_rgb = [tuple(rgb) for rgb in meta["palette_rgb"]]
+    raw_palette = atlas.getpalette()
+    if raw_palette is None:
+        raise ValueError("Atlas PNG has no indexed palette")
+    palette_rgb = [
+        tuple(raw_palette[i * 3:i * 3 + 3])
+        for i in range(16)
+    ]
     palette_words = [rgb_to_st_word(rgb) for rgb in palette_rgb]
 
     by_sprite: dict[str, list[dict]] = defaultdict(list)
@@ -109,15 +131,22 @@ def main() -> None:
         frames_meta = []
         word_blob: list[int] = []
 
-        for frame_meta in by_sprite[sprite_name]:
+        def append_frame(frame_meta: dict, vertical_flip: bool = False) -> None:
             x = int(frame_meta["x"])
             y = int(frame_meta["y"])
             w = int(frame_meta["w"])
             h = int(frame_meta["h"])
             indices: list[int] = []
-            for py in range(y, y + h):
+            row_range = range(y + h - 1, y - 1, -1) if vertical_flip else range(y, y + h)
+            for py in row_range:
                 for px in range(x, x + w):
-                    indices.append(int(atlas_px[px, py]) & 0x0F)
+                    color_index = int(atlas_px[px, py])
+                    if color_index > 15:
+                        raise ValueError(
+                            f"{args.atlas}.png uses palette index {color_index} at "
+                            f"({px},{py}) in sprite {sprite_name}; STE sprites support only indices 0..15"
+                        )
+                    indices.append(color_index)
 
             row_words, mask_words, gfx_words = pack_masked_words(w, h, indices)
             mask_offset = len(word_blob)
@@ -135,6 +164,11 @@ def main() -> None:
                     do=data_offset,
                 )
             )
+
+        for frame_meta in by_sprite[sprite_name]:
+            append_frame(frame_meta)
+        for frame_meta in by_sprite[sprite_name]:
+            append_frame(frame_meta, vertical_flip=True)
 
         out_path = OUT_DIR / f"{sprite_name}.inc"
         with out_path.open("w") as f:

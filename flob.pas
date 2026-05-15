@@ -7,16 +7,6 @@ uses xbios, gemdos, bios;
 const
 {$i const.inc}
 {$i vnumber.inc}
-    DEBUG_LOADLEVEL = false;
-    DEBUG_DRAWLEVEL = false;
-    DEBUG_TILE_PLACEHOLDER = false;
-    DEBUG_TILE_HUD = false;
-    DEBUG_TILE_FORCE_VISIBLE = false;
-    USE_TILE_BLITTER = true;
-    DEBUG_TEST_BIGSLIME = false;
-    USE_DEBUG_FORCE_LEVEL = false;
-    DEBUG_FORCE_WORLD = 0;
-    DEBUG_FORCE_LEVEL = 4;
     LEVEL_SCALE_X = 2;
     LEVEL_SCALE_Y = 2;
     LEVEL_OFFSET_Y = 16;
@@ -24,33 +14,53 @@ const
     PLAYFIELD_HEIGHT = 160;
     SPAWN_Y_ADJUST = 10;
     GROUND_COLLISION_COLOR = 2;
-    FLOB_RENDER_OFFSET_Y = 2;
+    DANGER_COLLISION_COLOR = 3;
+    FLOB_RENDER_OFFSET_Y = 5;
     WORLD_SPRITE_OFFSET_X = -2;
     WORLD_SPRITE_OFFSET_Y = 4;
-    WORLD_SPRITE_MOVE_STEP = 2;
+    WORLD_SPRITE_MOVE_STEP = 1;
     FLOB_MOVE_STEP = 2;
     FLOB_FALL_STEP = 2;
     HUD_HEIGHT = 8;
     MESSAGE_TEXT_COLOR = 15;
-    SLIME_RENDER_OFFSET_X = -PMG_X_OFFSET * LEVEL_SCALE_X;
-    SLIME_RENDER_OFFSET_Y = 12;
-    STE_PAL: array[0..255] of word = (
-        $000,$888,$111,$999,$222,$AAA,$333,$BBB,$444,$CCC,$555,$DDD,$666,$EEE,$777,$FFF,
-        $800,$180,$910,$290,$A20,$3A0,$B30,$4B8,$C41,$DC9,$D52,$6DA,$E63,$FEB,$F74,$FFC,
-        $900,$200,$A80,$310,$B90,$420,$CA8,$531,$DB9,$642,$ECA,$753,$FDB,$F64,$FEC,$F75,
-        $200,$A00,$300,$B80,$418,$C91,$529,$DA2,$63A,$EB3,$74B,$FC4,$F5C,$FD5,$F66,$FEE,
-        $200,$A08,$301,$B89,$412,$C9A,$523,$DAB,$634,$EBC,$745,$FCD,$F56,$FDE,$F67,$FE7,
-        $909,$202,$A02,$38A,$B13,$49B,$C24,$5AC,$D35,$6BD,$E46,$7CE,$F5E,$FD7,$F67,$FE7,
-        $10A,$903,$20B,$A84,$31C,$B95,$42D,$CA6,$53E,$DB7,$647,$EC7,$757,$FD7,$F67,$FEF,
-        $00B,$80B,$184,$91C,$295,$A2D,$3A6,$B3E,$4B7,$C4F,$5CF,$D5F,$6DF,$E6F,$7EF,$F7F,
-        $003,$08B,$014,$89C,$125,$9AD,$236,$ABE,$347,$BCF,$45F,$CDF,$56F,$DEF,$67F,$EFF,
-        $08A,$013,$09B,$024,$8AC,$135,$9BD,$246,$ACE,$357,$BDF,$46F,$CEF,$57F,$DFF,$6FF,
-        $011,$092,$02A,$0A3,$03B,$8B4,$14C,$9C5,$25D,$AD6,$36E,$BE7,$47F,$CFF,$5FF,$DFF,
-        $018,$098,$021,$0A9,$03A,$8B3,$14B,$9C4,$25C,$AD5,$36D,$BE6,$47E,$CFE,$5F7,$DFF,
-        $018,$098,$028,$0A1,$831,$1B9,$942,$2CA,$A53,$3DB,$B64,$4EC,$C75,$5FD,$DFD,$6F6,
-        $018,$098,$028,$8A8,$138,$9B8,$248,$AC1,$359,$BD2,$46A,$CE3,$57B,$DF4,$6FC,$EF5,
-        $080,$810,$190,$920,$2A0,$A30,$3B0,$B48,$4C1,$C59,$5D2,$D6A,$6E3,$E7B,$7F4,$FF4,
-        $100,$980,$210,$A90,$320,$B30,$4B0,$C48,$5C1,$5C9,$6D2,$E6A,$7E3,$7EB,$FF4,$FFC
+    FLIP_STEPS = 4;
+    SLIME_RENDER_OFFSET_X = -50 * LEVEL_SCALE_X;
+    SLIME_RENDER_OFFSET_Y = 16;
+    FLIP_H: array[0..FLIP_STEPS] of word = (160, 80, 32, 8, 0);
+    STE_PAL: array[0..255] of word =
+    (
+    { $00-$07 } $111, $999, $222, $AAA, $333, $BBB, $444, $444,
+    { $08-$0F } $CCC, $555, $DDD, $666, $EEE, $777, $FFF, $FFF,
+    { $10-$17 } $A10, $390, $B90, $420, $CA8, $531, $DB9, $D42,
+    { $18-$1F } $6CA, $E5A, $753, $FDB, $F64, $FEC, $F75, $FFD,
+    { $20-$27 } $380, $B18, $491, $C99, $522, $5A2, $D3A, $6B3,
+    { $28-$2F } $E4B, $7C4, $F5C, $F55, $FDD, $F6D, $FE6, $F7E,
+    { $30-$37 } $309, $B82, $41A, $C93, $52B, $DAB, $6A4, $63C,
+    { $38-$3F } $EB5, $74D, $FC6, $F5E, $FD7, $F67, $F6F, $FEF,
+    { $40-$47 } $303, $B8B, $414, $414, $C9C, $525, $DAD, $636,
+    { $48-$4F } $EBE, $747, $FCF, $FCF, $F5F, $FDF, $F6F, $FEF,
+    { $50-$57 } $A04, $38C, $315, $B9D, $496, $C26, $5AE, $D37,
+    { $58-$5F } $6BF, $E4F, $ECF, $75F, $F5F, $FDF, $F6F, $FEF,
+    { $60-$67 } $98C, $285, $A1D, $396, $B2E, $4A7, $43F, $CBF,
+    { $68-$6F } $54F, $D4F, $6CF, $E5F, $7DF, $F6F, $FEF, $F7F,
+    { $70-$77 } $88C, $115, $99D, $226, $AAE, $337, $BBF, $44F,
+    { $78-$7F } $44F, $CCF, $55F, $DDF, $66F, $EEF, $77F, $FFF,
+    { $80-$87 } $014, $89C, $125, $9AD, $936, $2B6, $A4E, $3C7,
+    { $88-$8F } $BCF, $45F, $CDF, $56F, $5EF, $D7F, $6FF, $EFF,
+    { $90-$97 } $093, $02B, $8A4, $834, $1BC, $945, $2CD, $A56,
+    { $98-$9F } $35E, $BD7, $46F, $4EF, $C7F, $5FF, $DFF, $6FF,
+    { $A0-$A7 } $029, $0A2, $03A, $8B3, $14B, $9CB, $2C4, $25C,
+    { $A8-$AF } $AD5, $36D, $BE6, $47E, $CF7, $5F7, $DFF, $DFF,
+    { $B0-$B7 } $0A0, $038, $031, $8B9, $142, $9C2, $25A, $AD3,
+    { $B8-$BF } $36B, $3E4, $BEC, $475, $CFD, $5FD, $DF6, $6FE,
+    { $C0-$C7 } $0A0, $030, $830, $1B0, $948, $2C1, $A59, $AD2,
+    { $C8-$CF } $36A, $BEA, $4E3, $C7B, $5F4, $DFC, $6F5, $6FD,
+    { $D0-$D7 } $820, $1A0, $130, $9B0, $240, $AC0, $358, $BD1,
+    { $D8-$DF } $4D9, $C62, $CEA, $57A, $DF3, $6FB, $EF4, $7FC,
+    { $E0-$E7 } $120, $9A0, $2A0, $A30, $3B0, $B40, $4C0, $458,
+    { $E8-$EF } $CD1, $569, $D62, $6EA, $E73, $7FB, $FFB, $FF4,
+    { $F0-$F7 } $290, $A20, $320, $BA0, $B30, $4B0, $C48, $5C1,
+    { $F8-$FF } $D59, $6D2, $EDA, $76A, $7E3, $F7B, $FF4, $FFC
     );
     MAIN_TITLE_COLORS: array[0..6] of byte = ($00,$3F,$34,$38,$98,$32,$94);
     SELECTOR_COLORS: array[0..9] of byte = ($00,$38,$3C,$34,$84,$78,$0F,$98,$1A,$26);
@@ -119,9 +129,11 @@ const
     SCREEN_ALLOC      = SCREEN_BYTES + SCREEN_ALIGN;
 
 {$i types.inc}        // starts with: type
+{$i assets/achievements.inc} // generated achievement definitions
+{$i assets/endworld_icons.inc} // generated 32x40 bitmap4 end-world icons
+{$i assets/world_icons.inc} // generated 96x40 bitmap4 world selector icons
 {$i bank_0_files.inc} // starts with: type ... var
 {$i assets/sprites.inc} // starts with: var
-{$i interrupts.inc}   // procedure stubs, no section headers needed
 {$i worlds/worlds.inc} // all world + asset const byte arrays
 {$i worlds/world_tiles.inc} // generated STE tile data
 {$i images/images.inc} // per-world room backgrounds + global screens (aplib compressed)
@@ -130,9 +142,13 @@ const
 
 {$L unapl.o}
 {$L font.o}
+{$L ikbd.o}
 procedure UnApl(src, dst: pointer); external;
 procedure DrawChar(screen, font: pointer; x, y, ch, fg, bg: longword); cdecl; external;
+procedure RawIkbdHandler; external;
 var FlobFont: byte; external name 'FlobFont';
+var RawIkbdJoyStatus: byte; external name 'RawIkbdJoyStatus';
+var RawIkbdState: byte; external name 'RawIkbdState';
 
 procedure ClearScreen(buf: pword); forward;
 procedure SwapScreen; forward;
@@ -142,14 +158,17 @@ procedure DrawTextTo(scr: pword; x, y, fg, bg: word; const str: string); forward
 procedure DrawHudTo(scr: pword); forward;
 procedure RefreshHudCache; forward;
 procedure CopyHudArea(src, dst: pword); forward;
+procedure CopyMessageArea(src, dst: pword); forward;
 procedure DrawMessageTo(scr: pword); forward;
-procedure DrawSlimesTo(scr: pword); forward;
+procedure RefreshMessageCache; forward;
 procedure RefreshOverlayBuffers; forward;
+procedure RebuildDisplayBuffersFromBackground; forward;
 procedure BlitterCopyData16(src, dst: pointer; size: longword); forward;
+procedure BlitterCopyBitmap4(src, dst: pointer; width, height, srcX, srcY, dstX,
+    dstY, srcWidth, dstWidth: word); forward;
 procedure BuildDisplayPalette(dst: PWord); forward;
 procedure UpdateDisplayPaletteIfNeeded(force: boolean); forward;
 procedure FillRect16(scr: pword; x, y, cellw, cellh, color: word); forward;
-procedure PutPixel4(scr: pword; x, y: word; color: byte); forward;
 procedure Collided(pnum: byte); forward;
 
 type
@@ -187,7 +206,7 @@ var
     gametime: cardinal;
     s, s1: string[40];
     s2: string[1];
-    b, joy: byte;
+    b, joy, joyRaw: byte;
     world: TWorld;
     level: TLevel;
     image: TImage;
@@ -207,7 +226,6 @@ var
     levelColors: array[0..3] of byte;
     levelRawColors: array[0..3] of byte;
     revealColors: array[0..3] of byte;
-    pmgColors: array[0..3] of byte;
     topBarForeground: byte;
 
     flobX, flobY, flobFoot, flobFace, flobDir, flobFrame, flobFalling: byte;
@@ -220,6 +238,10 @@ var
     colorCollision, mainGoalReached, room_changed, game_over,
     room_landed, first_landed, exploded, teleported: boolean;
     landedTime: byte;
+    triggerGrace: byte;   // frames to skip CheckEvents after teleport (prevents instant exit re-trigger)
+    spriteCollisionMovePending: boolean;
+    teleportTriggerReleasePending: boolean;
+    teleportPortalReleasePending: boolean;
     cheatmode, statsOn: boolean;
 
     levelNum: byte;
@@ -227,9 +249,10 @@ var
     lastSafeLanded: TLastLanded;
     doorReveal: array[0..1] of byte;
 
-    // hardware register stubs (no absolute address on STE)
+    // 8-bit-style input state, updated by the STE IKBD layer.
     stick0: byte;
     strig0: byte;
+    joyStatus: byte;
     skstat: byte;
     kbcode: byte;
     invulnerability: byte;
@@ -257,6 +280,9 @@ var
     currentWorldTileCount: word;
     spriteColorsRaw: array[0..1] of PByte;
     spriteFramesRaw: array[0..1, 0..15] of PByte;
+    spriteAtlasFrames: array[0..1] of PSteSpriteFrame;
+    spriteAtlasWords: array[0..1] of PWord;
+    spriteAtlasFrameCount: array[0..1] of byte;
     spriteBgValid: array[0..1] of boolean;
     spriteBgX: array[0..1] of word;
     spriteBgY: array[0..1] of word;
@@ -270,6 +296,7 @@ var
     triggerCount: byte;
     msgDisplayCounter: byte;
     msgDisplayType: byte;
+    messageCacheDirty: boolean;
     messages: array[0..3] of word;
     messageTypes: array[0..3] of byte;
     currentMessageLines: array[0..1] of string;
@@ -297,13 +324,6 @@ var
     statBestsBack: byte;
     statGlobalBack: byte;
 
-    PMG_p0pl, PMG_p1pl: byte;
-    PMG_hposm0, PMG_hposm1: byte;
-    PMG_sizep0, PMG_sizep1: byte;
-    PMG_hpos: array[0..3] of byte;
-    PMG_sizep: array[0..3] of byte;
-    PMG_hitclr: byte;
-
     colbk: byte;
     currentPal: pointer;  // target palette for FadeIn, set by LoadImage/LoadCutsceneSlide
     currentBasePal: pointer;
@@ -316,14 +336,22 @@ var
     lastPaletteFlobFrame: shortint;
     lastPaletteSlimeFrame: shortint;
     lastPaletteMsgSource: shortint;
+    DEBUG_LOADLEVEL: boolean = false;
 
 
     vramLineOffset: array[0..99] of word; // unused on STE, kept for compatibility
 
+{$i generated/world_sprite_atlas_map.inc}
+
 // *** Forward declarations (same as original) ***
 procedure ReadInput; forward;
+procedure PollJoystickState; forward;
 procedure InstallInput; forward;
 procedure UnInstallInput; forward;
+procedure InstallGameplayInput; forward;
+procedure UnInstallGameplayInput; forward;
+procedure ResetJoystickState; forward;
+function CRT_FirePressedEdge: boolean; forward;
 procedure LoadLevel(lvl: byte); forward;
 procedure CheckAchievements; forward;
 procedure EndWorld; forward;
@@ -346,25 +374,17 @@ procedure SetLandingSafe; forward;
 // *** COMPATIBILITY LAYER (replaces 8-bit builtins)
 // ***************************************************
 
-function peek(addr: word): byte; inline;
+procedure VSync;
+var vbl: longword;
 begin
-    Result := 0; // stub – 8-bit VRAM/hardware access
-end;
-
-procedure poke(addr: word; val: byte); inline;
-begin
-    // stub
-end;
-
-procedure dpoke(addr: word; val: word); inline;
-begin
-    // stub
+    vbl := PLongWord(pointer(longword($00000466)))^;
+    while PLongWord(pointer(longword($00000466)))^ = vbl do ;
 end;
 
 procedure WaitFrame;
 begin
     ReadInput;
-    xbios_vsync;
+    VSync;
     Inc(sysframe);
 end;
 
@@ -374,9 +394,10 @@ begin
     for i := 0 to count - 1 do WaitFrame;
 end;
 
-function Atascii2Antic(const s: string): string;
+procedure GameplayFrameTick;
 begin
-    Result := s; // stub – character conversion not needed on STE
+    PollJoystickState;
+    Inc(sysframe);
 end;
 
 function Antic2Ascii(const Data: AnsiString): AnsiString;
@@ -395,6 +416,7 @@ var
   I: Integer;
   Code: Byte;
 begin
+  Result := '';
   SetLength(Result, Length(Data));
 
   for I := 1 to Length(Data) do
@@ -460,75 +482,11 @@ begin
         w.lvlPtr[i] := SwapWord(w.lvlPtr[i]);
 end;
 
-procedure DebugShowOverlay(const title, line1, line2, line3, line4: string);
-begin
-    ClearScreen(SCREEN_LOG);
-    DrawStr(8, 8, 15, title);
-    DrawStr(8, 32, 15, line1);
-    DrawStr(8, 48, 15, line2);
-    DrawStr(8, 64, 15, line3);
-    DrawStr(8, 80, 15, line4);
-    SwapScreen;
-end;
-
-procedure DrawDebugHexDigit(scr: pword; x, y: word; digit: byte; fg, bg: word);
-var row, col: byte;
-begin
-    for row := 0 to 4 do
-        for col := 0 to 2 do
-            if (DEBUG_HEX_FONT[digit and $0F][row] and (1 shl (2 - col))) <> 0 then
-                FillRect16(scr, x + word(col) * 16, y + word(row) * 4, 16, 4, fg)
-            else if bg <> fg then
-                FillRect16(scr, x + word(col) * 16, y + word(row) * 4, 16, 4, bg);
-end;
-
-procedure DrawDebugHexWord(scr: pword; x, y, fg, bg, v: word);
-begin
-    DrawDebugHexDigit(scr, x + 0,   y, byte(v shr 12), fg, bg);
-    DrawDebugHexDigit(scr, x + 64,  y, byte(v shr 8),  fg, bg);
-    DrawDebugHexDigit(scr, x + 128, y, byte(v shr 4),  fg, bg);
-    DrawDebugHexDigit(scr, x + 192, y, byte(v),        fg, bg);
-end;
-
-procedure DrawDebugRect(scr: pword; x, y, w, h: word; color: byte);
-var i: word;
-begin
-    if (w = 0) or (h = 0) then exit;
-
-    for i := 0 to w - 1 do begin
-        PutPixel4(scr, x + i, y, color);
-        PutPixel4(scr, x + i, y + h - 1, color);
-    end;
-
-    for i := 0 to h - 1 do begin
-        PutPixel4(scr, x, y + i, color);
-        PutPixel4(scr, x + w - 1, y + i, color);
-    end;
-end;
-
-procedure DrawTileLookupDebug(src: word; found: boolean);
-var line: string;
-    firstAddr: word;
-begin
-    FillRect16(SCREEN_LOG, 0, 0, 320, 40, 0);
-
-    if currentWorldTiles <> nil then
-        firstAddr := currentWorldTiles^.sourceAddr
-    else
-        firstAddr := 0;
-
-    line := 'src=' + HexWord(src) + ' cnt=' + WordToStr(currentWorldTileCount) +
-        ' first=' + HexWord(firstAddr);
-    if found then
-        line := line + ' HIT'
-    else
-        line := line + ' MISS';
-    DrawStr(8, 8, 1, line);
-end;
-
 // ***************************************************
 // *** SCREEN / PALETTE INIT (like fuji-tetris)
 // ***************************************************
+
+procedure BlitterClearBitmap4(dst: pointer; width, height, dstX, dstY, dstWidth: word); forward;
 
 procedure AlignScreenBuffer(rawScreen: pword; var screen: pword);
 var addr: longint;
@@ -540,7 +498,7 @@ end;
 
 procedure ClearScreen(buf: pword);
 begin
-    FillChar(buf^, SCREEN_BYTES, 0);
+    BlitterClearBitmap4(buf, 320, 200, 0, 0, 320);
 end;
 
 procedure ScreenInit;
@@ -579,18 +537,28 @@ begin
     gemdos_super(pointer(1));
 end;
 
+procedure SetPhysicalScreen(screen: pword);
+var addr: longword;
+begin
+    if screen = nil then exit;
+    addr := longword(screen);
+    PByte(pointer(longword($FFFF8201)))^ := byte(addr shr 16);
+    PByte(pointer(longword($FFFF8203)))^ := byte(addr shr 8);
+    PByte(pointer(longword($FFFF820D)))^ := byte(addr);
+end;
+
 procedure SwapScreen;
 var tmp: pword;
     tmpIndex: byte;
 begin
-    xbios_vsync;
     tmp := SCREEN_LOG;
     SCREEN_LOG := SCREEN_PHY;
     SCREEN_PHY := tmp;
     tmpIndex := screenLogIndex;
     screenLogIndex := screenPhyIndex;
     screenPhyIndex := tmpIndex;
-    xbios_setscreen(SCREEN_LOG, SCREEN_PHY, -1);
+    SetPhysicalScreen(SCREEN_PHY);
+    VSync;
 end;
 
 // ***************************************************
@@ -598,24 +566,18 @@ end;
 // ***************************************************
 
 
-procedure PMG_Init(base: word); begin end;
-procedure PMG_Clear; begin end;
-
-procedure EnableVBLI(proc: pointer); begin end;
-procedure EnableDLI(proc: pointer);  begin end;
-
-procedure InitScreen(dladdr: word; dliptr: pointer); begin end;
 procedure FlipGameplayAreaInPlace(buf: pword);
 var yTop, yBottom: word;
     topPtr, bottomPtr: PByte;
     tmp: array[0..SCREEN_LINE_BYTES-1] of byte;
 begin
     if buf = nil then exit;
+    FillChar(tmp, SizeOf(tmp), 0);
     yTop := BG_IMAGE_OFFSET_Y;
     yBottom := BG_IMAGE_OFFSET_Y + PLAYFIELD_HEIGHT - 1;
     while yTop < yBottom do begin
-        topPtr := PByte(longint(buf) + longint(yTop) * SCREEN_LINE_BYTES);
-        bottomPtr := PByte(longint(buf) + longint(yBottom) * SCREEN_LINE_BYTES);
+        topPtr := PByte(longword(buf) + longword(yTop) * SCREEN_LINE_BYTES);
+        bottomPtr := PByte(longword(buf) + longword(yBottom) * SCREEN_LINE_BYTES);
         Move(topPtr^, tmp[0], SCREEN_LINE_BYTES);
         Move(bottomPtr^, topPtr^, SCREEN_LINE_BYTES);
         Move(tmp[0], bottomPtr^, SCREEN_LINE_BYTES);
@@ -628,8 +590,8 @@ procedure CopyPlayfieldArea(src, dst: pword);
 var srcPtr, dstPtr: PByte;
 begin
     if (src = nil) or (dst = nil) then exit;
-    srcPtr := PByte(longint(src) + longint(BG_IMAGE_OFFSET_Y) * SCREEN_LINE_BYTES);
-    dstPtr := PByte(longint(dst) + longint(BG_IMAGE_OFFSET_Y) * SCREEN_LINE_BYTES);
+    srcPtr := PByte(longword(src) + longword(BG_IMAGE_OFFSET_Y) * SCREEN_LINE_BYTES);
+    dstPtr := PByte(longword(dst) + longword(BG_IMAGE_OFFSET_Y) * SCREEN_LINE_BYTES);
     BlitterCopyData16(srcPtr, dstPtr, longword(PLAYFIELD_HEIGHT) * SCREEN_LINE_BYTES);
 end;
 
@@ -639,13 +601,74 @@ begin
     BlitterCopyData16(src, dst, 20 * SCREEN_LINE_BYTES);
 end;
 
+procedure CopyMessageArea(src, dst: pword);
+var srcPtr, dstPtr: PByte;
+begin
+    if (src = nil) or (dst = nil) then exit;
+    srcPtr := PByte(longword(src) + 180 * SCREEN_LINE_BYTES);
+    dstPtr := PByte(longword(dst) + 180 * SCREEN_LINE_BYTES);
+    BlitterCopyData16(srcPtr, dstPtr, 20 * SCREEN_LINE_BYTES);
+end;
+
+procedure ClearPlayfieldLog;
+begin
+    if SCREEN_LOG = nil then exit;
+    BlitterClearBitmap4(SCREEN_LOG, 320, PLAYFIELD_HEIGHT, 0, BG_IMAGE_OFFSET_Y, 320);
+end;
+
+procedure DrawSquashedPlayfield(src: pword; destH: word);
+var i, srcY, yDst: word;
+    srcLine, dstLine: PByte;
+begin
+    if (src = nil) or (SCREEN_LOG = nil) then exit;
+    if (destH = 0) or (destH > PLAYFIELD_HEIGHT) then exit;
+
+    yDst := BG_IMAGE_OFFSET_Y + (PLAYFIELD_HEIGHT - destH) div 2;
+    for i := 0 to destH - 1 do begin
+        srcY := BG_IMAGE_OFFSET_Y + word((longword(i) * PLAYFIELD_HEIGHT) div destH);
+        srcLine := PByte(longword(src) + longword(srcY) * SCREEN_LINE_BYTES);
+        dstLine := PByte(longword(SCREEN_LOG) + longword(yDst + i) * SCREEN_LINE_BYTES);
+        Move(srcLine^, dstLine^, SCREEN_LINE_BYTES);
+    end;
+end;
+
+procedure DrawFlipPlayfieldFrame(src: pword; destH: word);
+begin
+    ClearPlayfieldLog;
+    DrawSquashedPlayfield(src, destH);
+    SwapScreen;
+end;
+
+procedure FlipGameplayEffect(wantFlipped: boolean);
+var step: integer;
+begin
+    if SCREEN_BKG = nil then exit;
+
+    RefreshOverlayBuffers;
+    for step := 1 to FLIP_STEPS do
+        DrawFlipPlayfieldFrame(SCREEN_BKG, FLIP_H[step]);
+
+    if displayFlipped <> wantFlipped then begin
+        FlipGameplayAreaInPlace(SCREEN_BKG);
+        displayFlipped := wantFlipped;
+    end;
+
+    for step := FLIP_STEPS - 1 downto 0 do
+        DrawFlipPlayfieldFrame(SCREEN_BKG, FLIP_H[step]);
+
+    RebuildDisplayBuffersFromBackground;
+end;
+
 procedure RebuildDisplayBuffersFromBackground;
 begin
     if SCREEN_BKG = nil then exit;
+    RefreshMessageCache;
     CopyPlayfieldArea(SCREEN_BKG, SCREEN_LOG);
     CopyPlayfieldArea(SCREEN_BKG, SCREEN_PHY);
     CopyHudArea(SCREEN_BKG, SCREEN_LOG);
+    CopyMessageArea(SCREEN_BKG, SCREEN_LOG);
     CopyHudArea(SCREEN_BKG, SCREEN_PHY);
+    CopyMessageArea(SCREEN_BKG, SCREEN_PHY);
     FillChar(queuedSpriteCount, SizeOf(queuedSpriteCount), 0);
 end;
 
@@ -659,31 +682,12 @@ begin
     RefreshOverlayBuffers;
 end;
 
-procedure OrderDlist;
-begin
-    EnsureDisplayOrientation(false);
-end;
-
-procedure ReverseDlist;
-begin
-    EnsureDisplayOrientation(true);
-end;
-
-procedure ClearVram; begin end;
-procedure ClearTxt1; begin end;
 procedure ClearTxt2;
 begin
     currentMessageLines[0] := '';
     currentMessageLines[1] := '';
+    messageCacheDirty := true;
 end;
-
-procedure HRLine1(y: byte); begin end;
-
-procedure PutChar(c: char; dest: word; color: byte); begin end;
-
-procedure PutString(var s: string; dest: word; color: byte); begin end;
-
-procedure PutCString(var s: string; dest: word; color: byte; w: byte); begin end;
 
 const
     BLITTER_BASE = $FFFF8A00;
@@ -707,6 +711,9 @@ const
     BLITTER_LOP_SRC_AND_DST = 1;
     BLITTER_LOP_SRC_OR_DST = 7;
     BLITTER_MODE_BUSY = $80;
+    BLITTER_MODE_HOG = $40;
+    BLITTER_START_COPY_MODE = BLITTER_MODE_BUSY;
+    BLITTER_START_SPRITE_MODE = BLITTER_MODE_BUSY or BLITTER_MODE_HOG;
     BLITTER_SKEW_NFSR = $40;
     BLITTER_START_MASKS: array[0..15] of word = (
         $FFFF, $7FFF, $3FFF, $1FFF, $0FFF, $07FF, $03FF, $01FF,
@@ -760,13 +767,62 @@ begin
     BlitterWriteWord(BLITTER_COUNT_Y, size shr 4);
     BlitterWriteByte(BLITTER_HOP, BLITTER_HOP_SRC);
     BlitterWriteByte(BLITTER_LOP, BLITTER_LOP_SRC);
-    BlitterWriteByte(BLITTER_MODE, $C0);
+    BlitterWriteByte(BLITTER_MODE, BLITTER_START_COPY_MODE);
+    BlitterWait;
+end;
+
+procedure BlitterCopyBitmap4(src, dst: pointer; width, height, srcX, srcY, dstX,
+    dstY, srcWidth, dstWidth: word);
+var countX, srcIncY, dstIncY: word;
+    srcBytes, dstBytes: PByte;
+begin
+    if (src = nil) or (dst = nil) or (width = 0) or (height = 0) then exit;
+    if (srcWidth = 0) or (dstWidth = 0) then exit;
+    if (srcX >= srcWidth) or (dstX >= dstWidth) then exit;
+
+    srcX := srcX and $FFF0;
+    dstX := dstX and $FFF0;
+    width := width and $FFF0;
+    if width = 0 then exit;
+
+    if (srcX + width) > srcWidth then
+        width := (srcWidth - srcX) and $FFF0;
+    if (dstX + width) > dstWidth then
+        width := (dstWidth - dstX) and $FFF0;
+    if width = 0 then exit;
+
+    countX := width shr 2;
+    srcIncY := ((srcWidth - width) shr 1) + 2;
+    dstIncY := ((dstWidth - width) shr 1) + 2;
+
+    srcBytes := PByte(src);
+    Inc(srcBytes, ((longword(srcY) * srcWidth + srcX) shr 1));
+    dstBytes := PByte(dst);
+    Inc(dstBytes, ((longword(dstY) * dstWidth + dstX) shr 1));
+
+    BlitterWait;
+    BlitterWriteByte(BLITTER_SKEW, 0);
+    BlitterWriteWord(BLITTER_SRC_INC_X, 2);
+    BlitterWriteWord(BLITTER_SRC_INC_Y, srcIncY);
+    BlitterWritePtr(BLITTER_SRC_ADDR, srcBytes);
+    BlitterWriteWord(BLITTER_ENDMASK1, $FFFF);
+    BlitterWriteWord(BLITTER_ENDMASK2, $FFFF);
+    BlitterWriteWord(BLITTER_ENDMASK3, $FFFF);
+    BlitterWriteWord(BLITTER_DST_INC_X, 2);
+    BlitterWriteWord(BLITTER_DST_INC_Y, dstIncY);
+    BlitterWritePtr(BLITTER_DST_ADDR, dstBytes);
+    BlitterWriteWord(BLITTER_COUNT_X, countX);
+    BlitterWriteWord(BLITTER_COUNT_Y, height);
+    BlitterWriteByte(BLITTER_HOP, BLITTER_HOP_SRC);
+    BlitterWriteByte(BLITTER_LOP, BLITTER_LOP_SRC);
+    BlitterWriteByte(BLITTER_MODE, BLITTER_START_COPY_MODE);
     BlitterWait;
 end;
 
 procedure BlitterClearBitmap4(dst: pointer; width, height, dstX, dstY, dstWidth: word);
-var lineAdvanceBytes: word;
+var countX, lineAdvanceBytes: word;
     dstAddr: pointer;
+    dstBytes: PByte;
 begin
     if (dst = nil) or (width = 0) or (height = 0) then exit;
     if (dstX >= dstWidth) or (dstY >= 200) then exit;
@@ -780,8 +836,12 @@ begin
         height := 200 - dstY;
     if height = 0 then exit;
 
+    countX := width shr 2;
+    if countX = 0 then exit;
     lineAdvanceBytes := ((dstWidth - width) shr 1) + 2;
-    dstAddr := pointer(longint(dst) + ((longint(dstY) * dstWidth + dstX) shr 1));
+    dstBytes := PByte(dst);
+    Inc(dstBytes, ((longword(dstY) * dstWidth + dstX) shr 1));
+    dstAddr := dstBytes;
 
     BlitterWait;
     BlitterWriteByte(BLITTER_SKEW, 0);
@@ -791,23 +851,12 @@ begin
     BlitterWriteWord(BLITTER_DST_INC_X, 2);
     BlitterWriteWord(BLITTER_DST_INC_Y, lineAdvanceBytes);
     BlitterWritePtr(BLITTER_DST_ADDR, dstAddr);
-    BlitterWriteWord(BLITTER_COUNT_X, width shr 2);
+    BlitterWriteWord(BLITTER_COUNT_X, countX);
     BlitterWriteWord(BLITTER_COUNT_Y, height);
     BlitterWriteByte(BLITTER_HOP, BLITTER_HOP_SRC);
     BlitterWriteByte(BLITTER_LOP, 0);
-    BlitterWriteByte(BLITTER_MODE, $C0);
+    BlitterWriteByte(BLITTER_MODE, BLITTER_START_COPY_MODE);
     BlitterWait;
-end;
-
-procedure ApplySpritePaletteSlots(startSlot: byte; palData: PWord; palCount: byte);
-var i: byte;
-begin
-    if palCount = 0 then begin
-        exit;
-    end;
-    for i := 0 to palCount - 1 do
-        if (startSlot + i) <= 15 then
-            spriteTestPal[startSlot + i] := palData[i];
 end;
 
 procedure ApplyRoomSpriteAtlasPalette(dst: PWord);
@@ -824,132 +873,36 @@ var i: word;
 begin
     Result := nil;
     if currentWorldTiles = nil then exit;
+    tilePtr := currentWorldTiles;
     for i := 0 to currentWorldTileCount - 1 do begin
-        tilePtr := PSteTile(longint(currentWorldTiles) + longint(i) * SizeOf(TSteTile));
         if tilePtr^.sourceAddr = src then begin
             Result := tilePtr;
             exit;
         end;
+        Inc(tilePtr);
     end;
-end;
-
-procedure PutPixel4(scr: pword; x, y: word; color: byte);
-var pw: pword;
-    mask: word;
-begin
-    if x >= 320 then exit;
-    if y >= 200 then exit;
-
-    pw := pword(longint(scr) + longint(y) * SCREEN_LINE_BYTES + longint(x shr 4) * 8);
-    mask := word(1) shl (15 - (x and 15));
-
-    pw[0] := pw[0] and (not mask);
-    pw[1] := pw[1] and (not mask);
-    pw[2] := pw[2] and (not mask);
-    pw[3] := pw[3] and (not mask);
-
-    if (color and 1) <> 0 then pw[0] := pw[0] or mask;
-    if (color and 2) <> 0 then pw[1] := pw[1] or mask;
-    if (color and 4) <> 0 then pw[2] := pw[2] or mask;
-    if (color and 8) <> 0 then pw[3] := pw[3] or mask;
-end;
-
-function GetPixel4(scr: pword; x, y: word): byte;
-var pw: pword;
-    mask: word;
-begin
-    if x >= 320 then exit(0);
-    if y >= 200 then exit(0);
-    pw := pword(longint(scr) + longint(y) * SCREEN_LINE_BYTES + longint(x shr 4) * 8);
-    mask := word(1) shl (15 - (x and 15));
-    Result := 0;
-    if (pw[0] and mask) <> 0 then Result := Result or 1;
-    if (pw[1] and mask) <> 0 then Result := Result or 2;
-    if (pw[2] and mask) <> 0 then Result := Result or 4;
-    if (pw[3] and mask) <> 0 then Result := Result or 8;
-end;
-
-procedure RestoreBackgroundRect(dst: pword; x, y, w, h: word);
-var x2: word;
-    spanWords: word;
-    endMask1, endMask2, endMask3: word;
-    srcWords, dstWords: pword;
-    plane: word;
-    clipTop, clipBottom: word;
-begin
-    if dst = nil then exit;
-    if SCREEN_BKG = nil then exit;
-    if (w = 0) or (h = 0) then exit;
-    if x >= 320 then exit;
-    if y >= 200 then exit;
-    clipTop := BG_IMAGE_OFFSET_Y;
-    clipBottom := BG_IMAGE_OFFSET_Y + PLAYFIELD_HEIGHT;
-    if y < clipTop then begin
-        if (y + h) <= clipTop then exit;
-        h := h - (clipTop - y);
-        y := clipTop;
-    end;
-    if y >= clipBottom then exit;
-    if (x + w) > 320 then w := 320 - x;
-    if (y + h) > clipBottom then h := clipBottom - y;
-    if (w = 0) or (h = 0) then exit;
-
-    x2 := x + w - 1;
-    spanWords := ((x2 shr 4) - (x shr 4)) + 1;
-
-    if spanWords > 2 then begin
-        endMask1 := BLITTER_START_MASKS[x and 15];
-        endMask2 := $FFFF;
-        endMask3 := BLITTER_END_MASKS[x2 and 15];
-    end else if spanWords > 1 then begin
-        endMask1 := BLITTER_START_MASKS[x and 15];
-        endMask2 := BLITTER_END_MASKS[x2 and 15];
-        endMask3 := BLITTER_END_MASKS[x2 and 15];
-    end else begin
-        endMask1 := BLITTER_START_MASKS[x and 15] and BLITTER_END_MASKS[x2 and 15];
-        endMask2 := endMask1;
-        endMask3 := endMask1;
-    end;
-
-    srcWords := pword(longint(SCREEN_BKG) + longint(y) * SCREEN_LINE_BYTES + longint(x shr 4) * 8);
-    dstWords := pword(longint(dst) + longint(y) * SCREEN_LINE_BYTES + longint(x shr 4) * 8);
-
-    BlitterWait;
-    BlitterWriteWord(BLITTER_ENDMASK1, endMask1);
-    BlitterWriteWord(BLITTER_ENDMASK2, endMask2);
-    BlitterWriteWord(BLITTER_ENDMASK3, endMask3);
-    BlitterWriteWord(BLITTER_SRC_INC_X, 8);
-    BlitterWriteWord(BLITTER_DST_INC_X, 8);
-    BlitterWriteWord(BLITTER_SRC_INC_Y, SCREEN_LINE_BYTES - ((spanWords - 1) shl 3));
-    BlitterWriteWord(BLITTER_DST_INC_Y, SCREEN_LINE_BYTES - ((spanWords - 1) shl 3));
-    BlitterWriteWord(BLITTER_COUNT_X, spanWords);
-    BlitterWriteByte(BLITTER_HOP, BLITTER_HOP_SRC);
-    BlitterWriteByte(BLITTER_LOP, BLITTER_LOP_SRC);
-    BlitterWriteByte(BLITTER_SKEW, 0);
-    for plane := 0 to 3 do begin
-        BlitterWait;
-        BlitterWritePtr(BLITTER_SRC_ADDR, srcWords + plane);
-        BlitterWritePtr(BLITTER_DST_ADDR, dstWords + plane);
-        BlitterWriteWord(BLITTER_COUNT_Y, h);
-        BlitterWriteByte(BLITTER_MODE, BLITTER_MODE_BUSY);
-    end;
-    BlitterWait;
 end;
 
 procedure BeginQueuedSpritesFrame;
 var i: byte;
     spr: ^TQueuedSprite;
+    messageWasDirty: boolean;
 begin
     UpdateDisplayPaletteIfNeeded(false);
     if queuedSpriteCount[screenLogIndex] > 0 then begin
-        for i := 0 to queuedSpriteCount[screenLogIndex] - 1 do begin
-            spr := @queuedSprites[screenLogIndex, i];
-            RestoreBackgroundRect(SCREEN_LOG, spr^.x, spr^.y, spr^.widthPx, spr^.heightPx);
-        end;
+        // for i := 0 to queuedSpriteCount[screenLogIndex] - 1 do begin
+        //     spr := @queuedSprites[screenLogIndex, i];
+        //     RestoreBackgroundRect(SCREEN_LOG, spr^.x, spr^.y, spr^.widthPx, spr^.heightPx);
+        // end;
+        CopyPlayfieldArea(SCREEN_BKG, SCREEN_LOG);
         queuedSpriteCount[screenLogIndex] := 0;
     end;
-    CopyHudArea(SCREEN_BKG, SCREEN_LOG);
-    DrawMessageTo(SCREEN_LOG);
+    messageWasDirty := messageCacheDirty;
+    RefreshMessageCache;
+    if messageWasDirty then begin
+        CopyMessageArea(SCREEN_BKG, SCREEN_LOG);
+        CopyMessageArea(SCREEN_BKG, SCREEN_PHY);
+    end;
 end;
 
 procedure QueueGeneratedSprite(dstX, dstY: word; frame: PSteSpriteFrame;
@@ -986,39 +939,6 @@ begin
     Inc(queuedSpriteCount[screenLogIndex]);
 end;
 
-procedure SaveSpriteBackground(num: byte; x, y, w, h: word);
-var px, py: word;
-    idx: word;
-begin
-    if (w = 0) or (h = 0) then exit;
-    if (w > 64) or (h > 128) then exit;
-    spriteBgValid[num] := true;
-    spriteBgX[num] := x;
-    spriteBgY[num] := y;
-    spriteBgW[num] := w;
-    spriteBgH[num] := h;
-    idx := 0;
-    for py := 0 to h - 1 do
-        for px := 0 to w - 1 do begin
-            spriteBgPixels[num, idx] := GetPixel4(SCREEN_LOG, x + px, y + py);
-            Inc(idx);
-        end;
-end;
-
-procedure RestoreSpriteBackground(num: byte);
-var px, py: word;
-    idx: word;
-begin
-    if not spriteBgValid[num] then exit;
-    idx := 0;
-    for py := 0 to spriteBgH[num] - 1 do
-        for px := 0 to spriteBgW[num] - 1 do begin
-            PutPixel4(SCREEN_LOG, spriteBgX[num] + px, spriteBgY[num] + py, spriteBgPixels[num, idx]);
-            Inc(idx);
-        end;
-    spriteBgValid[num] := false;
-end;
-
 procedure DrawSteTile(scr: pword; dstX, dstY: word; tile: PSteTile; flip: byte);
 var y, xw: word;
     rowWords: word;
@@ -1044,27 +964,10 @@ begin
     end else
         exit;
 
-    maskBase := PWord(longint(currentWorldTileWords) + longint(dataOffset) * SizeOf(word));
-    gfxBase := PWord(longint(maskBase) + longint(tile^.heightPx) * longint(rowWords) * SizeOf(word));
-
-    if not USE_TILE_BLITTER then begin
-        for y := 0 to tile^.heightPx - 1 do begin
-            maskRow := PWord(longint(maskBase) + longint(y) * longint(rowWords) * SizeOf(word));
-            gfxRow := PWord(longint(gfxBase) + longint(y) * longint(rowWords) * 4 * SizeOf(word));
-            dstWords := pword(longint(scr) + longint(dstY + y) * SCREEN_LINE_BYTES + longint(dstX shr 4) * 8);
-            for xw := 0 to rowWords - 1 do begin
-                maskWord := maskRow^;
-                dstWords[0] := (dstWords[0] and maskWord) or gfxRow[0];
-                dstWords[1] := (dstWords[1] and maskWord) or gfxRow[1];
-                dstWords[2] := (dstWords[2] and maskWord) or gfxRow[2];
-                dstWords[3] := (dstWords[3] and maskWord) or gfxRow[3];
-                Inc(maskRow);
-                Inc(gfxRow, 4);
-                Inc(dstWords, 4);
-            end;
-        end;
-        exit;
-    end;
+    maskBase := currentWorldTileWords;
+    Inc(maskBase, dataOffset);
+    gfxBase := maskBase;
+    Inc(gfxBase, tile^.heightPx * rowWords);
 
     BlitterWait;
     BlitterWriteWord(BLITTER_COUNT_X, rowWords);
@@ -1076,7 +979,8 @@ begin
     BlitterWriteByte(BLITTER_HOP, BLITTER_HOP_SRC);
     BlitterWriteByte(BLITTER_SKEW, 0);
 
-    dstWords := pword(longint(scr) + longint(dstY) * SCREEN_LINE_BYTES + longint(dstX shr 4) * 8);
+    dstWords := scr;
+    Inc(dstWords, (longword(dstY) * SCREEN_LINE_BYTES + longword(dstX shr 4) * 8) shr 1);
 
     BlitterWriteByte(BLITTER_LOP, BLITTER_LOP_SRC_AND_DST);
     BlitterWriteWord(BLITTER_SRC_INC_X, 2);
@@ -1086,7 +990,7 @@ begin
         BlitterWritePtr(BLITTER_DST_ADDR, dstWords + plane);
         BlitterWritePtr(BLITTER_SRC_ADDR, maskBase);
         BlitterWriteWord(BLITTER_COUNT_Y, tile^.heightPx);
-        BlitterWriteByte(BLITTER_MODE, BLITTER_MODE_BUSY);
+        BlitterWriteByte(BLITTER_MODE, BLITTER_START_SPRITE_MODE);
     end;
 
     BlitterWait;
@@ -1100,7 +1004,7 @@ begin
         BlitterWritePtr(BLITTER_DST_ADDR, dstPlane);
         BlitterWritePtr(BLITTER_SRC_ADDR, srcPlane);
         BlitterWriteWord(BLITTER_COUNT_Y, tile^.heightPx);
-        BlitterWriteByte(BLITTER_MODE, BLITTER_MODE_BUSY);
+        BlitterWriteByte(BLITTER_MODE, BLITTER_START_SPRITE_MODE);
     end;
 
     BlitterWait;
@@ -1118,28 +1022,9 @@ begin
         dstX := word(x) * 4 * LEVEL_SCALE_X;
         dstY := LEVEL_OFFSET_Y + word(y) * LEVEL_SCALE_Y;
         DrawSteTile(SCREEN_LOG, dstX, dstY, tile, flip);
-        if DEBUG_TILE_HUD then begin
-            DrawDebugRect(SCREEN_LOG, dstX, dstY, tile^.widthPx, tile^.heightPx, 3);
-            DrawTileLookupDebug(src, true);
-        end;
         exit;
     end;
-
-    if DEBUG_TILE_PLACEHOLDER then begin
-        px := word(x) * 4 * LEVEL_SCALE_X;
-        px := px and $FFF0;
-        color := 2 + (src and 3);
-        if flip <> 0 then color := 6 + (src and 1);
-
-        FillRect16(SCREEN_LOG, px, y, 16, 8, color);
-        if DEBUG_TILE_HUD then begin
-            DrawTileLookupDebug(src, false);
-        end;
-    end;
 end;
-procedure PutIcon(icon: word; locked: boolean); begin end;
-
-procedure ClearVram_range(addr: word; count: word); begin end;
 
 {$i fade.inc}
 {$i text.inc}
@@ -1199,20 +1084,45 @@ begin
     currentPal := palPtr;
 end;
 
-procedure PresentCutsceneSlide;
+procedure DrawCutsceneSlideTo(dst: pword);
 var srcPtr: PByte;
 begin
-    if (SCREEN_BKG = nil) or (SCREEN_LOG = nil) then exit;
-    ClearScreen(SCREEN_LOG);
-    srcPtr := PByte(longint(SCREEN_BKG) + 8 * SCREEN_LINE_BYTES);
-    BlitterCopyData16(srcPtr, SCREEN_LOG, 168 * SCREEN_LINE_BYTES);
-    BlitterClearBitmap4(SCREEN_LOG, 320, 32, 0, 168, 320);
+    if (SCREEN_BKG = nil) or (dst = nil) then exit;
+    ClearScreen(dst);
+    srcPtr := PByte(SCREEN_BKG);
+    Inc(srcPtr, 8 * SCREEN_LINE_BYTES);
+    BlitterCopyData16(srcPtr, dst, 168 * SCREEN_LINE_BYTES);
+    BlitterClearBitmap4(dst, 320, 32, 0, 168, 320);
+end;
+
+procedure PresentCutsceneSlide;
+begin
+    DrawCutsceneSlideTo(SCREEN_LOG);
+    DrawCutsceneSlideTo(SCREEN_PHY);
     SwapScreen;
 end;
 
 procedure FadeIn;   begin FadeToPalette(pword(currentPal), FADE_FRAMES); end;
 procedure FadeOut;  begin FadeToBlack(FADE_FRAMES); xbios_setpalette(@ALL_BLACK[0]); end;
 procedure BlackAll; begin xbios_setpalette(@ALL_BLACK[0]); end;
+
+procedure SetPaletteRegister(index: byte; color: word);
+var palRegs: PWord;
+begin
+    if index > 15 then exit;
+    palRegs := PWord(pointer(longword($FFFF8240)));
+    palRegs[index] := color;
+end;
+
+function CurrentPaletteRegisterColor(index: byte): word;
+var pal: PWord;
+begin
+    Result := 0;
+    if index > 15 then exit;
+    if currentPal = nil then exit;
+    pal := PWord(currentPal);
+    Result := pal[index];
+end;
 
 procedure BuildDisplayPalette(dst: PWord);
 begin
@@ -1254,7 +1164,7 @@ begin
     roomPalette[1] := STE_PAL[c1];
     roomPalette[3] := STE_PAL[c2];
     roomPalette[0] := STE_PAL[bg];
-    roomPalette[15] := $EEE;
+    roomPalette[15] := $eee;
     roomSpritePaletteActive := false;
     currentPal := @roomPalette[0];
 end;
@@ -1283,32 +1193,22 @@ begin
     end else
         msgSource := -1;
 
-    if (not force) and (not displayPaletteDirty) and
-       (lastPaletteMsgSource = msgSource) then
+    if (not force) and (not displayPaletteDirty) then begin
+        if lastPaletteMsgSource <> msgSource then begin
+            if msgSource >= 0 then
+                SetPaletteRegister(MESSAGE_TEXT_COLOR, STE_PAL[byte(msgSource)])
+            else
+                SetPaletteRegister(MESSAGE_TEXT_COLOR, CurrentPaletteRegisterColor(MESSAGE_TEXT_COLOR));
+            lastPaletteMsgSource := msgSource;
+        end;
         exit;
+    end;
 
     BuildDisplayPalette(@spriteTestPal[0]);
     xbios_setpalette(@spriteTestPal[0]);
 
     lastPaletteMsgSource := msgSource;
     displayPaletteDirty := false;
-end;
-
-procedure ApplyFlobPalette;
-begin
-end;
-
-procedure SaveFlobBackground(x, y, w, h: word);
-begin
-end;
-
-procedure RestoreFlobBackground;
-begin
-end;
-
-procedure ClearFlob;
-begin
-    RestoreFlobBackground;
 end;
 
 procedure DrawGeneratedSpriteFrameBlitter(scr: pword; dstX, dstY: word;
@@ -1350,9 +1250,12 @@ begin
         endMask3 := endMask1;
     end;
 
-    dstWords := pword(longint(scr) + longint(dstY) * SCREEN_LINE_BYTES + longint(dstX shr 4) * 8);
-    maskBase := PWord(longint(wordsBase) + longint(frame^.maskOffset) * SizeOf(word));
-    gfxBase := PWord(longint(wordsBase) + longint(frame^.dataOffset) * SizeOf(word));
+    dstWords := scr;
+    Inc(dstWords, (longword(dstY) * SCREEN_LINE_BYTES + longword(dstX shr 4) * 8) shr 1);
+    maskBase := wordsBase;
+    Inc(maskBase, frame^.maskOffset);
+    gfxBase := wordsBase;
+    Inc(gfxBase, frame^.dataOffset);
 
     BlitterWait;
     BlitterWriteWord(BLITTER_COUNT_X, lXcount);
@@ -1372,7 +1275,7 @@ begin
         BlitterWritePtr(BLITTER_DST_ADDR, dstWords + plane);
         BlitterWritePtr(BLITTER_SRC_ADDR, maskBase);
         BlitterWriteWord(BLITTER_COUNT_Y, frame^.heightPx);
-        BlitterWriteByte(BLITTER_MODE, BLITTER_MODE_BUSY);
+        BlitterWriteByte(BLITTER_MODE, BLITTER_START_SPRITE_MODE);
     end;
 
     BlitterWait;
@@ -1384,7 +1287,7 @@ begin
         BlitterWritePtr(BLITTER_DST_ADDR, dstWords + plane);
         BlitterWritePtr(BLITTER_SRC_ADDR, gfxBase + plane);
         BlitterWriteWord(BLITTER_COUNT_Y, frame^.heightPx);
-        BlitterWriteByte(BLITTER_MODE, BLITTER_MODE_BUSY);
+        BlitterWriteByte(BLITTER_MODE, BLITTER_START_SPRITE_MODE);
     end;
     BlitterWait;
 end;
@@ -1475,26 +1378,6 @@ begin
     end;
 end;
 
-function ScoreTextBytes(p: PByte; len: word): integer;
-var i: word;
-    b: byte;
-begin
-    Result := -1;
-    if p = nil then exit;
-    Result := 0;
-    for i := 0 to len - 1 do begin
-        b := PByte(longint(p) + i)^;
-        if b = 0 then
-            Inc(Result, 1)
-        else if (b >= 32) and (b <= 95) then
-            Inc(Result, 2)
-        else if b < 64 then
-            Inc(Result, 1)
-        else
-            Dec(Result, 4);
-    end;
-end;
-
 function ResolveWorldTextPtr(addr: word): PByte;
 var ofs: word;
     dataPtr, assetPtr: PByte;
@@ -1505,11 +1388,11 @@ begin
 
     dataPtr := nil;
     if (currentWorldData <> nil) and (ofs + 79 < 8192) then
-        dataPtr := PByte(longint(currentWorldData) + ofs);
+        dataPtr := PByte(longword(currentWorldData) + ofs);
 
     assetPtr := nil;
     if (currentWorldAssets <> nil) and (ofs + 79 < currentWorldAssetsSize) then
-        assetPtr := PByte(longint(currentWorldAssets) + ofs);
+        assetPtr := PByte(longword(currentWorldAssets) + ofs);
 
     // Message/scene text labels live in the asset bank in the original worlds.
     // Prefer that bank here and only fall back to world data if needed.
@@ -1521,17 +1404,22 @@ end;
 
 function DecodeWorldTextLine(addr: word; line: byte): string;
 var p: PByte;
+    q: PByte;
     i: integer;
     b: byte;
     raw: AnsiString;
 begin
     Result := '';
+    raw := '';
     p := ResolveWorldTextPtr(addr);
     if p = nil then exit;
     SetLength(raw, 40);
+    q := p;
+    Inc(q, word(line) * 40);
     for i := 0 to 39 do begin
-        b := PByte(longint(p) + word(line) * 40 + i)^;
+        b := q^;
         raw[i + 1] := Chr(b and $7F);
+        Inc(q);
     end;
     Result := Antic2Ascii(raw);
 end;
@@ -1556,7 +1444,7 @@ procedure DrawHudTo(scr: pword);
 var scoreStr: string;
 begin
     BlitterClearBitmap4(scr, 320, 20, 0, 0, 320);
-    FillRect16(scr, 0, HUD_HEIGHT, 320, 2, 1);
+    // FillRect16(scr, 0, HUD_HEIGHT, 320, 2, 1);
     DrawTextTo(scr, 8, 0, 1, 0, Antic2Ascii(world.name));
     scoreStr := PackedBcdToScore5(mySlime);
     DrawTextTo(scr, 320 - 8 - Length(scoreStr) * 8, 0, 1, 0, scoreStr);
@@ -1577,41 +1465,23 @@ begin
     end;
 end;
 
-procedure DrawOneSlime(scr: pword; px, py: smallint);
+procedure RefreshMessageCache;
 begin
-    if (px < 1) or (py < 1) then exit;
-    PutPixel4(scr, px + 1, py + 0, 10);
-    PutPixel4(scr, px + 0, py + 1, 10);
-    PutPixel4(scr, px + 1, py + 1, 11);
-    PutPixel4(scr, px + 2, py + 1, 10);
-    PutPixel4(scr, px + 1, py + 2, 10);
-end;
-
-procedure DrawSlimesTo(scr: pword);
-var i: byte;
-    px, py, rowY: smallint;
-begin
-    for i := 0 to 19 do begin
-        if slimeX[i] = 0 then
-            continue;
-        px := smallint(slimeX[i]) * LEVEL_SCALE_X + SLIME_RENDER_OFFSET_X;
-        rowY := smallint(i shl 2);
-        if flipped then
-            rowY := 76 - rowY;
-        py := rowY * LEVEL_SCALE_Y + SLIME_RENDER_OFFSET_Y;
-        DrawOneSlime(scr, px, py);
-    end;
+    if (not messageCacheDirty) or (SCREEN_BKG = nil) then exit;
+    DrawMessageTo(SCREEN_BKG);
+    messageCacheDirty := false;
 end;
 
 procedure RefreshOverlayBuffers;
 begin
+    RefreshMessageCache;
     if SCREEN_LOG <> nil then begin
         CopyHudArea(SCREEN_BKG, SCREEN_LOG);
-        DrawMessageTo(SCREEN_LOG);
+        CopyMessageArea(SCREEN_BKG, SCREEN_LOG);
     end;
     if SCREEN_PHY <> nil then begin
         CopyHudArea(SCREEN_BKG, SCREEN_PHY);
-        DrawMessageTo(SCREEN_PHY);
+        CopyMessageArea(SCREEN_BKG, SCREEN_PHY);
     end;
 end;
 
@@ -1642,10 +1512,6 @@ begin
     end;
 end;
 
-procedure ClearSlimes;
-begin
-end;
-
 procedure ShowSlime;
 begin
     RefreshHudCache;
@@ -1660,7 +1526,7 @@ begin
     if addr < $A000 then exit;
     ofs := addr - $A000;
     if ofs >= currentWorldAssetsSize then exit;
-    Result := PByte(longint(currentWorldAssets) + ofs);
+    Result := PByte(longword(currentWorldAssets) + ofs);
 end;
 
 function LoadAnimationStepFromAsset(addr: word; var step: TAnimationStep): boolean;
@@ -1674,64 +1540,50 @@ begin
     Result := true;
 end;
 
-function MapSpriteColorRaw(c: byte; channel: byte): byte;
-var lum: byte;
-begin
-    if c = 0 then exit(0);
-    lum := c and $0F;
-    if lum >= 8 then Result := 1
-    else if lum >= 4 then Result := 2
-    else Result := 3;
-    if (channel = 1) and (Result = 1) then Result := 2;
-end;
-
 procedure ClearSprite(num: byte);
 begin
-    RestoreSpriteBackground(num);
-    spritePtr[num] := 0;
+    // RestoreSpriteBackground(num);
+    // spritePtr[num] := 0;
 end;
 
 procedure ClearSprites;
 begin
-    if sprites.state = SPRITE_NONE then exit;
-    if sprites.state > SPRITE_NONE then ClearSprite(0);
-    if sprites.state > SPRITE_SINGLE then ClearSprite(1);
+    // if sprites.state = SPRITE_NONE then exit;
+    // if sprites.state > SPRITE_NONE then ClearSprite(0);
+    // if sprites.state > SPRITE_SINGLE then ClearSprite(1);
 end;
 
 procedure ShowSprite(num: byte);
-var src, rowPtr: PByte;
-    x, y, h, frameCount, frameIdx: byte;
-    upside: boolean;
+var x, y, h, frameCount, frameIdx: byte;
+    frame: PSteSpriteFrame;
     dstX, dstY: word;
-    drawW, drawH: word;
-    rawRow, rowByte: byte;
-    py, dy, dx, bit: byte;
-    color: byte;
     drawX, drawY: smallint;
 begin
     spritePtr[num] := 0;
+    if spriteAtlasFrames[num] = nil then exit;
+    if spriteAtlasWords[num] = nil then exit;
+    frameCount := spriteData.frameCount[num];
+    if frameCount = 0 then frameCount := spriteAtlasFrameCount[num];
+    if frameCount = 0 then exit;
+
     if (sprites.stype[num] = STYPE_EXIT) and not mainGoalReached then exit;
     if ((sprites.stype[num] = STYPE_DECOR) or (sprites.stype[num] = STYPE_GOAL)) and
         (sprites.goal[num] <> NONE) and (goals[sprites.goal[num]] = 0) then exit;
     if (sprites.stype[num] = STYPE_DIAL) and
         (sprites.param2[num] <> $ff) and (goals[sprites.param2[num]] > 0) then exit;
 
-    frameCount := spriteData.frameCount[num];
     h := spriteData.height[num];
-    if frameCount = 0 then exit;
     frameIdx := spriteFrame[num];
     if frameIdx >= frameCount then frameIdx := 0;
-    src := spriteFramesRaw[num, frameIdx];
-    if src = nil then exit;
+    if flipped and (sprites.flipable[num] = 1) and
+        (spriteAtlasFrameCount[num] >= frameCount + frameCount) then
+        Inc(frameIdx, frameCount);
+    frame := PSteSpriteFrame(longword(spriteAtlasFrames[num]) + longword(frameIdx) * SizeOf(TSteSpriteFrame));
 
     x := sprites.x[num];
     y := sprites.y[num];
-    upside := false;
-    if flipped and (sprites.flipable[num] = 1) then begin
+    if flipped and (sprites.flipable[num] = 1) then
         y := 80 - (h + y);
-        upside := true;
-    end;
-
     if (num = 1) and (sprites.state = SPRITE_COMBINED) then
         x := x + sprites.gap;
 
@@ -1741,26 +1593,8 @@ begin
     if drawY < 0 then drawY := 0;
     dstX := word(drawX);
     dstY := word(drawY);
-    drawW := 8 * LEVEL_SCALE_X;
-    drawH := word(h) * LEVEL_SCALE_Y;
-    if (drawW = 0) or (drawH = 0) then exit;
-    color := MapSpriteColorRaw(spriteColorsRaw[num][frameIdx], num);
 
-    for rawRow := 0 to h - 1 do begin
-        if upside then
-            rowPtr := PByte(longint(src) + longint(h - 1 - rawRow))
-        else
-            rowPtr := PByte(longint(src) + longint(rawRow));
-        rowByte := rowPtr^;
-        for py := 0 to LEVEL_SCALE_Y - 1 do begin
-            dy := rawRow * LEVEL_SCALE_Y + py;
-            for bit := 0 to 7 do
-                if (rowByte and (byte($80) shr bit)) <> 0 then
-                    for dx := 0 to LEVEL_SCALE_X - 1 do
-                        PutPixel4(SCREEN_LOG, dstX + word(bit) * LEVEL_SCALE_X + dx, dstY + dy, color);
-        end;
-    end;
-    QueueSpriteRect(dstX, dstY, drawW, drawH);
+    QueueGeneratedSprite(dstX, dstY, frame, spriteAtlasWords[num], nil, 0);
     spritePtr[num] := 1;
 end;
 
@@ -1771,72 +1605,49 @@ begin
     if sprites.state > SPRITE_SINGLE then ShowSprite(1);
 end;
 
-procedure ApplyTestSpritePalette(palData: PWord; palCount: byte);
-var i: byte;
-begin
-    if currentPal <> nil then
-        Move(currentPal^, spriteTestPal[0], 32)
-    else
-        Move(ALL_BLACK[0], spriteTestPal[0], 32);
-    for i := 0 to palCount - 1 do
-        if (12 + i) <= 15 then
-            spriteTestPal[12 + i] := palData[i];
-    xbios_setpalette(@spriteTestPal[0]);
-end;
-
-procedure DrawGeneratedSpriteFrame(scr: pword; dstX, dstY: word;
-    frame: PSteSpriteFrame; wordsBase, palBase: PWord);
-var y, x, wordIdx: word;
+function GeneratedSpriteOpaqueAt(frame: PSteSpriteFrame; wordsBase: PWord; px, py: smallint): boolean;
+var maskBase: PWord;
     maskWord: word;
-    planes: array[0..3] of word;
-    bitMask: word;
-    color: byte;
-    maskRow, dataRow, palData: PWord;
 begin
+    Result := false;
     if frame = nil then exit;
-    if (palBase <> nil) and (frame^.paletteCount > 0) then begin
-        palData := PWord(longint(palBase) + longint(frame^.paletteOffset) * SizeOf(word));
-        ApplyTestSpritePalette(palData, frame^.paletteCount);
-    end;
+    if wordsBase = nil then exit;
+    if (px < 0) or (py < 0) then exit;
+    if (word(px) >= frame^.widthPx) or (word(py) >= frame^.heightPx) then exit;
 
-    for y := 0 to frame^.heightPx - 1 do begin
-        maskRow := PWord(longint(wordsBase) + longint(frame^.maskOffset + y * frame^.rowWords) * SizeOf(word));
-        dataRow := PWord(longint(wordsBase) + longint(frame^.dataOffset + y * frame^.rowWords * 4) * SizeOf(word));
-        for wordIdx := 0 to frame^.rowWords - 1 do begin
-            maskWord := maskRow^;
-            planes[0] := dataRow[0];
-            planes[1] := dataRow[1];
-            planes[2] := dataRow[2];
-            planes[3] := dataRow[3];
-            for x := 0 to 15 do begin
-                bitMask := word(1) shl (15 - x);
-                if (maskWord and bitMask) = 0 then begin
-                    color := 0;
-                    if (planes[0] and bitMask) <> 0 then color := color or 1;
-                    if (planes[1] and bitMask) <> 0 then color := color or 2;
-                    if (planes[2] and bitMask) <> 0 then color := color or 4;
-                    if (planes[3] and bitMask) <> 0 then color := color or 8;
-                    if color > 0 then
-                        PutPixel4(scr, dstX + wordIdx * 16 + x, dstY + y, 11 + color);
-                end;
-            end;
-            Inc(maskRow);
-            Inc(dataRow, 4);
-        end;
-    end;
+    maskBase := wordsBase;
+    Inc(maskBase, frame^.maskOffset);
+    Inc(maskBase, word(py) * frame^.rowWords + word(px shr 4));
+    maskWord := maskBase^;
+    Result := (maskWord and (word($8000) shr (px and 15))) = 0;
 end;
 
-procedure DrawTestBigSlime;
+function GeneratedSpritesOverlap(frameA: PSteSpriteFrame; wordsA: PWord; ax, ay: smallint;
+    frameB: PSteSpriteFrame; wordsB: PWord; bx, by: smallint): boolean;
+var left, top, right, bottom: smallint;
+    x, y: smallint;
 begin
-    if not DEBUG_TEST_BIGSLIME then exit;
-    DrawGeneratedSpriteFrame(
-        SCREEN_LOG,
-        152,
-        108,
-        @SPR_BIGSLIME_FRAMES[0],
-        @SPR_BIGSLIME_WORDS[0],
-        nil
-    );
+    Result := false;
+    if (frameA = nil) or (frameB = nil) then exit;
+    if (wordsA = nil) or (wordsB = nil) then exit;
+
+    left := ax;
+    if bx > left then left := bx;
+    top := ay;
+    if by > top then top := by;
+    right := ax + smallint(frameA^.widthPx);
+    if bx + smallint(frameB^.widthPx) < right then right := bx + smallint(frameB^.widthPx);
+    bottom := ay + smallint(frameA^.heightPx);
+    if by + smallint(frameB^.heightPx) < bottom then bottom := by + smallint(frameB^.heightPx);
+    if (left >= right) or (top >= bottom) then exit;
+
+    for y := top to bottom - 1 do
+        for x := left to right - 1 do
+            if GeneratedSpriteOpaqueAt(frameA, wordsA, x - ax, y - ay) and
+               GeneratedSpriteOpaqueAt(frameB, wordsB, x - bx, y - by) then begin
+                Result := true;
+                exit;
+            end;
 end;
 
 procedure ShowLevelName;
@@ -1847,11 +1658,6 @@ end;
 procedure InitLevelScreen;
 begin
     ShowLevelName;
-end;
-
-procedure GetImageInfo(imgBank, imgNum: byte);
-begin
-    // No-op on STE: image.start was an 8-bit address; use LoadImage/LoadCutsceneSlide instead.
 end;
 
 // ***************************************************
@@ -1866,31 +1672,12 @@ procedure Sfx(patch: byte);  begin end;
 {$i input.inc}
 
 // ***************************************************
-// *** BANK SWITCHING STUBS (no cartridge on STE)
-// ***************************************************
-
-procedure SetBank0; begin end; // no-op on STE with flat RAM
-procedure SetBank(bank: byte); begin end;
-
-// ***************************************************
-// *** ASSET DECOMPRESSION STUBS
-// ***************************************************
-
-// unApl is declared external (unapl.o) above
-procedure ExpandLZ4(src, dst: word); begin end;
-
-// ***************************************************
 // *** HELPERS (from original flob.pas)
 // ***************************************************
 
 function IsStereoPresent: boolean;
 begin
     Result := false; // stub
-end;
-
-function MapColor(c: byte): byte;
-begin
-    Result := c; // stub – on STE we'll use real ST palette values
 end;
 
 procedure Sec2TimeInS1(seconds: word);
@@ -1966,6 +1753,20 @@ begin
         exit;
     end;
 
+    if csbank = CREDITS_BANK then begin
+        case slide of
+            0: begin c0 := $3f; c1 := $34; c2 := $38; bg := $00; end;
+            1: begin c0 := $98; c1 := $9f; c2 := $94; bg := $00; end;
+            2: begin c0 := $18; c1 := $1f; c2 := $14; bg := $00; end;
+            3: begin c0 := $b8; c1 := $bf; c2 := $b4; bg := $00; end;
+            4: begin c0 := $78; c1 := $7f; c2 := $74; bg := $00; end;
+            5: begin c0 := $28; c1 := $2f; c2 := $24; bg := $00; end;
+            6: begin c0 := $e8; c1 := $ef; c2 := $e4; bg := $00; end;
+            7: begin c0 := $0a; c1 := $0f; c2 := $04; bg := $00; end;
+        end;
+        exit;
+    end;
+
     if csbank = OUTRO_BANK then begin
         case slide of
             0: begin
@@ -1995,25 +1796,18 @@ end;
 
 procedure DrawCutsceneTextBlock(scr: pword; bg: word);
 begin
-    FillRect16(scr, 0, 168, 320, 32, bg);
+    // FillRect16(scr, 0, 168, 320, 32, bg);
+    BlitterClearBitmap4(scr, 320, 32, 0, 168, 320);
 end;
 
 procedure RenderCutsceneText(scr: pword; const l0, l1, l2, l3: string;
     visibleLines: byte);
 begin
     DrawCutsceneTextBlock(scr, 0);
-    if visibleLines > 0 then DrawTextCenteredTo(scr, 167, 15, 0, l0);
-    if visibleLines > 1 then DrawTextCenteredTo(scr, 175, 15, 0, l1);
-    if visibleLines > 2 then DrawTextCenteredTo(scr, 183, 15, 0, l2);
-    if visibleLines > 3 then DrawTextCenteredTo(scr, 191, 15, 0, l3);
-end;
-
-procedure PrepareCutscenePalette(csbank, slide: byte);
-var c0, c1, c2, bg: byte;
-    l0, l1, l2, l3: string;
-begin
-    GetCutsceneText(csbank, slide, c0, c1, c2, bg, l0, l1, l2, l3);
-    RebuildCutscenePalette(c0, c1, c2, bg);
+    if visibleLines > 0 then DrawTextCenteredTo(scr, 168, 15, 0, l0);
+    if visibleLines > 1 then DrawTextCenteredTo(scr, 176, 15, 0, l1);
+    if visibleLines > 2 then DrawTextCenteredTo(scr, 184, 15, 0, l2);
+    if visibleLines > 3 then DrawTextCenteredTo(scr, 192, 15, 0, l3);
 end;
 
 {$i saving_routines.inc}
@@ -2047,11 +1841,12 @@ begin
     end;
 end;
 
-// Achievement data is loaded from world banks on 8-bit;
-// on STE we stub these with empty records for now.
 procedure LoadAchievement(achNum: byte);
 begin
-    FillChar(achievement, SizeOf(TAchievement), 0);
+    if achNum < ACHIEVEMENT_DEF_COUNT then
+        achievement := ACHIEVEMENT_DEFS[achNum]
+    else
+        FillChar(achievement, SizeOf(TAchievement), 0);
 end;
 
 function isAchivementReached: boolean;
@@ -2123,6 +1918,84 @@ end;
 
 procedure PlaySoundFx(patch: byte); begin end; // internal alias used below
 
+procedure DrawEndWorldIcon(iconData: pointer);
+// Icon is END_ICON_WIDTH x END_ICON_HEIGHT (64x80 at 2x scale).
+// Centre horizontally: (320 - 64) / 2 = 128, which is a multiple of 16. ✓
+const ICON_DST_X = 128;
+      ICON_DST_Y = 20;
+begin
+    if iconData = nil then exit;
+    BlitterCopyBitmap4(
+        iconData,
+        SCREEN_LOG,
+        END_ICON_WIDTH,
+        END_ICON_HEIGHT,
+        0,
+        0,
+        ICON_DST_X,
+        ICON_DST_Y,
+        END_ICON_WIDTH,
+        320
+    );
+end;
+
+procedure ShowEndWorldScreen(sec, score: word);
+var iconData: pointer;
+    timeStr, scoreStr, pickedStr, totalStr: string[20];
+    line: string[40];
+begin
+    ClearScreen(SCREEN_LOG);
+
+    // Title  (y=4, one text row above the 64x80 icon that starts at y=20)
+    if mainGoalReached then begin
+        DrawStrCentered(4, 3, 'Congratulations!');
+        if worldCurrent = 0 then
+            iconData := @END_ICON_BIGMAP[0]
+        else if worldCurrent = 5 then
+            iconData := @END_ICON_BIGFORMULA[0]
+        else
+            iconData := @END_ICON_BIGVIAL[0];
+    end else begin
+        DrawStrCentered(4, 3, 'Game Over');
+        iconData := @END_ICON_SKULL[0];
+    end;
+
+    // Icon  (64x80, centred at x=128, y=20..99)
+    DrawEndWorldIcon(iconData);
+
+    // Stats  (y=108..156, 12px spacing — icon ends at y=99, 8px gap)
+    Sec2TimeInS1(sec);
+    timeStr := s1;
+    Str(score, scoreStr);
+    Str(pickedSlimeCount, pickedStr);
+    Str(world.totalSlimeCount, totalStr);
+
+    line := 'Game Time ' + timeStr;
+    DrawStrCentered(108, 2, line);
+    line := 'Score ' + scoreStr;
+    DrawStrCentered(120, 3, line);
+    line := 'Slimes ' + pickedStr + ' of ' + totalStr;
+    DrawStrCentered(132, 3, line);
+    Str(deadCount, line);
+    line := 'Deaths ' + line;
+    DrawStrCentered(144, 2, line);
+
+    if mainGoalReached then begin
+        Str(secretsFound, pickedStr);
+        Str(world.secretsCount, totalStr);
+        line := 'Secrets ' + pickedStr + ' of ' + totalStr;
+        DrawStrCentered(156, 2, line);
+    end;
+
+    // Prompt  (y=176 — safe margin from bottom edge at y=200)
+    DrawStrCentered(176, 3, 'FIRE / ENTER to continue');
+
+    currentPal := @END_ICON_PAL[0];
+    roomSpritePaletteActive := false;
+    SwapScreen;
+    FadeIn;
+end;
+
 // ***************************************************
 // *** SCORE
 // ***************************************************
@@ -2168,7 +2041,7 @@ begin
     if currentCollisionData = nil then exit(0);
     if flipped then sampleY := 79 - y
     else sampleY := y;
-    byteOfs := word(sampleY) * 40 + (x shr 2);
+    byteOfs := (word(sampleY) shl 5) + (word(sampleY) shl 3) + word(x shr 2);
     packedByte := currentCollisionData[byteOfs];
     shift := 6 - ((x and 3) shl 1);
     Result := (packedByte shr shift) and 3;
@@ -2277,8 +2150,6 @@ end;
 procedure InitWorld;
 begin
     levelNum := world.start;
-    if USE_DEBUG_FORCE_LEVEL and (worldCurrent = DEBUG_FORCE_WORLD) then
-        levelNum := DEBUG_FORCE_LEVEL;
     flobX := world.flobx;
     if world.floby > SPAWN_Y_ADJUST then
         flobY := world.floby - SPAWN_Y_ADJUST
@@ -2293,12 +2164,17 @@ begin
     secretsFound := 0;
     mainGoalReached := false;
     msgDisplayCounter := 0;
+    ClearTxt2;
     SetLanded;
     SetLandingSafe;
     room_landed := false;
     first_landed := false;
     teleported := false;
     landedTime := 0;
+    triggerGrace := 0;
+    spriteCollisionMovePending := false;
+    teleportTriggerReleasePending := false;
+    teleportPortalReleasePending := false;
     doorReveal[0] := 0;
     doorReveal[1] := 0;
     FillChar(slimes,   SizeOf(slimes),   1);
@@ -2426,24 +2302,25 @@ begin
     FillChar(spriteFramesRaw, SizeOf(spriteFramesRaw), 0);
     spriteStep[0] := 0;
     spriteStep[1] := 0;
+    SetupWorldSpriteAtlas(worldCurrent, addr);
     base := SpriteAssetPtr(addr);
     if base = nil then exit;
 
     spriteData.bank := bank;
-    for p := 0 to 1 do spriteData.frameCount[p] := PByte(longint(base) + p)^;
-    for p := 0 to 1 do spriteData.height[p] := PByte(longint(base) + 2 + p)^;
+    for p := 0 to 1 do spriteData.frameCount[p] := base[p];
+    for p := 0 to 1 do spriteData.height[p] := base[2 + p];
 
-    base := PByte(longint(base) + 4);
+    Inc(base, 4);
     for p := 0 to 1 do begin
         frameCount := spriteData.frameCount[p];
         h := spriteData.height[p];
         if frameCount > 0 then spriteColorsRaw[p] := base
         else spriteColorsRaw[p] := nil;
-        base := PByte(longint(base) + frameCount);
+        Inc(base, frameCount);
         if frameCount > 0 then
             for f := 0 to frameCount - 1 do
-                spriteFramesRaw[p, f] := PByte(longint(base) + longint(f) * h);
-        base := PByte(longint(base) + longint(frameCount) * h);
+                spriteFramesRaw[p, f] := @base[word(f) * word(h)];
+        Inc(base, word(frameCount) * word(h));
     end;
 end;
 
@@ -2533,7 +2410,6 @@ begin
     sfxDelay := 0;
     slimeX[pick] := 0;
     WaitFrame;
-    PMG_hitclr := $ff;
     slimes[slimeGoal[pick]] := 0;
     AddSlime(byte($50));
     Inc(pickedSlimeCount);
@@ -2576,23 +2452,95 @@ begin
               (ay < by + bh) and (by < ay + ah);
 end;
 
+function WorldSpritePixelCollision(num: byte): boolean;
+var frameIdx: byte;
+    frame: PSteSpriteFrame;
+    frameCount: byte;
+    x, y, h: byte;
+    flobFrameIdx: byte;
+    flobFramePtr: PSteSpriteFrame;
+    flobScreenX, flobScreenY: smallint;
+    spriteScreenX, spriteScreenY: smallint;
+begin
+    Result := false;
+    if num > 1 then exit;
+    if spriteAtlasFrames[num] = nil then exit;
+    if spriteAtlasWords[num] = nil then exit;
+    frameCount := spriteData.frameCount[num];
+    if frameCount = 0 then frameCount := spriteAtlasFrameCount[num];
+    if frameCount = 0 then exit;
+
+    frameIdx := spriteFrame[num];
+    if frameIdx >= frameCount then frameIdx := 0;
+    if flipped and (sprites.flipable[num] = 1) and
+        (spriteAtlasFrameCount[num] >= frameCount + frameCount) then
+        Inc(frameIdx, frameCount);
+    frame := PSteSpriteFrame(longword(spriteAtlasFrames[num]) + longword(frameIdx) * SizeOf(TSteSpriteFrame));
+
+    x := sprites.x[num];
+    y := sprites.y[num];
+    h := spriteData.height[num];
+    if flipped and (sprites.flipable[num] = 1) then
+        y := 80 - (h + y);
+    if (num = 1) and (sprites.state = SPRITE_COMBINED) then
+        x := x + sprites.gap;
+
+    flobFrameIdx := flobFrame + flobDir;
+    if flobFrameIdx > High(SPR_FLOB_FRAMES) then exit;
+    flobFramePtr := @SPR_FLOB_FRAMES[flobFrameIdx];
+    flobScreenX := smallint(flobX) * LEVEL_SCALE_X;
+    flobScreenY := FLOB_RENDER_OFFSET_Y + smallint(flobY) * LEVEL_SCALE_Y;
+    spriteScreenX := smallint(x) * LEVEL_SCALE_X + WORLD_SPRITE_OFFSET_X;
+    spriteScreenY := LEVEL_OFFSET_Y + smallint(y) * LEVEL_SCALE_Y + WORLD_SPRITE_OFFSET_Y;
+
+    Result := GeneratedSpritesOverlap(
+        flobFramePtr,
+        @SPR_FLOB_WORDS[0],
+        flobScreenX,
+        flobScreenY,
+        frame,
+        spriteAtlasWords[num],
+        spriteScreenX,
+        spriteScreenY
+    );
+end;
+
 procedure CheckSpriteCollisions;
+// Flob renders at screen_Y = FLOB_RENDER_OFFSET_Y + flobY * LEVEL_SCALE_Y = 2 + flobY*2
+// Sprites render at screen_Y = LEVEL_OFFSET_Y + sprites.y * LEVEL_SCALE_Y + WORLD_SPRITE_OFFSET_Y = 20 + y*2
+// Delta = 18 screen px = 9 game units: flobY must be shifted down by 9 before comparing to sprite Y.
+const FLOB_TO_SPRITE_Y = (LEVEL_OFFSET_Y + WORLD_SPRITE_OFFSET_Y - FLOB_RENDER_OFFSET_Y) div LEVEL_SCALE_Y; // = 9
 var fx, fy, fw, fh: byte;
     sx, sy, sw, sh: byte;
     p: byte;
+    waitingForPortalRelease: boolean;
 begin
+    if spriteCollisionMovePending then exit;
+
     fx := flobX;
-    fy := flobY;
+    if flobY >= FLOB_TO_SPRITE_Y then
+        fy := flobY - FLOB_TO_SPRITE_Y
+    else
+        fy := 0;
     fw := 8;
     fh := 8;
+    waitingForPortalRelease := false;
     for p := 0 to 1 do begin
         if not SpriteCollisionRect(p, sx, sy, sw, sh) then
             continue;
         if RectsOverlap(fx, fy, fw, fh, sx, sy, sw, sh) then begin
+            if not WorldSpritePixelCollision(p) then
+                continue;
+            if teleportPortalReleasePending and (sprites.stype[p] = STYPE_PORTAL) then begin
+                waitingForPortalRelease := true;
+                continue;
+            end;
             Collided(p);
             exit;
         end;
     end;
+    if teleportPortalReleasePending and not waitingForPortalRelease and (triggerGrace = 0) then
+        teleportPortalReleasePending := false;
 end;
 
 procedure CheckSlimeCollision;
@@ -2624,7 +2572,11 @@ end;
 
 function FlobTouchesDangerColor: boolean;
 begin
-    Result := false;
+    Result :=
+        (GetPix(flobFoot, flobY    ) = DANGER_COLLISION_COLOR) or  // feet / ground level
+        (GetPix(flobFoot, flobY - 1) = DANGER_COLLISION_COLOR) or  // lower body
+        (GetPix(flobFace, flobY - 2) = DANGER_COLLISION_COLOR) or  // mid body
+        (GetPix(flobFace, flobY - 3) = DANGER_COLLISION_COLOR);    // head
 end;
 
 // ***************************************************
@@ -2635,13 +2587,11 @@ procedure Explode;
 begin
     FSfx(SFX_DEAD);
     sfxDelay := 0;
-    ClearFlob;
     flobFrame := FRAME_POOF1;
     BeginQueuedSpritesFrame;
     DrawFlob;
     PresentQueuedSprites;
     WaitFrames(5);
-    ClearFlob;
     flobFrame := FRAME_POOF2;
     BeginQueuedSpritesFrame;
     DrawFlob;
@@ -2652,7 +2602,6 @@ begin
     SubSlime($70);
     SubSlime($80);
     WaitFrames(50);
-    PMG_Clear;
     exploded := true;
     Inc(deadCount);
 end;
@@ -2724,12 +2673,13 @@ procedure ShowMessage(msg, mtype, count: byte);
 begin
     msgDisplayCounter := count;
     msgDisplayType := mtype;
-    displayPaletteDirty := true;
     ClearTxt2;
     if msg <= High(messages) then begin
         currentMessageLines[0] := DecodeWorldTextLine(messages[msg], 0);
         currentMessageLines[1] := DecodeWorldTextLine(messages[msg], 1);
     end;
+    messageCacheDirty := true;
+    RefreshOverlayBuffers;
 end;
 
 procedure LaunchTrigger(id, action, target, actparam, param: byte);
@@ -2761,16 +2711,43 @@ begin
     LaunchTrigger(roomTriggers[t, 0], roomTriggers[t, 7], roomTriggers[t, 8], roomTriggers[t, 9], roomTriggers[t, 6]);
 end;
 
+function FlobInsideTrigger(t: byte): boolean;
+var fy: byte;
+begin
+    fy := flobY;
+    if flipped then fy := 82 - fy;
+    Result :=
+        (flobX >= roomTriggers[t, 1]) and
+        (fy    >= roomTriggers[t, 2]) and
+        (flobX <= roomTriggers[t, 3]) and
+        (fy    <= roomTriggers[t, 4]);
+end;
+
 procedure CheckEvents;
 var t: byte;
+    waitingForTeleportTriggerRelease: boolean;
 begin
     if doorReveal[0] > 0 then RevealCountdown(0);
     if doorReveal[1] > 0 then RevealCountdown(1);
 
-    t := triggerCount;
-    while t > 0 do begin
-        Dec(t);
-        if triggers[roomTriggers[t, 0]] > 0 then CheckTrigger(t);
+    waitingForTeleportTriggerRelease := false;
+    if triggerGrace > 0 then
+        Dec(triggerGrace)
+    else begin
+        t := triggerCount;
+        while t > 0 do begin
+            Dec(t);
+            if triggers[roomTriggers[t, 0]] > 0 then begin
+                if teleportTriggerReleasePending and
+                    (roomTriggers[t, 7] = TELEPORT_ME) and
+                    FlobInsideTrigger(t) then
+                    waitingForTeleportTriggerRelease := true
+                else
+                    CheckTrigger(t);
+            end;
+        end;
+        if teleportTriggerReleasePending and not waitingForTeleportTriggerRelease then
+            teleportTriggerReleasePending := false;
     end;
 
     if msgDisplayCounter > 0 then begin
@@ -2778,10 +2755,9 @@ begin
         topBarForeground := sysframe shr 1;
         if msgDisplayType = MSG_INFO then
             topBarForeground := ((topBarForeground shr 1) and 7) + 8;
-        displayPaletteDirty := true;
         if msgDisplayCounter = 0 then begin
             ClearTxt2;
-            displayPaletteDirty := true;
+            RefreshOverlayBuffers;
         end;
     end;
 
@@ -2808,14 +2784,13 @@ begin
             if actionDelay = 0 then begin
                 FadeOut;
                 ShowStats;
-                PMG_Clear;
                 InitLevelScreen;
                 LoadLevel(levelNum);
                 SetLevelColors;
                 DrawSlimes;
                 ShowSlime;
                 ShowSprites;
-                if flipped then ReverseDlist;
+                if flipped then EnsureDisplayOrientation(true);
                 BlackAll;
                 WaitFrame;
                 FadeIn;
@@ -2869,23 +2844,17 @@ begin
     flobX := x;
     flobY := y;
     flipped := false;
-    OrderDlist;
+    EnsureDisplayOrientation(false);
     room_changed := true;
     teleported := true;
+    triggerGrace := 100;   // ~0.5 s at 50 Hz; prevents exit trigger firing at spawn
+    teleportTriggerReleasePending := true;
+    teleportPortalReleasePending := true;
 end;
 
 procedure SpriteTeleport(pnum: byte);
 begin
     Teleport(sprites.goal[pnum], sprites.frameOn[pnum], sprites.frameOff[pnum]);
-end;
-
-procedure InitFlobPMG;
-begin
-    PMG_Clear;
-    pmgColors[0] := MapColor(FLOB_COL0);
-    pmgColors[1] := MapColor(FLOB_COL1);
-    PMG_sizep0 := 0;
-    PMG_sizep1 := 0;
 end;
 
 // ***************************************************
@@ -2911,26 +2880,9 @@ begin
     colorCollision := true;
     repeat
         Inc(cmdCount);
-        if DEBUG_DRAWLEVEL and (cmdCount > 255) then begin
-            DebugShowOverlay(
-                'DrawLevel watchdog',
-                'Too many commands',
-                'lvlptr=' + ByteToStr(lvlptr),
-                'first=' + HexByte(leveldata[0]) + ' ' + HexByte(leveldata[1]) + ' ' +
-                    HexByte(leveldata[2]) + ' ' + HexByte(leveldata[3]),
-                'possible loop in stream');
-            exit;
-        end;
         cmd := leveldata[lvlptr];
         case cmd of
             IMAGE_LZ4: begin
-                if DEBUG_DRAWLEVEL then
-                    DebugShowOverlay(
-                        'DrawLevel IMAGE_LZ4',
-                        'lvlptr=' + ByteToStr(lvlptr),
-                        'img=' + ByteToStr(leveldata[lvlptr + 1]),
-                        'cmd=' + HexByte(cmd),
-                        'before LoadImage');
                 LoadImage(leveldata[lvlptr + 1]);
                 CopyPlayfieldArea(SCREEN_PHY, SCREEN_LOG);
                 Inc(lvlptr, 2);
@@ -3012,27 +2964,14 @@ begin
             end;
             LEVEL_END: ;
         else
-            if DEBUG_DRAWLEVEL then
-                DebugShowOverlay(
-                    'DrawLevel bad cmd',
-                    'cmd=' + HexByte(cmd),
-                    'lvlptr=' + ByteToStr(lvlptr),
-                    'bytes=' + HexByte(leveldata[lvlptr]) + ' ' +
-                        HexByte(leveldata[lvlptr + 1]) + ' ' +
-                        HexByte(leveldata[lvlptr + 2]) + ' ' +
-                        HexByte(leveldata[lvlptr + 3]),
-                    'stream invalid');
             exit;
         end;
     until cmd = LEVEL_END;
-    DrawTestBigSlime;
 end;
 
 procedure SetLevelColors;
 begin
     Move(levelRawColors[0], levelColors[0], 4);
-    pmgColors[0] := MapColor(FLOB_COL0);
-    pmgColors[1] := MapColor(FLOB_COL1);
     RebuildRoomPalette;
     // Apply the level image palette to the STE hardware immediately.
     // BackToLevel and Teleport manage their own BlackAll/FadeIn sequence;
@@ -3078,50 +3017,13 @@ var fileOffset: word;
     cmdBytes: word;
 begin
     WaitFrame;
-    if currentWorldData = nil then begin
-        if DEBUG_LOADLEVEL then
-            DebugShowOverlay(
-                'LoadLevel error',
-                'currentWorldData=nil',
-                'world=' + ByteToStr(worldCurrent),
-                'lvl=' + ByteToStr(lvl),
-                'LoadWorld missing');
-        exit;
-    end;
     fileOffset := world.lvlPtr[lvl] - $A000;
-    if DEBUG_LOADLEVEL then
-        DebugShowOverlay(
-            'LoadLevel start',
-            'world=' + ByteToStr(worldCurrent) + ' lvl=' + ByteToStr(lvl),
-            'ptr=' + HexWord(world.lvlPtr[lvl]) + ' off=' + WordToStr(fileOffset),
-            'start=' + ByteToStr(world.start) + ' state=' + ByteToStr(world.state),
-            'name=' + Antic2Ascii(world.name));
-    if (world.lvlPtr[lvl] < $A000) or (fileOffset >= 8192) then begin
-        if DEBUG_LOADLEVEL then
-            DebugShowOverlay(
-                'LoadLevel bad ptr',
-                'ptr=' + HexWord(world.lvlPtr[lvl]),
-                'off=' + WordToStr(fileOffset),
-                'world=' + ByteToStr(worldCurrent),
-                'lvl=' + ByteToStr(lvl));
-        exit;
-    end;
     Move(currentWorldData[fileOffset], level, SizeOf(TLevel));
     Move(level.colors[0], levelRawColors[0], 4);
     cmdBytes := MAX_LEVEL_DATA;
     if fileOffset + SizeOf(TLevel) + cmdBytes > 8192 then
         cmdBytes := 8192 - fileOffset - SizeOf(TLevel);
     Move(currentWorldData[fileOffset + SizeOf(TLevel)], leveldata[0], cmdBytes);
-    if DEBUG_LOADLEVEL then
-        DebugShowOverlay(
-            'LoadLevel header',
-            'colors=' + HexByte(level.colors[0]) + ' ' + HexByte(level.colors[1]) + ' ' +
-                HexByte(level.colors[2]) + ' ' + HexByte(level.colors[3]),
-            'exits=' + HexByte(level.room_top) + ' ' + HexByte(level.room_right) + ' ' +
-                HexByte(level.room_bottom) + ' ' + HexByte(level.room_left),
-            'cmd=' + HexByte(leveldata[0]) + ' ' + HexByte(leveldata[1]) + ' ' +
-                HexByte(leveldata[2]) + ' ' + HexByte(leveldata[3]),
-            'bytes=' + WordToStr(cmdBytes));
 
     sprites.state := SPRITE_NONE;
     if room_changed then begin
@@ -3142,10 +3044,11 @@ begin
     CopyPlayfieldArea(SCREEN_PHY, SCREEN_LOG);
     CopyPlayfieldArea(SCREEN_PHY, SCREEN_BKG);
     RefreshHudCache;
-    if flipped then ReverseDlist
-    else OrderDlist;
+    displayFlipped := false;  // DrawLevel always writes normal orientation; force re-flip if needed
+    if flipped then EnsureDisplayOrientation(true)
+    else EnsureDisplayOrientation(false);
     FillChar(queuedSpriteCount, SizeOf(queuedSpriteCount), 0);
-    if room_changed then AdjustFlobPosition;
+    if room_changed and not teleported then AdjustFlobPosition;  // teleport: designer chose spawn, no adjust
     room_changed := false;
     room_landed := false;
     first_landed := false;
@@ -3157,34 +3060,16 @@ end;
 // ***************************************************
 
 procedure Flip;
-var stepPauses: array[0..5] of byte;
-    step: byte;
-    upside: boolean;
+var targetFlipped: boolean;
 begin
-    stepPauses[0] := 1; stepPauses[1] := 1; stepPauses[2] := 1;
-    stepPauses[3] := 1; stepPauses[4] := 2; stepPauses[5] := 3;
     Sfx(SFX_FLIP);
-    step := 0;
-    upside := false;
     WaitFrame;
-    ClearFlob;
-    ClearSlimes;
-    repeat
-        // stub: Display List row reordering happens here
-        if not upside then Inc(step);
-        if step = 6 then begin
-            flipped := not flipped;
-            if flipped then ReverseDlist
-            else OrderDlist;
-            upside := true;
-        end;
-        if upside then Dec(step);
-        ClearSprites;
-        if step < 6 then WaitFrames(stepPauses[step]);
-    until step = $ff;
-    WaitFrame;
+    targetFlipped := not flipped;
+    FlipGameplayEffect(targetFlipped);
+    flipped := targetFlipped;
     ShowSprites;
     flobY := 84 - flobY;
+    spriteCollisionMovePending := true;
     BeginQueuedSpritesFrame;
     DrawFlob;
     PresentQueuedSprites;
@@ -3202,10 +3087,9 @@ begin
     PresentQueuedSprites;
     WaitFrame;
     ShowLevelName;
-    if flipped then ReverseDlist
-    else OrderDlist;
+    if flipped then EnsureDisplayOrientation(true)
+    else EnsureDisplayOrientation(false);
     ClearTxt2;
-    PMG_hitclr := $ff;
     FadeIn;                 // reads black palette, fades to currentPal ✓
 end;
 
@@ -3215,10 +3099,9 @@ var times: byte;
 begin
     FadeOut;
     WaitFrame;
-    PMG_Clear;
     wasflipped := flipped;
     flipped := false;
-    OrderDlist;
+    EnsureDisplayOrientation(false);
     goals[rgoal] := 0;
     LoadLevel(room);
     goals[rgoal] := 1;
@@ -3240,7 +3123,6 @@ begin
     WaitFrames(50);
     FadeOut;
     WaitFrame;
-    PMG_Clear;
     flipped := wasflipped;
     BackToLevel;
 end;
@@ -3333,9 +3215,15 @@ var sec, score: word;
     n, shift: byte;
     mul, mask: cardinal;
     mastered: boolean;
+    gameplayInputWasInstalled: boolean;
 begin
     FadeOut;
     StopSong;
+    gameplayInputWasInstalled := gameplayInputInstalled;
+    if gameplayInputWasInstalled then begin
+        UnInstallGameplayInput;
+        keyboardInputEnabled := true;
+    end;
     GetWorldStats(worldCurrent);
     worldStats.attempts := worldStats.attempts + 1;
     mastered := true;
@@ -3397,9 +3285,11 @@ begin
         StoreStats;
     end;
 
+    ShowEndWorldScreen(sec, score);
     PlaySong(MUSIC_ENDGAME);
-    repeat until IsStartingButtonDown;
+    repeat WaitFrame until IsStartingButtonDown;
     WaitForStartKeyUp;
+    FadeOut;
 
     if (worldCurrent = 5) and mainGoalReached then begin
         ShowCutScene(OUTRO_BANK, OUTRO_IMAGE_COUNT);
@@ -3407,6 +3297,10 @@ begin
     end;
     if newAchivements > 0 then ShowAchievements;
 
+    if gameplayInputWasInstalled then begin
+        keyboardInputEnabled := false;
+        InstallGameplayInput;
+    end;
     game_over := true;
     StopSong;
 end;
@@ -3426,6 +3320,8 @@ begin
     WaitFrame;
     StopSong;
     BlackAll;
+    ClearScreen(SCREEN_LOG);
+    ClearScreen(SCREEN_PHY);
     slide := 0;
     WaitFrame;
     PlaySong(0);
@@ -3443,7 +3339,8 @@ begin
             if slideDelay = 0 then begin
                 if visibleLines < 4 then begin
                     Inc(visibleLines);
-                    RenderCutsceneText(SCREEN_PHY, l0, l1, l2, l3, visibleLines);
+                    RenderCutsceneText(SCREEN_LOG, l0, l1, l2, l3, visibleLines);
+                    SwapScreen;
                     slideDelay := 22;
                 end else if not cutsceneHold then begin
                     cutsceneHold := true;
@@ -3454,8 +3351,8 @@ begin
                 Dec(slideDelay);
             WaitFrame;
         until (cutsceneHold and (slideDelay = 0)) or IsStartingButtonDown;
-        if IsStartingButtonDown then break;
         FadeOut;
+        if IsStartingButtonDown then break;
         Inc(slide);
     until (slide = cscount) or IsStartingButtonDown;
     WaitForStartKeyUp;
@@ -3496,87 +3393,150 @@ end;
 
 procedure ShowAchievements;
 const
-    // ST palette: $0RGB, each component 0-7 (standard 3-bit ST format)
     ACH_PAL: array[0..15] of word = (
         $000,  //  0 – black background
-        $777,  //  1 – white  (title text)
-        $050,  //  2 – green  (achievement earned)
-        $222,  //  3 – dark   (achievement locked)
-        $440,  //  4 – yellow (newly earned flash – cleared to 2 below)
-        $444,  //  5 – medium gray (world-row label text)
-        $333,  //  6 – dark separator bar color
-        $555,  //  7 – light gray  (footer text)
-        $000, $000, $000, $000, $000, $000, $000, $000
+        $55F,  //  1 – blue/cyan (title text, separators)
+        $550,  //  2 – gold  (earned world achievement)
+        $222,  //  3 – dark  (locked)
+        $770,  //  4 – bright gold (newly earned flash)
+        $530,  //  5 – orange/copper (global row)
+        $333,  //  6 – dim separator
+        $444,  //  7 – grey info text
+        $777,  //  8 – white (selected / bright info text)
+        $000, $000, $000, $000, $000, $000, $000
     );
-    // Grid geometry – all x coords are multiples of 16 (one bitplane group)
-    GRID_LEFT  = 64;   // pixels from left edge; leaves 64px for row labels
-    GRID_TOP   = 36;   // first row top pixel
-    CELL_W     = 16;   // width per achievement cell (= one bitplane group)
-    CELL_H     = 14;   // fill height inside row
-    ROW_STRIDE = 16;   // CELL_H + 2px black gap between rows
-    // Row labels (7 strings, max 7 chars each to fit in 64px at 8px/char)
-    ROW_LABELS: array[0..6] of string[7] = (
-        'WORLD 1', 'WORLD 2', 'WORLD 3',
-        'WORLD 4', 'WORLD 5', 'WORLD 6',
-        'GLOBAL '
+    // Grid: 12 cells × 16px = 192px, centered in 320px → left margin = 64px
+    GRID_LEFT  = 64;
+    GRID_TOP   = 30;
+    CELL_W     = 16;
+    CELL_H     = 16;
+    ROW_STRIDE = 18;   // CELL_H + 2px gap
+    SEP_Y      = 30 + 7 * 18 + 2;   // separator below grid
+    INFO_Y     = SEP_Y + 6;
+    WORLD_NAMES: array[0..6] of string[22] = (
+        'Escape from the Lab',
+        'Abominable Sewers',
+        'Suburbian Parkour',
+        'Hazardous Mudlands',
+        'Silver Dust Mines',
+        'Return to the Lab',
+        'Global'
     );
 var
     w, a, aid: byte;
     cx, cy:    word;
-    col:       word;
+    col:       byte;
+    curW, curA: byte;
+    update:    boolean;
+    firstDraw: boolean;
+    key:       byte;
+    delay:     byte;
 begin
     FadeOut;
 
-    // ---- build back buffer ------------------------------------------------
-    ClearScreen(SCREEN_LOG);
+    curW   := 0;
+    curA   := 0;
+    update := true;
+    firstDraw := true;
+    delay  := 0;
 
-    // Title line
-    Str(achivementsCount, s1);
-    Str(ACHIEVEMENTS_COUNT, s);
-    s := 'ACHIEVEMENTS  ' + s1 + ' / ' + s;
-    DrawStrCentered(6, 1, s);
-
-    // Thin separator under title
-    FillRect16(SCREEN_LOG, 0, 26, 320, 2, 6);
-
-    // Achievement grid
-    aid := 0;
-    for w := 0 to WORLD_COUNT do begin
-        cy := GRID_TOP + word(w) * ROW_STRIDE;
-
-        // Row label on the left (truncated to 7 chars so it stays < 64px)
-        DrawStr(2, cy, 5, ROW_LABELS[w]);
-
-        for a := 0 to 11 do begin
-            cx := GRID_LEFT + word(a) * CELL_W;
-
-            // Mark newly earned → earned, pick display color
-            if achievements[aid] = 2 then begin
-                achievements[aid] := 1;
-                col := 4;   // yellow flash for newly earned
-            end else if achievements[aid] = 1 then
-                col := 2    // green
-            else
-                col := 3;   // dark gray (locked)
-
-            FillRect16(SCREEN_LOG, cx, cy, CELL_W, CELL_H, col);
-            Inc(aid);
-        end;
-    end;
-
-    // Footer
-    DrawStrCentered(186, 7, 'FIRE  /  SPACE  to close');
-
-    // ---- show with fade-in ------------------------------------------------
     currentPal := @ACH_PAL[0];
-    SwapScreen;
-    FadeIn;
+    BlackAll;
 
-    // ---- wait for dismiss -------------------------------------------------
-    WaitFrame;
     repeat
-        joy := stick0;
         WaitFrame;
+        joy := stick0;
+        key := NONE;
+        if skstat and 4 = 0 then key := kbcode;
+
+        if delay > 0 then Dec(delay)
+        else begin
+            if (joy and %0100 = 0) or (key = KEY_LEFT_CODE) then begin
+                if curA = 0 then curA := 11 else Dec(curA);
+                update := true; delay := 6;
+            end;
+            if (joy and %1000 = 0) or (key = KEY_RIGHT_CODE) then begin
+                if curA = 11 then curA := 0 else Inc(curA);
+                update := true; delay := 6;
+            end;
+            if (joy and %0001 = 0) or (key = KEY_UP_CODE) then begin
+                if curW = 0 then curW := WORLD_COUNT else Dec(curW);
+                update := true; delay := 6;
+            end;
+            if (joy and %0010 = 0) or (key = KEY_DOWN_CODE) then begin
+                if curW = WORLD_COUNT then curW := 0 else Inc(curW);
+                update := true; delay := 6;
+            end;
+        end;
+
+        if update then begin
+            ClearScreen(SCREEN_LOG);
+
+            // Title (blue/cyan like original)
+            Str(achivementsCount, s1);
+            Str(ACHIEVEMENTS_COUNT, s);
+            s := 'Achievements ' + s1 + ' / ' + s;
+            DrawStrCentered(4, 1, s);
+
+            // Blue separator under title
+            FillRect16(SCREEN_LOG, 0, 20, 320, 2, 1);
+
+            // Achievement grid — no row labels, trophies fill full width
+            aid := 0;
+            for w := 0 to WORLD_COUNT do begin
+                cy := GRID_TOP + word(w) * ROW_STRIDE;
+                for a := 0 to 11 do begin
+                    cx := GRID_LEFT + word(a) * CELL_W;
+                    // pick colour
+                    if achievements[aid] = 2 then begin
+                        achievements[aid] := 1;
+                        col := 4;           // bright gold flash
+                    end else if achievements[aid] = 1 then begin
+                        if w = WORLD_COUNT then col := 5   // orange for global
+                        else col := 2;                      // gold for world
+                    end else begin
+                        col := 3;           // dark locked
+                    end;
+                    if (w = curW) and (a = curA) then col := 8;  // white cursor
+                    FillRect16(SCREEN_LOG, cx, cy, CELL_W, CELL_H, col);
+                    Inc(aid);
+                end;
+            end;
+
+            // Blue separator above info panel
+            FillRect16(SCREEN_LOG, 0, SEP_Y, 320, 2, 1);
+
+            // Info panel
+            aid := curW * 12 + curA;
+            if aid < ACHIEVEMENTS_COUNT then begin
+                if curW < WORLD_COUNT then
+                    achievement := ACHIEVEMENT_DEFS[curA]
+                else
+                    achievement := ACHIEVEMENT_DEFS[12 + curA];
+
+                // Line 1 (dim): "WorldName Achievement"
+                s := WORLD_NAMES[curW] + ' Achievement';
+                DrawStrCentered(INFO_Y, 7, s);
+
+                // Line 2 (bright): "Name : Desc"  (strip trailing spaces from name)
+                s := achievement.name;
+                while (Length(s) > 0) and (s[Length(s)] = ' ') do
+                    SetLength(s, Length(s) - 1);
+                s1 := achievement.desc;
+                while (Length(s1) > 0) and (s1[Length(s1)] = ' ') do
+                    SetLength(s1, Length(s1) - 1);
+                s := s + ': ' + s1;
+                DrawStrCentered(INFO_Y + 12, 8, s);
+            end;
+
+            SwapScreen;
+            if firstDraw then begin
+                FadeIn;
+                firstDraw := false;
+            end;
+            update := false;
+        end;
+
     until IsStartingButtonDown or CRT_SelectPressed;
     repeat WaitFrame; until not IsStartingButtonDown and not CRT_SelectPressed;
 
@@ -3616,41 +3576,95 @@ begin
     if statPage = 4 then statPage := 0;
 end;
 
-procedure RenderWorldSelector(locked: boolean);
+procedure DrawWorldSelectorIcon(locked: boolean);
 begin
-    UnApl(@IMG_TITLE[0], SCREEN_LOG);
-    currentBasePal := @IMG_TITLE_PAL[0];
-    RebuildTitlePalette(SELECTOR_COLORS);
+    if worldCurrent > High(WORLD_ICON_PTRS) then exit;
 
-    FillRect16(SCREEN_LOG, 0, 120, 320, 80, 0);
-    FillRect16(SCREEN_LOG, 0, 118, 320, 2, 1);
-
-    DrawStrCentered(124, 1, 'SELECT WORLD');
-    DrawStrCentered(144, 1, Antic2Ascii(world.name));
-
-    if worldCurrent > 0 then DrawStr(8, 144, 1, '<');
-    if worldCurrent < WORLD_COUNT - 1 then DrawStr(304, 144, 1, '>');
+    BlitterCopyBitmap4(
+        WORLD_ICON_PTRS[worldCurrent],
+        SCREEN_LOG,
+        WORLD_ICON_WIDTH,
+        WORLD_ICON_HEIGHT,
+        0,
+        0,
+        64,
+        48,
+        WORLD_ICON_WIDTH,
+        320
+    );
 
     if locked then
-        DrawStrCentered(160, 2, 'LOCKED')
-    else
-        DrawStrCentered(160, 1, s);
+        DrawStrCentered(84, 3, 'LOCKED');
+end;
 
-    DrawStrCentered(176, 1, 'FIRE/ENTER START');
-    DrawStrCentered(184, 1, 'LEFT/RIGHT CHANGE  ESC BACK');
+procedure RenderWorldSelector(locked: boolean);
+var i: byte;
+    iconPal: PWord;
+    iconColOfs: word;
+    colPtr: PByte;
+begin
+    ClearScreen(SCREEN_LOG);
+    FillChar(titlePalette[0], SizeOf(titlePalette), 0);
+
+    // Load this world's greyscale icon palette as base (entries 0..3)
+    if worldCurrent <= High(WORLD_ICON_PAL_PTRS) then
+        iconPal := PWord(WORLD_ICON_PAL_PTRS[worldCurrent])
+    else
+        iconPal := @WORLD_ICON_PAL_00[0];
+    for i := 0 to 3 do
+        titlePalette[i] := iconPal[i];
+
+    if locked then begin
+        // Locked: keep greyscale palette as-is ($000,$111,$444,$777)
+    end else begin
+        // Active: read 3 CTIA colour bytes embedded at world.iconPtr in world data
+        // (same bytes the original reads via MoveColors(pointer(icon), titleColors, 3))
+        iconColOfs := world.iconPtr - $A000;
+        if (currentWorldData <> nil) and (iconColOfs + 2 < 8192) then begin
+            colPtr := PByte(longword(currentWorldData) + iconColOfs);
+            titlePalette[1] := STE_PAL[colPtr[0]];
+            titlePalette[2] := STE_PAL[colPtr[1]];
+            titlePalette[3] := STE_PAL[colPtr[2]];
+        end;
+    end;
+
+    // UI text colours (indices 4+ — outside icon palette range)
+    titlePalette[4] := $222;   // dim text / arrows
+    currentPal := @titlePalette[0];
+    // NOTE: palette is applied by the caller (FadeIn on first render, xbios_setpalette otherwise)
+
+    FillRect16(SCREEN_LOG, 0, 0, 320, 200, 0);
+    FillRect16(SCREEN_LOG, 0, 34, 320, 2, 2);
+    FillRect16(SCREEN_LOG, 0, 134, 320, 2, 2);
+
+    DrawStrCentered(10, 1, 'SELECT WORLD');
+    DrawWorldSelectorIcon(locked);
+    DrawStrCentered(140, 1, Antic2Ascii(world.name));
+
+    if worldCurrent > 0 then DrawStr(24, 84, 1, '<');
+    if worldCurrent < WORLD_COUNT - 1 then DrawStr(288, 84, 1, '>');
+
+    if locked then
+        DrawStrCentered(156, 2, 'LOCKED')
+    else
+        DrawStrCentered(156, 1, s);
+
+    DrawStrCentered(168, 1, 'FIRE/ENTER START');
+    DrawStrCentered(184, 2, 'LEFT/RIGHT CHANGE  ESC BACK');
     SwapScreen;
 end;
 
 function ShowWorldSelector: boolean;
 var update, locked: boolean;
     key, delay: byte;
+    firstRender: boolean;
 begin
     Result := true;
-    InitFlobPMG;
     WaitFrame;
     update := true;
     delay := 0;
     locked := false;
+    firstRender := true;
 
     repeat
         joy := stick0;
@@ -3668,7 +3682,6 @@ begin
 
         if update then begin
             WaitFrame;
-            ClearFlob;
             LoadWorld(worldCurrent);
             GetWorldStats(worldCurrent);
             locked := false;
@@ -3685,6 +3698,11 @@ begin
                 ShowNextStat;
             end;
             RenderWorldSelector(locked);
+            if firstRender then begin
+                FadeIn;        // SwapScreen already done inside RenderWorldSelector
+                firstRender := false;
+            end else
+                xbios_setpalette(pword(currentPal));
             update := false;
             delay := WORLD_SELECTION_DELAY;
         end;
@@ -3694,6 +3712,7 @@ begin
             if statCount = 0 then begin
                 ShowNextStat;
                 RenderWorldSelector(locked);
+                xbios_setpalette(pword(currentPal));
             end;
         end;
         WaitFrame;
@@ -3736,6 +3755,7 @@ begin
         if CRT_HelpPressed then begin ShowCredits; InitTitle; end;
     until IsStartingButtonDown;
     WaitForStartKeyUp;
+    FadeOut;
 end;
 
 // ***************************************************
@@ -3771,8 +3791,9 @@ end;
 // ***************************************************
 
 begin
-    ScreenInit;
     gemdos_super(pointer(0));
+    ScreenInit;
+    InstallInput;
     sysframe := 0;
 
     spriteAnimations[0] := @spriteAnimation0;
@@ -3782,8 +3803,8 @@ begin
     statBestsBack  := STAT_OFF;
     statGlobalBack := STAT_OFF;
     music_ingame := true;
+    escPressed := 0;
 
-    InstallInput;
     CheckDiags;
     isStereo := IsStereoPresent;
     InitGame;
@@ -3797,18 +3818,20 @@ begin
             StopSong;
             if worldCurrent = 0 then ShowCutScene(INTRO_BANK, INTRO_IMAGE_COUNT);
             StopSong;
+            keyboardInputEnabled := false;
+            InstallGameplayInput;
             InitWorld;
             music_track := worldCurrent;
             if music_track > 4 then music_track := 0;
             if music_ingame then PlaySong(MUSIC_LEVEL)
             else PlaySong(MUSIC_SILENT);
             InitLevelScreen;
-            InitFlobPMG;
 
+            BlackAll;   // ensure screen is black before first FadeIn
             repeat
-                PMG_Clear;
                 if exploded then begin
-                    if lastSafeLanded.flipped then ReverseDlist else OrderDlist;
+                    if lastSafeLanded.flipped then EnsureDisplayOrientation(true)
+                    else EnsureDisplayOrientation(false);
                     flipped  := lastSafeLanded.flipped;
                     flobX    := lastSafeLanded.x;
                     flobY    := lastSafeLanded.y;
@@ -3816,25 +3839,25 @@ begin
                     flobFalling := 0;
                     if flobX < 80 then flobDir := DIR_RIGHT else flobDir := DIR_LEFT;
                     invulnerability := INVULNERABILTY_TIME;
-                end;
+                end else if not teleported then
+                    FadeOut;  // normal room transition: fade out before swapping room
 
                 LoadLevel(levelNum);
                 ShowSlime;
                 WaitFrame;
 
+                SetLevelColors;
+                if not exploded then begin
+                    FadeIn;                    // all non-explosion transitions fade in
+                    displayPaletteDirty := true;
+                end;
                 if teleported then begin
-                    FadeIn;
                     teleported := false;
-                end else begin
-                    SetLevelColors;
                 end;
 
                 repeat
-                    PMG_hitclr := $ff;
-                    WaitFrame;
+                    GameplayFrameTick;
                     BeginQueuedSpritesFrame;
-
-                    ClearFlob;
 
                     if flobFrame <> 0 then
                         if flobFrameDelay > 0 then Dec(flobFrameDelay)
@@ -3842,16 +3865,16 @@ begin
 
                     FlobFootUpdate;
 
-                    joy := stick0;
-                    if joy and %0100 = 0 then FlobMove(DIR_LEFT);
-                    if joy and %1000 = 0 then FlobMove(DIR_RIGHT);
-                    if strig0 = 0 then Flip;
-
-                    if skstat and 4 = 0 then begin
-                        if kbcode = KEY_LEFT_CODE  then FlobMove(DIR_LEFT);
-                        if kbcode = KEY_RIGHT_CODE then FlobMove(DIR_RIGHT);
-                        if kbcode = KEY_UP_CODE    then Flip;
+                    joyRaw := joyStatus and $8F;
+                    if (joyRaw and %0100) <> 0 then begin
+                        spriteCollisionMovePending := false;
+                        FlobMove(DIR_LEFT);
                     end;
+                    if (joyRaw and %1000) <> 0 then begin
+                        spriteCollisionMovePending := false;
+                        FlobMove(DIR_RIGHT);
+                    end;
+                    if CRT_FirePressedEdge then Flip;
 
                     if (not IsSolidPix(GetPix(flobFoot, flobY))) or (flobY > 80) then FlobFall
                     else begin
@@ -3915,7 +3938,7 @@ begin
                             end;
                         end else escPressed := 0;
 
-                        if CRT_StartPressed then begin
+                        if keyboardInputEnabled and CRT_StartPressed then begin
                             repeat WaitFrame; until not CRT_StartPressed;
                             repeat WaitFrame; until IsStartingButtonDown;
                             WaitForStartKeyUp;
@@ -3947,6 +3970,8 @@ begin
 
             until game_over;
 
+            UnInstallGameplayInput;
+            keyboardInputEnabled := true;
             FadeOut;
             StopSong;
         end;
