@@ -21,7 +21,10 @@ from pathlib import Path
 
 from PIL import Image
 
-from sprite_combined_config import MERGED_OVERLAY_ATLAS_NAMES
+from sprite_combined_config import (
+    MERGED_COMPOUND_ATLAS_GAPS,
+    MERGED_OVERLAY_ATLAS_NAMES,
+)
 
 ROOT = Path("/Users/kriss/GCC.ELF")
 FLOB_STE = ROOT / "flob-ste"
@@ -29,6 +32,11 @@ DEFAULT_ATLAS_NAME = "used_sprites"
 OUT_DIR = FLOB_STE / "generated" / "sprite_assets_atlas"
 MASTER_INC = FLOB_STE / "generated" / "sprite_assets_atlas.inc"
 PALETTE_INC = FLOB_STE / "generated" / "sprite_atlas_palette.inc"
+
+FLOB_EXPLOSION_MASKS = (
+    (0x10, 0x82, 0x20, 0x08, 0x81, 0x10, 0x44, 0x00),
+    (0x22, 0x08, 0x81, 0x10, 0x04, 0x41, 0x08, 0x00),
+)
 
 
 def to_ident(name: str) -> str:
@@ -155,6 +163,61 @@ def main() -> None:
         del generated_sprites[p1_name]
         generated_sprites[f"{base_name}_merged"] = merged_frames
 
+    for base_name, gap_a8 in sorted(MERGED_COMPOUND_ATLAS_GAPS.items()):
+        p0_name = f"{base_name}_p0"
+        p1_name = f"{base_name}_p1"
+        if p0_name not in by_sprite or p1_name not in by_sprite:
+            raise ValueError(f"Missing compound rows {p0_name}/{p1_name}")
+        p0_frames = by_sprite[p0_name]
+        p1_frames = by_sprite[p1_name]
+        if len(p0_frames) != len(p1_frames):
+            raise ValueError(f"Compound frame count differs for {base_name}")
+
+        gap_px = gap_a8 * 2
+        compound_frames: list[dict] = []
+        for p0_frame, p1_frame in zip(p0_frames, p1_frames):
+            if int(p0_frame["h"]) != int(p1_frame["h"]):
+                raise ValueError(f"Compound frame height differs for {base_name}")
+            compound_frames.append({
+                "frame": p0_frame["frame"],
+                "x": p0_frame["x"],
+                "y": p0_frame["y"],
+                "w": max(int(p0_frame["w"]), gap_px + int(p1_frame["w"])),
+                "h": p0_frame["h"],
+                "compound_p0": p0_frame,
+                "compound_p1": p1_frame,
+                "compound_gap_px": gap_px,
+            })
+        del generated_sprites[p0_name]
+        del generated_sprites[p1_name]
+        generated_sprites[f"{base_name}_compound"] = compound_frames
+
+    # The A8 death effect moves Flob's final P0/P1 patterns independently.
+    # Keep deriving these helper sprites from the editable atlas so recolouring
+    # Flob does not require hand-maintained Pascal assets.
+    if "flob" not in by_sprite or len(by_sprite["flob"]) <= 14:
+        raise ValueError("Flob frame 14 is required for the death animation")
+    explosion_frame = by_sprite["flob"][14]
+    for layer in range(2):
+        layer_frame = dict(explosion_frame)
+        layer_frame["flob_explosion_layer"] = layer
+        generated_sprites[f"flob_explode_p{layer}"] = [layer_frame]
+
+    generated_sprites["flob_particle_p0"] = [{
+        "frame": 0,
+        "x": int(explosion_frame["x"]) + 6,
+        "y": int(explosion_frame["y"]),
+        "w": 2,
+        "h": 2,
+    }]
+    generated_sprites["flob_particle_p1"] = [{
+        "frame": 0,
+        "x": int(explosion_frame["x"]) + 4,
+        "y": int(explosion_frame["y"]),
+        "w": 2,
+        "h": 2,
+    }]
+
     outputs: list[Path] = []
     for sprite_name in sorted(generated_sprites):
         ident = to_ident(sprite_name)
@@ -169,10 +232,37 @@ def main() -> None:
             indices: list[int] = []
             merge_p0 = frame_meta.get("merge_p0")
             merge_p1 = frame_meta.get("merge_p1")
+            compound_p0 = frame_meta.get("compound_p0")
+            compound_p1 = frame_meta.get("compound_p1")
+            compound_gap_px = int(frame_meta.get("compound_gap_px", 0))
+            explosion_layer = frame_meta.get("flob_explosion_layer")
             row_range = range(h - 1, -1, -1) if vertical_flip else range(h)
             for row_y in row_range:
                 for column_x in range(w):
-                    if merge_p0 is not None and merge_p1 is not None:
+                    if explosion_layer is not None:
+                        logical_x = column_x // 2
+                        logical_y = row_y // 2
+                        bit = 0x80 >> logical_x
+                        if FLOB_EXPLOSION_MASKS[explosion_layer][logical_y] & bit:
+                            color_index = int(atlas_px[x + column_x, y + row_y])
+                        else:
+                            color_index = 0
+                    elif compound_p0 is not None and compound_p1 is not None:
+                        p0_index = 0
+                        p1_index = 0
+                        if column_x < int(compound_p0["w"]):
+                            p0_index = int(atlas_px[
+                                int(compound_p0["x"]) + column_x,
+                                int(compound_p0["y"]) + row_y,
+                            ])
+                        p1_x = column_x - compound_gap_px
+                        if 0 <= p1_x < int(compound_p1["w"]):
+                            p1_index = int(atlas_px[
+                                int(compound_p1["x"]) + p1_x,
+                                int(compound_p1["y"]) + row_y,
+                            ])
+                        color_index = p1_index if p1_index != 0 else p0_index
+                    elif merge_p0 is not None and merge_p1 is not None:
                         p0_index = int(atlas_px[
                             int(merge_p0["x"]) + column_x,
                             int(merge_p0["y"]) + row_y,

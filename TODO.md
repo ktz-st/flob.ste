@@ -9,9 +9,9 @@
 
 ## Gameplay / Rendering
 
-- Port the original `Reveal` effect for `doorReveal` / key reveal flow.
-  - Original A8 version stores the "before" room in `REVEAL_BUFFER`, loads the "after" room, then flashes between both buffers/display lists.
-  - Current STE version loads both states but still needs the visible flash/alternate-buffer effect.
+- Verify the STE `Reveal` effect for `doorReveal` / key reveal flow in every world.
+  - The port now stores the revealed playfield in a temporary buffer and flashes it against the normal `SCREEN_BKG`, including each state's room palette.
+  - The world 0 phone path has been verified, including room colors and palette restoration after returning.
 - Verify the new dirty-sprite renderer in all rooms.
   - Gameplay now restores merged old/new sprite rectangles from `SCREEN_BKG` with `BlitterCopyBitmap4`.
   - Each LOG/PHY page retains unchanged sprites and redraws only sprites intersecting a dirty rectangle.
@@ -19,12 +19,13 @@
   - Check moving/animated/removed sprites, overlaps, flip, death, teleport, and reveal paths.
 - Keep copy/clear blitter operations without HOG; keep HOG only for sprite/tile blits unless testing shows otherwise.
 - Continue verifying flip-specific collision and sprite positions in all rooms.
+- Verify the STE Flob death animation on floors, platforms, flipped rooms and screen edges.
+  - `poof3`/`poof4` are generated as separate atlas layers; their 2x2 particles fall independently against room collision data.
 
 ## UI / Screens
 
-- Finish the stats screen.
-  - `ShowStats` currently has navigation/data selection but still needs real STE text/layout rendering.
-  - Implement `ShowInt` / `ShowTime` equivalents or replace the whole screen with an STE-native layout.
+- Verify the STE stats screen values and navigation after long play sessions.
+  - Six per-world pages and one global page are rendered with STE-native text and support joystick or keyboard navigation.
 - Polish the world selector.
   - Icons are implemented with STE-native world icon rendering.
   - Later: improve full-screen layout, text style, locked/playable state presentation, and preview animation.
@@ -36,6 +37,8 @@
   - Message rendering should remain cached/event-driven, not per-frame.
 - Verify title, cutscenes, achievements, selector, stats, game-over, and credits palette order.
   - Draw to LOG first, swap, then fade into target palette.
+- Verify gameplay pause with `P`, Enter and FIRE resume.
+  - Check restoring an active message and ensure FIRE resume does not trigger an immediate flip.
 
 ## Assets / Palette
 
@@ -45,8 +48,9 @@
 - Replace temporary/converted graphics with final 16-color STE artwork where available.
 - Verify the new merged `SPRITE_COMBINED` color overlays in all listed rooms.
   - All 26 `gap=0` uses now render one generated `*_merged` asset instead of separate P0/P1 blits.
+  - All 7 `gap>0` uses now render generated 20/30/32 px `*_compound` assets with full-width pixel collision.
   - Check colors, animation, vertical flip and collision against `SPRITE_COMBINED_REPORT.md`.
-  - Keep `phone`, `gear`, `spiderjump` and `bat` as two-part compound objects until their wider collision geometry is implemented.
+  - `phone` is visually verified; verify `gear`, `spiderjump` and `bat` in the rooms listed in the report.
 - Rebuild sprite assets after any edited `images/sprite_atlas/used_sprites.png` palette/art changes.
   - Use `make sprite-atlas-assets-only && make clean && make`.
   - `make used-sprite-atlas` regenerates the PNG/JSON from source data and overwrites manual edits.

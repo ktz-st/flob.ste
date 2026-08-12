@@ -47,7 +47,8 @@ SOURCES = \
 	$(ENDWORLD_ICON_GEN) \
 	$(WORLD_ICON_GEN) \
 	$(TILE_OUT) \
-	images/images.inc
+	images/images.inc \
+	images/global/IMG_TITLE_CROWN.inc
 
 .PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas sprite-atlas-assets sprite-atlas-assets-only
 
@@ -64,6 +65,9 @@ assets/endworld_icons.inc: $(ENDWORLD_ICON_GEN) ../flob/assets/bigmap.gif ../flo
 
 assets/world_icons.inc: $(WORLD_ICON_GEN) ../flob/worlds/00_Escape_From_The_Lab/images/icon.gif ../flob/worlds/01_Abominable_Sewers/images/icon.gif ../flob/worlds/02_Suburbian_Parkour/images/icon.gif ../flob/worlds/03_Hazardous_Mudlands/images/icon.gif ../flob/worlds/04_Silver_Dust_Mines/images/icon.gif ../flob/worlds/05_Return_To_The_Lab/images/icon.gif
 	python3 $(WORLD_ICON_GEN)
+
+images/global/IMG_TITLE_CROWN.inc: convert_images.py ../flob/assets/flob_title.gif ../flob/assets/crown2.gif
+	python3 convert_images.py
 
 unapl.o: unapl.s
 	$(AS) -quiet -Faout -o unapl.o unapl.s

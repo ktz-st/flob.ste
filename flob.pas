@@ -196,7 +196,7 @@ type
     end;
 
 const
-    MAX_QUEUED_SPRITES = 32;
+    MAX_QUEUED_SPRITES = 48;
     MAX_DIRTY_RECTS = MAX_QUEUED_SPRITES * 2;
     DIRTY_FULL_COPY_PIXELS = 48000;
     DIRTY_FULL_COPY_RECTS = 40;
@@ -1234,6 +1234,7 @@ begin
     roomPalette[2] := STE_PAL[levelRawColors[0]];
     roomPalette[3] := STE_PAL[levelRawColors[2]];
     roomPalette[0] := STE_PAL[levelRawColors[3]];
+    ApplyRoomSpriteAtlasPalette(@roomPalette[0]);
     roomSpritePaletteActive := true;
     currentPal := @roomPalette[0];
 end;
@@ -1316,10 +1317,12 @@ begin
     lX2 := (dstX + frame^.widthPx) - 1;
     lXcount := (((lX2 and $FFF0) - (dstX and $FFF0)) shr 4) + 1;
 
-    if (dstX and 15) <> 0 then
-        skew := BLITTER_SKEW_NFSR or byte(dstX and 15)
-    else
-        skew := 0;
+    skew := byte(dstX and 15);
+    // NFSR reduces source reads by one. It is needed when skew makes the
+    // destination span one word more than the packed source, but would clip
+    // the second source word of a 20 px sprite such as the phone.
+    if (skew <> 0) and (rowWords < lXcount) then
+        skew := skew or BLITTER_SKEW_NFSR;
 
     if lXcount > 2 then begin
         endMask1 := BLITTER_START_MASKS[dstX and 15];
@@ -2670,6 +2673,8 @@ begin
     if num > 1 then exit;
     if sprites.state = SPRITE_NONE then exit;
     if (num = 1) and (sprites.state <= SPRITE_SINGLE) then exit;
+    if spriteAtlasFrames[num] = nil then exit;
+    if spriteAtlasWords[num] = nil then exit;
     if (sprites.stype[num] = STYPE_EXIT) and not mainGoalReached then exit;
     if ((sprites.stype[num] = STYPE_DECOR) or (sprites.stype[num] = STYPE_GOAL)) and
         (sprites.goal[num] <> NONE) and (goals[sprites.goal[num]] = 0) then exit;
@@ -2687,7 +2692,7 @@ begin
     if flipped and (sprites.flipable[num] = 1) then
         yy := 80 - (h + yy);
     y := yy;
-    w := 8;
+    w := (spriteAtlasFrames[num]^.widthPx + LEVEL_SCALE_X - 1) div LEVEL_SCALE_X;
     Result := true;
 end;
 
@@ -2829,26 +2834,180 @@ end;
 // ***************************************************
 
 procedure Explode;
+const
+    PARTICLE_MAX = 20;
+    PARTICLE_FALL_LIMIT = 90;
+    EXPLODE_P0: array[0..7] of byte = ($10, $82, $20, $08, $81, $10, $44, $00);
+    EXPLODE_P1: array[0..7] of byte = ($22, $08, $81, $10, $04, $41, $08, $00);
+type
+    TDeathParticle = record
+        x, y: smallint;
+        layer: byte;
+        active: boolean;
+    end;
+var particles: array[0..PARTICLE_MAX - 1] of TDeathParticle;
+    particleCount: byte;
+    baseX, baseY: smallint;
+    step, fallFrames: byte;
+    moved: boolean;
+
+    function ClampSpriteX(x: smallint; width: word): word;
+    begin
+        if x < 0 then Result := 0
+        else if x + width > 320 then Result := 320 - width
+        else Result := word(x);
+    end;
+
+    procedure QueueDeathBackdrop;
+    begin
+        DrawSlimes;
+        ShowSprites;
+    end;
+
+    procedure PresentDeathFlob(frame: byte);
+    begin
+        flobFrame := frame;
+        BeginQueuedSpritesFrame;
+        DrawSlimes;
+        DrawFlob;
+        ShowSprites;
+        PresentQueuedSprites;
+    end;
+
+    procedure PresentExplosionLayers(spreadStep: byte);
+    var frameIndex: byte;
+        leftX, rightX, drawY: smallint;
+    begin
+        frameIndex := 0;
+        if flipped then frameIndex := 1;
+        leftX := baseX - smallint((spreadStep div 2) * 2);
+        rightX := baseX + smallint(((spreadStep + 1) div 2) * 2);
+        drawY := baseY + smallint((spreadStep + 1) * 2);
+
+        BeginQueuedSpritesFrame;
+        DrawSlimes;
+        QueueGeneratedSprite(ClampSpriteX(leftX, 16), word(drawY),
+            @SPR_FLOB_EXPLODE_P0_FRAMES[frameIndex],
+            @SPR_FLOB_EXPLODE_P0_WORDS[0], nil, 0);
+        QueueGeneratedSprite(ClampSpriteX(rightX, 16), word(drawY),
+            @SPR_FLOB_EXPLODE_P1_FRAMES[frameIndex],
+            @SPR_FLOB_EXPLODE_P1_WORDS[0], nil, 0);
+        ShowSprites;
+        PresentQueuedSprites;
+    end;
+
+    procedure AddParticle(x, y: smallint; layer: byte);
+    begin
+        if particleCount >= PARTICLE_MAX then exit;
+        if (x < 0) or (x > 318) then exit;
+        particles[particleCount].x := x;
+        particles[particleCount].y := y;
+        particles[particleCount].layer := layer;
+        particles[particleCount].active := true;
+        Inc(particleCount);
+    end;
+
+    procedure BuildParticles;
+    var row, bit: byte;
+        mask: byte;
+        particleY: smallint;
+    begin
+        particleCount := 0;
+        for row := 0 to 7 do begin
+            if flipped then particleY := baseY + 10 + smallint(7 - row) * 2
+            else particleY := baseY + 10 + smallint(row) * 2;
+            mask := $80;
+            for bit := 0 to 7 do begin
+                if (EXPLODE_P0[row] and mask) <> 0 then
+                    AddParticle(baseX - 4 + smallint(bit) * 2, particleY, 0);
+                if (EXPLODE_P1[row] and mask) <> 0 then
+                    AddParticle(baseX + 4 + smallint(bit) * 2, particleY, 1);
+                mask := mask shr 1;
+            end;
+        end;
+    end;
+
+    procedure QueueParticles;
+    var i, frameIndex: byte;
+    begin
+        frameIndex := 0;
+        if flipped then frameIndex := 1;
+        if particleCount > 0 then
+            for i := 0 to particleCount - 1 do
+                if particles[i].active then begin
+                    if particles[i].layer = 0 then
+                        QueueGeneratedSprite(word(particles[i].x), word(particles[i].y),
+                            @SPR_FLOB_PARTICLE_P0_FRAMES[frameIndex],
+                            @SPR_FLOB_PARTICLE_P0_WORDS[0], nil, 0)
+                    else
+                        QueueGeneratedSprite(word(particles[i].x), word(particles[i].y),
+                            @SPR_FLOB_PARTICLE_P1_FRAMES[frameIndex],
+                            @SPR_FLOB_PARTICLE_P1_WORDS[0], nil, 0);
+                end;
+    end;
+
+    procedure PresentParticles;
+    begin
+        BeginQueuedSpritesFrame;
+        QueueDeathBackdrop;
+        QueueParticles;
+        PresentQueuedSprites;
+    end;
+
+    procedure DropParticles;
+    var i: byte;
+        gameX, gameY: smallint;
+    begin
+        moved := false;
+        if particleCount > 0 then
+            for i := 0 to particleCount - 1 do
+                if particles[i].active then begin
+                    gameX := (particles[i].x + 1) div LEVEL_SCALE_X;
+                    gameY := (particles[i].y + 2 - LEVEL_OFFSET_Y) div LEVEL_SCALE_Y;
+                    if (gameY > 79) or (gameX < 0) or (gameX > 159) then begin
+                        particles[i].active := false;
+                        moved := true;
+                    end else if not IsSolidPix(GetPix(byte(gameX), byte(gameY))) then begin
+                        Inc(particles[i].y, LEVEL_SCALE_Y);
+                        moved := true;
+                    end;
+                end;
+    end;
 begin
     FSfx(SFX_DEAD);
     sfxDelay := 0;
-    flobFrame := FRAME_POOF1;
-    BeginQueuedSpritesFrame;
-    DrawFlob;
-    PresentQueuedSprites;
+
+    PresentDeathFlob(FRAME_POOF1);
     WaitFrames(5);
-    flobFrame := FRAME_POOF2;
-    BeginQueuedSpritesFrame;
-    DrawFlob;
-    PresentQueuedSprites;
+    PresentDeathFlob(FRAME_POOF2);
     WaitFrames(5);
+
     flobFrame := FRAME_XPLODE;
-    WaitFrames(30);
+    baseX := smallint(flobX) * LEVEL_SCALE_X;
+    baseY := FLOB_RENDER_OFFSET_Y + smallint(flobY) * LEVEL_SCALE_Y;
+    for step := 0 to 4 do PresentExplosionLayers(step);
+
+    BuildParticles;
+    fallFrames := 0;
+    repeat
+        DropParticles;
+        PresentParticles;
+        Inc(fallFrames);
+    until (not moved) or (fallFrames >= PARTICLE_FALL_LIMIT);
+
+    // Synchronise both display pages at the final particle positions.
+    PresentParticles;
+    PresentParticles;
     SubSlime($70);
     SubSlime($80);
     WaitFrames(50);
     exploded := true;
     Inc(deadCount);
+
+    // The caller presents once more before leaving the room loop.
+    BeginQueuedSpritesFrame;
+    QueueDeathBackdrop;
+    QueueParticles;
 end;
 
 // ***************************************************
@@ -3327,6 +3486,8 @@ procedure BackToLevel;
 begin
     BlackAll;               // palette black before image swap → no colour flash
     LoadLevel(levelNum);    // decompresses to SCREEN_LOG, SwapScreen; palette stays black
+    SetLevelColors;         // Reveal leaves currentPal set to the preview room palette
+    BlackAll;               // SetLevelColors updates hardware; keep it black until FadeIn
     BeginQueuedSpritesFrame;
     ShowSprites;
     DrawFlob;
@@ -3342,18 +3503,60 @@ end;
 procedure Reveal(rgoal, room: byte);
 var times: byte;
     wasflipped: boolean;
+    revealRaw, revealBuffer: pword;
+    revealPalette, normalPalette: array[0..15] of word;
+
+    procedure PresentRevealFrame(src: pword; palette: PWord);
+    begin
+        CopyPlayfieldArea(src, SCREEN_LOG);
+        SwapScreen;
+        xbios_setpalette(palette);
+    end;
+
+    procedure DrawRevealSprites(dst: pword);
+    var i: byte;
+        queued: PQueuedSprite;
+    begin
+        queuedSpriteCount[screenLogIndex] := 0;
+        ShowSprites;
+        if queuedSpriteCount[screenLogIndex] > 0 then
+            for i := 0 to queuedSpriteCount[screenLogIndex] - 1 do begin
+                queued := @queuedSprites[screenLogIndex, i];
+                if queued^.frame <> nil then
+                    DrawGeneratedSpriteFrameBlitter(dst, queued^.x, queued^.y,
+                        queued^.frame, queued^.wordsBase);
+            end;
+        queuedSpriteCount[screenLogIndex] := 0;
+    end;
 begin
+    revealRaw := gemdos_malloc(SCREEN_ALLOC);
+    if revealRaw = nil then exit;
+    AlignScreenBuffer(revealRaw, revealBuffer);
+
     FadeOut;
     WaitFrame;
     wasflipped := flipped;
     flipped := false;
     EnsureDisplayOrientation(false);
+
+    // Build and retain the room after the goal has been revealed.
     goals[rgoal] := 0;
     LoadLevel(room);
+    RebuildRoomPalette;
+    CopyPlayfieldArea(SCREEN_BKG, revealBuffer);
+    BuildDisplayPalette(@revealPalette[0]);
+
+    // Keep the normal room in SCREEN_BKG while the revealed state remains
+    // in the temporary buffer, matching the two display lists on A8.
     goals[rgoal] := 1;
     LoadLevel(room);
+    RebuildRoomPalette;
+    BuildDisplayPalette(@normalPalette[0]);
     goals[rgoal] := 0;
-    ShowSprites;
+    DrawRevealSprites(SCREEN_BKG);
+    DrawRevealSprites(revealBuffer);
+    CopyPlayfieldArea(SCREEN_BKG, SCREEN_LOG);
+    CopyPlayfieldArea(SCREEN_BKG, SCREEN_PHY);
     BlackAll;
     topBarForeground := 0;
     WaitFrame;
@@ -3362,13 +3565,16 @@ begin
     FadeIn;
     times := 3;
     repeat
+        PresentRevealFrame(SCREEN_BKG, @normalPalette[0]);
         WaitFrames(20);
+        PresentRevealFrame(revealBuffer, @revealPalette[0]);
         WaitFrames(20);
         Dec(times);
     until times = 0;
     WaitFrames(50);
     FadeOut;
     WaitFrame;
+    gemdos_mfree(revealRaw);
     flipped := wasflipped;
     BackToLevel;
 end;
@@ -3433,47 +3639,233 @@ begin
 end;
 
 // ***************************************************
-// *** STATS SCREEN (1:1 from original, display stubs)
+// *** STATS SCREEN
 // ***************************************************
 
 procedure ShowStats;
-var page, key: byte;
-    update: boolean;
-    off: byte;
+const
+    STATS_PAL: array[0..15] of word = (
+        $000, $067, $345, $777, $023, $650, $222, $444,
+        $000, $000, $000, $000, $000, $000, $000, $000
+    );
+    ENTRY_TOP = 40;
+    ENTRY_STEP = 16;
+    LEFT_X = 8;
+    RIGHT_X = 168;
+    VALUE_OFFSET = 72;
+var page, key, delay: byte;
+    update, firstDraw, exitRequested: boolean;
+    savedWorld: byte;
 
-    procedure ShowInt(i: cardinal); begin end; // stub – real impl writes to screen
-    procedure ShowTime(i: cardinal); begin end; // stub
+    function NumberText(value: cardinal): string;
+    begin
+        Str(value, Result);
+    end;
+
+    function TwoDigits(value: cardinal): string;
+    begin
+        Str(value, Result);
+        if value < 10 then Result := '0' + Result;
+    end;
+
+    function TimeText(seconds: cardinal): string;
+    var hours, minutes, secs: cardinal;
+    begin
+        if seconds = $FFFF then begin
+            Result := '--:--';
+            exit;
+        end;
+        hours := seconds div 3600;
+        minutes := (seconds div 60) mod 60;
+        secs := seconds mod 60;
+        if hours > 0 then
+            Result := NumberText(hours) + ':' + TwoDigits(minutes) + ':' + TwoDigits(secs)
+        else
+            Result := NumberText(minutes) + ':' + TwoDigits(secs);
+    end;
+
+    function OptionalNumber(value: word): string;
+    begin
+        if value = $FFFF then Result := '--'
+        else Result := NumberText(value);
+    end;
+
+    procedure DrawEntry(x, row: word; const labelText, valueText: string);
+    var y: word;
+    begin
+        y := ENTRY_TOP + row * ENTRY_STEP;
+        DrawTextTo(SCREEN_LOG, x, y, 2, 0, labelText);
+        DrawTextTo(SCREEN_LOG, x + VALUE_OFFSET, y, 3, 0, valueText);
+    end;
+
+    procedure DrawWorldStats;
+    begin
+        DrawEntry(LEFT_X,  0, 'Attempts',   NumberText(worldStats.attempts));
+        DrawEntry(LEFT_X,  1, 'Wins',       NumberText(worldStats.winCount));
+        DrawEntry(LEFT_X,  2, 'Failures',   NumberText(worldStats.failCount));
+        DrawEntry(LEFT_X,  3, 'Best scr',   NumberText(worldStats.bestScore));
+        DrawEntry(LEFT_X,  4, 'Best time',  TimeText(worldStats.bestTime));
+        DrawEntry(LEFT_X,  5, 'Max slime',  NumberText(worldStats.maxSlimes));
+        DrawEntry(LEFT_X,  6, 'Secrets',    NumberText(worldStats.maxSecrets));
+        DrawEntry(LEFT_X,  7, 'Min death',  OptionalNumber(worldStats.minDeaths));
+        DrawEntry(LEFT_X,  8, 'Max death',  NumberText(worldStats.maxDeaths));
+
+        DrawEntry(RIGHT_X, 0, 'All slime',  NumberText(worldStats.totalSlimes));
+        DrawEntry(RIGHT_X, 1, 'Deaths',     NumberText(worldStats.totalDeaths));
+        DrawEntry(RIGHT_X, 2, 'Tot time',   TimeText(worldStats.totalTime));
+        DrawEntry(RIGHT_X, 3, 'All score',  NumberText(worldStats.totalScore));
+        DrawEntry(RIGHT_X, 4, 'Flawless',   NumberText(worldStats.flawlessCount));
+        DrawEntry(RIGHT_X, 5, 'Mastered',   NumberText(worldStats.mastersCount));
+        DrawEntry(RIGHT_X, 6, 'Pick all',   NumberText(worldStats.pickAllCount));
+        DrawEntry(RIGHT_X, 7, 'Secrets',    NumberText(worldStats.secretAllCount));
+        DrawEntry(RIGHT_X, 8, 'Speedrun',   NumberText(worldStats.speedRunsCount));
+    end;
+
+    procedure DrawGlobalStats;
+    begin
+        DrawEntry(LEFT_X,  0, 'Attempts',   NumberText(globalStats.attempts));
+        DrawEntry(LEFT_X,  1, 'Wins',       NumberText(globalStats.winCount));
+        DrawEntry(LEFT_X,  2, 'Failures',   NumberText(globalStats.failCount));
+        DrawEntry(LEFT_X,  3, 'All score',  NumberText(globalStats.totalScore));
+        DrawEntry(LEFT_X,  4, 'Tot time',   TimeText(globalStats.totalTime));
+        DrawEntry(LEFT_X,  5, 'All slime',  NumberText(globalStats.totalSlimes));
+        DrawEntry(LEFT_X,  6, 'Deaths',     NumberText(globalStats.totalDeaths));
+        DrawEntry(LEFT_X,  7, 'Goals',      NumberText(globalStats.goalsCount));
+        DrawEntry(LEFT_X,  8, 'Achieved',   NumberText(achivementsCount));
+
+        DrawEntry(RIGHT_X, 0, 'Flaw W',     NumberText(globalStats.flawlessWorlds));
+        DrawEntry(RIGHT_X, 1, 'Slime W',    NumberText(globalStats.allSlimesWorlds));
+        DrawEntry(RIGHT_X, 2, 'Secret W',   NumberText(globalStats.allSecretsWorlds));
+        DrawEntry(RIGHT_X, 3, 'Master W',   NumberText(globalStats.mastersWorlds));
+        DrawEntry(RIGHT_X, 4, 'Speed W',    NumberText(globalStats.speedRunsWorlds));
+        DrawEntry(RIGHT_X, 5, 'Flawless',   NumberText(globalStats.flawlessCount));
+        DrawEntry(RIGHT_X, 6, 'Pick all',   NumberText(globalStats.allSlimesCount));
+        DrawEntry(RIGHT_X, 7, 'Secrets',    NumberText(globalStats.allSecretsCount));
+        DrawEntry(RIGHT_X, 8, 'Game runs',  NumberText(gameRuns));
+    end;
+
+    procedure RenderStatsPage;
+    begin
+        ClearScreen(SCREEN_LOG);
+        if page < WORLD_COUNT then begin
+            statBestsBack := STAT_ON + 4;
+            statGlobalBack := STAT_OFF;
+            LoadWorld(page);
+            GetWorldStats(page);
+            DrawTextCenteredTo(SCREEN_LOG, 4, 1, 0, Antic2Ascii(world.name));
+            DrawWorldStats;
+        end else begin
+            statBestsBack := STAT_OFF;
+            statGlobalBack := STAT_ON + 4;
+            DrawTextCenteredTo(SCREEN_LOG, 4, 5, 0, 'Total Game Stats');
+            DrawGlobalStats;
+        end;
+        DrawTextCenteredTo(SCREEN_LOG, 18, 7, 0,
+            '<  Page ' + NumberText(page + 1) + ' / ' + NumberText(WORLD_COUNT + 1) + '  >');
+        FillRect16(SCREEN_LOG, 0, 31, 320, 2, 4);
+        FillRect16(SCREEN_LOG, 0, 184, 320, 2, 4);
+        DrawTextCenteredTo(SCREEN_LOG, 190, 7, 0, 'LEFT/RIGHT   FIRE: BACK');
+        SwapScreen;
+    end;
 begin
+    savedWorld := worldCurrent;
     page := worldCurrent;
     update := true;
+    firstDraw := true;
+    exitRequested := false;
+    delay := 0;
     CountGlobalStats;
-    repeat
-        joy := stick0;
-        key := NONE;
-        if (skstat and 4 = 0) then key := kbcode;
+    currentPal := @STATS_PAL[0];
+    BlackAll;
 
-        if page > 0 then
-            if (key = KEY_LEFT_CODE) then begin Dec(page); update := true; end;
-        if page < WORLD_COUNT then
-            if (key = KEY_RIGHT_CODE) then begin Inc(page); update := true; end;
+    repeat
+        WaitFrame;
+        key := NONE;
+        if (skstat and 4) = 0 then key := kbcode;
+
+        exitRequested := CRT_FirePressedEdge or
+            CRT_GameplayKeyPressed(KEY_ENTER_CODE) or
+            CRT_GameplayKeyPressed(KEY_ESC_CODE) or
+            (key = KEY_ENTER_CODE) or (key = KEY_ESC_CODE);
+
+        if delay > 0 then Dec(delay)
+        else begin
+            if ((stick0 and %0100) = 0) or (key = KEY_LEFT_CODE) or
+                CRT_GameplayKeyPressed(KEY_LEFT_CODE) then begin
+                if page = 0 then page := WORLD_COUNT else Dec(page);
+                update := true;
+                delay := 8;
+            end else if ((stick0 and %1000) = 0) or (key = KEY_RIGHT_CODE) or
+                CRT_GameplayKeyPressed(KEY_RIGHT_CODE) then begin
+                if page = WORLD_COUNT then page := 0 else Inc(page);
+                update := true;
+                delay := 8;
+            end;
+        end;
 
         if update then begin
-            if page < WORLD_COUNT then begin
-                statBestsBack := STAT_ON + 4;
-                statGlobalBack := STAT_OFF;
-                LoadWorld(page);
-                GetWorldStats(page);
-                s1 := world.name;
-            end else begin
-                statBestsBack  := STAT_OFF;
-                statGlobalBack := STAT_ON + 4;
-                s1 := 'Total Game Stats';
+            RenderStatsPage;
+            if firstDraw then begin
+                FadeIn;
+                firstDraw := false;
             end;
             update := false;
         end;
+    until exitRequested;
+
+    FadeOut;
+    LoadWorld(savedWorld);
+    WaitForStartKeyUp;
+end;
+
+procedure PauseGame;
+var savedLines: array[0..1] of string;
+    savedCounter, savedType, savedForeground: byte;
+
+    function CenterMessage(const text: string): string;
+    var leftPad: byte;
+    begin
+        if Length(text) >= 40 then begin
+            Result := Copy(text, 1, 40);
+            exit;
+        end;
+        leftPad := (40 - Length(text)) div 2;
+        Result := StringOfChar(' ', leftPad) + text;
+        while Length(Result) < 40 do Result := Result + ' ';
+    end;
+begin
+    savedLines[0] := currentMessageLines[0];
+    savedLines[1] := currentMessageLines[1];
+    savedCounter := msgDisplayCounter;
+    savedType := msgDisplayType;
+    savedForeground := topBarForeground;
+
+    currentMessageLines[0] := CenterMessage('GAME PAUSED');
+    currentMessageLines[1] := CenterMessage('P / ENTER / FIRE TO RESUME');
+    msgDisplayCounter := $FF;
+    msgDisplayType := MSG_INFO;
+    topBarForeground := 15;
+    messageCacheDirty := true;
+    RefreshOverlayBuffers;
+    UpdateDisplayPaletteIfNeeded(false);
+
+    repeat
         WaitFrame;
-    until IsStartingButtonDown;
-    LoadWorld(worldCurrent);
+        topBarForeground := ((sysframe shr 2) and 7) + 8;
+        UpdateDisplayPaletteIfNeeded(false);
+    until CRT_FirePressedEdge or
+        CRT_GameplayKeyPressed(KEY_P_CODE) or
+        CRT_GameplayKeyPressed(KEY_ENTER_CODE) or
+        CRT_GameplayKeyPressed(KEY_ESC_CODE);
+
+    currentMessageLines[0] := savedLines[0];
+    currentMessageLines[1] := savedLines[1];
+    msgDisplayCounter := savedCounter;
+    msgDisplayType := savedType;
+    topBarForeground := savedForeground;
+    messageCacheDirty := true;
+    RefreshOverlayBuffers;
+    UpdateDisplayPaletteIfNeeded(false);
     WaitForStartKeyUp;
 end;
 
@@ -4001,10 +4393,20 @@ begin
     WaitForStartKeyUp;
 end;
 
+procedure LoadTitleTo(dst: pword);
+begin
+    if achievements[12 * 5] > 0 then begin
+        UnApl(@IMG_TITLE_CROWN[0], dst);
+        currentBasePal := @IMG_TITLE_CROWN_PAL[0];
+    end else begin
+        UnApl(@IMG_TITLE[0], dst);
+        currentBasePal := @IMG_TITLE_PAL[0];
+    end;
+end;
+
 procedure InitTitle;
 begin
-    UnApl(@IMG_TITLE[0], SCREEN_LOG);
-    currentBasePal := @IMG_TITLE_PAL[0];
+    LoadTitleTo(SCREEN_LOG);
     RebuildTitlePalette(MAIN_TITLE_COLORS);
     SwapScreen;
     FadeIn;
@@ -4014,8 +4416,7 @@ procedure ShowTitleScreen;
 begin
 
     // Show title image
-    UnApl(@IMG_TITLE[0], SCREEN_LOG);
-    currentBasePal := @IMG_TITLE_PAL[0];
+    LoadTitleTo(SCREEN_LOG);
     RebuildTitlePalette(MAIN_TITLE_COLORS);
     xbios_setpalette(pword(currentPal));
     SwapScreen;
@@ -4128,6 +4529,9 @@ begin
 
                 repeat
                     GameplayFrameTick;
+                    if CRT_GameplayKeyPressed(KEY_P_CODE) or
+                        CRT_GameplayKeyPressed(KEY_ENTER_CODE) then
+                        PauseGame;
                     BeginQueuedSpritesFrame;
 
                     if flobFrame <> 0 then
@@ -4183,12 +4587,12 @@ begin
                             else NextLevel(DIR_BOTTOM);
 
                         CheckSlimeCollision;
-                        if colorCollision and FlobTouchesDangerColor then
+                        if invulnerability > 0 then
+                            Dec(invulnerability)
+                        else if colorCollision and FlobTouchesDangerColor then
                             Explode
                         else
                             CheckSpriteCollisions;
-
-                        if invulnerability > 0 then Dec(invulnerability);
 
                         if first_landed then begin
                             if landedTime = 0 then begin SetLanded; room_landed := true; end;
@@ -4210,12 +4614,6 @@ begin
                                 escPressed := 0;
                             end;
                         end else escPressed := 0;
-
-                        if keyboardInputEnabled and CRT_StartPressed then begin
-                            repeat WaitFrame; until not CRT_StartPressed;
-                            repeat WaitFrame; until IsStartingButtonDown;
-                            WaitForStartKeyUp;
-                        end;
 
                         if CRT_OptionPressed and (actionDelay = 0) then begin
                             music_ingame := not music_ingame;

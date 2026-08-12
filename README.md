@@ -12,18 +12,20 @@ Gra kompiluje sie do `flob.prg` i ma juz dzialajacy glowny przeplyw:
 - world selector,
 - ekrany miedzy swiatami / end-world / game-over,
 - achievements screen,
+- wariant title screenu z korona po zdobyciu koncowego achievementu,
 - ladowanie swiata i pokoju,
 - render tla 320x160 w playfieldzie,
 - HUD i message cache,
 - Flob, slime i world sprite'y renderowane blitterem z atlasu,
 - flip screen z wizualnym efektem card-flip,
+- eksplozja Floba z rozsunieciem warstw i opadajacymi czastkami,
 - joystick w trybie gry przez raw IKBD handler,
 - klawiatura w menu / title / ekranach pomocniczych,
 - podstawowe kolizje, teleporty, sprite keys, portals, slimes, enemies, exits,
 - wspolna paleta sprite atlasu dla pokojow gry,
 - level colors mapowane z danych A8 przez `STE_PAL`.
 
-Najwazniejsze braki sa w `TODO.md`. Na dzis glowne otwarte obszary to audio, pelny/polerowany stats screen, reveal effect, dalsza optymalizacja restore tła pod sprite'ami oraz pelna weryfikacja wszystkich swiatow.
+Najwazniejsze braki sa w `TODO.md`. Na dzis glowne otwarte obszary to audio, dalsza optymalizacja restore tła pod sprite'ami oraz pelna weryfikacja wszystkich swiatow i nowych ekranow STE.
 
 ## Build
 
@@ -193,6 +195,15 @@ Aktualny atlas zawiera:
 - 73 pary `_p0` + `_p1`,
 - 16 sprite'ow majacych tylko `_p0`.
 
+Faktyczne uzycia `SPRITE_COMBINED` sa generowane jako pojedyncze assety STE:
+
+- `*_merged` dla nakladek kolorow z `gap=0`,
+- `*_compound` dla `phone`, `gear`, `spiderjump` i `bat`, z zachowaniem szerokosci wynikajacej z `gap`.
+
+Szerokie assety wymagaja warunkowego `NFSR`: flaga jest ustawiana tylko wtedy, gdy
+skew powoduje, ze cel zajmuje o jedno slowo wiecej niz spakowane zrodlo. Bez tego
+telefon 20 px tracil drugi word grafiki przy niezerowym `X mod 16`.
+
 Nie nalezy automatycznie splaszczac wszystkich par klatka-do-klatki: w danych wystepuja pary o roznej liczbie klatek, np. `9+7`, `2+4` i `7+3`. Raport klasyfikacji uzyc `SPRITE_COMBINED` powinien wskazac, ktore przypadki sa nakladka kolorow, a ktore obiektem zlozonym.
 
 ### Vertical Flip Sprite'ow
@@ -222,6 +233,11 @@ Glowny loop gry robi w uproszczeniu:
 11. `PresentQueuedSprites`
 
 W trybie gry klawiatura nie jest czytana do sterowania. Joystick idzie przez raw IKBD handler. Menu/title/cutscenes nadal korzystaja z klawiatury.
+Raw IKBD obsluguje takze pauze w grze: `P` lub Enter zatrzymuje petle, a `P`, Enter, Esc albo FIRE wznawia gre.
+
+Efekt `Reveal` buduje dwa warianty docelowego pokoju w osobnych buforach i miga
+miedzy nimi razem z odpowiadajacymi im paletami pokoju. Po zakonczeniu
+`BackToLevel` ponownie laduje kolory biezacego pokoju i wspolna palete sprite'ow.
 
 ## Kolizje
 
@@ -275,7 +291,7 @@ Zaimplementowane / funkcjonalne:
 
 Do dopracowania:
 
-- stats screen nadal ma stuby `ShowInt` / `ShowTime`,
+- stats screen ma szesc stron swiata i jedna strone globalna,
 - layout world selector docelowo bedzie wiekszy/pelnoekranowy,
 - finalny font i finalny wyglad UI sa jeszcze otwarte.
 

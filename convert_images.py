@@ -235,6 +235,16 @@ GLOBAL_IMAGES = {
        for i in range(1, 9)},
 }
 
+
+def build_crowned_title(path: Path) -> None:
+    """Compose the original crown2 replacement strip over the title GIF."""
+    from PIL import Image
+
+    title = Image.open(ASSETS_SRC / 'flob_title.gif').convert('RGBA')
+    crown = Image.open(ASSETS_SRC / 'crown2.gif').convert('RGBA')
+    title.paste(crown, (0, 0))
+    title.save(path, format='GIF')
+
 def process_global():
     """Convert global (non-world) images."""
     out_dir = OUTDIR / 'global'
@@ -248,6 +258,14 @@ def process_global():
         ratio = 100 * cmp_sz // raw_sz
         print(f'  {gif_path.name}: {raw_sz} -> {cmp_sz} bytes ({ratio}%)')
         names.append(name)
+
+    with tempfile.TemporaryDirectory() as td:
+        crowned_title = Path(td) / 'flob_title_crown.gif'
+        build_crowned_title(crowned_title)
+        raw_sz, cmp_sz = convert_image(crowned_title, out_dir, 'IMG_TITLE_CROWN')
+        ratio = 100 * cmp_sz // raw_sz
+        print(f'  crown2.gif + flob_title.gif: {raw_sz} -> {cmp_sz} bytes ({ratio}%)')
+        names.append('IMG_TITLE_CROWN')
 
     with open(OUTDIR / 'images_global.inc', 'w') as f:
         for name in names:

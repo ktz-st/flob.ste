@@ -7,7 +7,7 @@ Raport obejmuje wszystkie faktyczne komendy `PUT_SPRITES`, ktore ustawiaja `spri
 | Kategoria | Wystapienia w pokojach | Logiczne sprite'y | Rekomendacja |
 | --- | ---: | ---: | --- |
 | Nakladka kolorow | 26 | 9 | Scalac offline do jednej klatki 4bpp |
-| Obiekt zlozony | 7 | 4 | Zachowac geometrie `gap`; opcjonalnie wygenerowac jeden szerszy sprite |
+| Obiekt zlozony | 7 | 4 | Zaimplementowane jako jeden szerszy sprite `*_compound` |
 | Razem | 33 | 13 | Nie zmieniac mechanicznie wszystkich par `_p0/_p1` |
 
 Wniosek: tylko 13 logicznych sprite'ow wystepuje jako `SPRITE_COMBINED`. Pozostale pary `_p0/_p1` w `used_sprites.png` sa uzywane przez inne tryby, przede wszystkim `SPRITE_DOUBLE`, i nie sa kandydatami do automatycznego scalania na podstawie tego raportu.
@@ -21,7 +21,7 @@ Etap `merged_overlay` jest zaimplementowany dla wszystkich 26 uzyc z `gap=0`:
 - mapa adresow przypisuje scalony asset do slotu 0 i pozostawia slot 1 bez grafiki,
 - `SPRITE_COMBINED` pozostaje bez zmian w logice gry,
 - oryginalne wygenerowane pliki P0/P1 dla scalonych nakladek nie sa dolaczane do programu,
-- obiekty z `gap > 0` nadal korzystaja z dwoch assetow i dwoch blitow.
+- obiekty z `gap > 0` korzystaja z jednego szerszego assetu `*_compound`, jednego blitu i pelnej szerokosci kolizji.
 
 Po przebudowie rozmiar `flob.prg` spadl z okolo 1.300 MB do 1.264 MB. Przed uznaniem etapu za zakonczony potrzebny jest test wizualny pokojow wymienionych w tabeli nakladek.
 
@@ -43,7 +43,7 @@ Obie warstwy zajmuja wtedy te sama komorke PMG. Na STE wynik P0, P1 i P0+P1 mozn
 
 `gap > 0` przesuwa P1 poziomo wzgledem P0. Nie jest to zwykla nakladka kolorow w tej samej komorce, nawet gdy animacja obu czesci jest zsynchronizowana.
 
-Te przypadki mozna docelowo wyrenderowac jednym blitem, generujac szersza klatke zawierajaca obie czesci. Trzeba jednak zachowac:
+Te przypadki sa renderowane jednym blitem przez wygenerowanie szerszej klatki zawierajacej obie czesci. Implementacja zachowuje:
 
 - szerokosc wynikowa `8 + gap` pikseli A8, czyli `(8 + gap) * 2` pikseli STE,
 - maske bedaca suma obu czesci,
@@ -96,10 +96,15 @@ Warianty `sprite_bat` z obu swiatow korzystaja z tego samego logicznego atlasowe
 3. Mapowac oba sloty oryginalu na jeden atlasowy asset, ale na poczatku pozostawic `SPRITE_COMBINED` w logice gry.
 4. W rendererze kolejkowac tylko scalony slot dla wpisow oznaczonych jako `merged_overlay`.
 5. Zweryfikowac animacje, vertical flip i pikselowa kolizje w wymienionych pokojach.
-6. Dopiero potem dodac `merged_compound` dla `phone`, `gear`, `spiderjump` i `bat`, wraz z szerszym rectem oraz maska kolizji.
-7. Usunac specjalna obsluge dwoch blitow dopiero wtedy, gdy wszystkie 33 wystapienia przejda testy.
+6. `merged_compound` dla `phone`, `gear`, `spiderjump` i `bat` jest zaimplementowany wraz z szerszym rectem oraz maska kolizji.
+7. Zweryfikowac wizualnie i kolizyjnie wszystkie 33 wystapienia podczas przechodzenia swiatow.
 
 ## Ryzyka i Testy
+
+Telefon (`sprite_phone_compound`, 20x16 px) zostal zweryfikowany w grze razem z
+animacja, kolizja i przeplywem `Reveal`. Renderer dobiera `NFSR` na podstawie
+liczby slow zrodla i celu; bez tego szeroki sprite ustawiony pod niezerowym
+`X mod 16` byl obcinany do pierwszego slowa.
 
 - `Collided` mapuje kontakt dowolnej czesci `SPRITE_COMBINED` na `pnum = 0`; zachowanie musi pozostac takie samo po scaleniu.
 - Obecny rect kolizji zaklada szerokosc jednego playera. Dla obiektow z `gap > 0` trzeba go poszerzyc przed przejsciem na pojedynczy asset.

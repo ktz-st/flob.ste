@@ -47,12 +47,9 @@ begin
             spriteAtlasFrameCount[1] := SPR_SPRITE_SPRAYS_P1_FRAME_COUNT;
             end;
             $A250: begin // sprite_phone
-            spriteAtlasFrames[0] := @SPR_SPRITE_PHONE_P0_FRAMES[0];
-            spriteAtlasWords[0] := @SPR_SPRITE_PHONE_P0_WORDS[0];
-            spriteAtlasFrameCount[0] := SPR_SPRITE_PHONE_P0_FRAME_COUNT;
-            spriteAtlasFrames[1] := @SPR_SPRITE_PHONE_P1_FRAMES[0];
-            spriteAtlasWords[1] := @SPR_SPRITE_PHONE_P1_WORDS[0];
-            spriteAtlasFrameCount[1] := SPR_SPRITE_PHONE_P1_FRAME_COUNT;
+            spriteAtlasFrames[0] := @SPR_SPRITE_PHONE_COMPOUND_FRAMES[0];
+            spriteAtlasWords[0] := @SPR_SPRITE_PHONE_COMPOUND_WORDS[0];
+            spriteAtlasFrameCount[0] := SPR_SPRITE_PHONE_COMPOUND_FRAME_COUNT;
             end;
             $A2F6: begin // sprite_screen_lever
             spriteAtlasFrames[0] := @SPR_SPRITE_SCREEN_LEVER_P0_FRAMES[0];
@@ -355,12 +352,9 @@ begin
             spriteAtlasFrameCount[0] := SPR_SPRITE_EYES_P0_FRAME_COUNT;
             end;
             $A29C: begin // sprite_bat
-            spriteAtlasFrames[0] := @SPR_SPRITE_BAT_P0_FRAMES[0];
-            spriteAtlasWords[0] := @SPR_SPRITE_BAT_P0_WORDS[0];
-            spriteAtlasFrameCount[0] := SPR_SPRITE_BAT_P0_FRAME_COUNT;
-            spriteAtlasFrames[1] := @SPR_SPRITE_BAT_P1_FRAMES[0];
-            spriteAtlasWords[1] := @SPR_SPRITE_BAT_P1_WORDS[0];
-            spriteAtlasFrameCount[1] := SPR_SPRITE_BAT_P1_FRAME_COUNT;
+            spriteAtlasFrames[0] := @SPR_SPRITE_BAT_COMPOUND_FRAMES[0];
+            spriteAtlasWords[0] := @SPR_SPRITE_BAT_COMPOUND_WORDS[0];
+            spriteAtlasFrameCount[0] := SPR_SPRITE_BAT_COMPOUND_FRAME_COUNT;
             end;
             $A2D8: begin // sprite_valve
             spriteAtlasFrames[0] := @SPR_SPRITE_VALVE_P0_FRAMES[0];
@@ -376,12 +370,9 @@ begin
             spriteAtlasFrameCount[0] := SPR_SPRITE_BUTTON_MERGED_FRAME_COUNT;
             end;
             $A3BA: begin // sprite_gear
-            spriteAtlasFrames[0] := @SPR_SPRITE_GEAR_P0_FRAMES[0];
-            spriteAtlasWords[0] := @SPR_SPRITE_GEAR_P0_WORDS[0];
-            spriteAtlasFrameCount[0] := SPR_SPRITE_GEAR_P0_FRAME_COUNT;
-            spriteAtlasFrames[1] := @SPR_SPRITE_GEAR_P1_FRAMES[0];
-            spriteAtlasWords[1] := @SPR_SPRITE_GEAR_P1_WORDS[0];
-            spriteAtlasFrameCount[1] := SPR_SPRITE_GEAR_P1_FRAME_COUNT;
+            spriteAtlasFrames[0] := @SPR_SPRITE_GEAR_COMPOUND_FRAMES[0];
+            spriteAtlasWords[0] := @SPR_SPRITE_GEAR_COMPOUND_WORDS[0];
+            spriteAtlasFrameCount[0] := SPR_SPRITE_GEAR_COMPOUND_FRAME_COUNT;
             end;
             $A48A: begin // sprite_bigslime
             spriteAtlasFrames[0] := @SPR_SPRITE_BIGSLIME_MERGED_FRAMES[0];
@@ -407,12 +398,9 @@ begin
             spriteAtlasFrameCount[0] := SPR_SPRITE_DROP_MERGED_FRAME_COUNT;
             end;
             $A677: begin // sprite_spiderjump
-            spriteAtlasFrames[0] := @SPR_SPRITE_SPIDERJUMP_P0_FRAMES[0];
-            spriteAtlasWords[0] := @SPR_SPRITE_SPIDERJUMP_P0_WORDS[0];
-            spriteAtlasFrameCount[0] := SPR_SPRITE_SPIDERJUMP_P0_FRAME_COUNT;
-            spriteAtlasFrames[1] := @SPR_SPRITE_SPIDERJUMP_P1_FRAMES[0];
-            spriteAtlasWords[1] := @SPR_SPRITE_SPIDERJUMP_P1_WORDS[0];
-            spriteAtlasFrameCount[1] := SPR_SPRITE_SPIDERJUMP_P1_FRAME_COUNT;
+            spriteAtlasFrames[0] := @SPR_SPRITE_SPIDERJUMP_COMPOUND_FRAMES[0];
+            spriteAtlasWords[0] := @SPR_SPRITE_SPIDERJUMP_COMPOUND_WORDS[0];
+            spriteAtlasFrameCount[0] := SPR_SPRITE_SPIDERJUMP_COMPOUND_FRAME_COUNT;
             end;
             $A6A3: begin // sprite_eye
             spriteAtlasFrames[0] := @SPR_SPRITE_EYE_P0_FRAMES[0];
@@ -446,12 +434,9 @@ begin
             spriteAtlasFrameCount[0] := SPR_SPRITE_BIGSLIME_MERGED_FRAME_COUNT;
             end;
             $A074: begin // sprite_bat
-            spriteAtlasFrames[0] := @SPR_SPRITE_BAT_P0_FRAMES[0];
-            spriteAtlasWords[0] := @SPR_SPRITE_BAT_P0_WORDS[0];
-            spriteAtlasFrameCount[0] := SPR_SPRITE_BAT_P0_FRAME_COUNT;
-            spriteAtlasFrames[1] := @SPR_SPRITE_BAT_P1_FRAMES[0];
-            spriteAtlasWords[1] := @SPR_SPRITE_BAT_P1_WORDS[0];
-            spriteAtlasFrameCount[1] := SPR_SPRITE_BAT_P1_FRAME_COUNT;
+            spriteAtlasFrames[0] := @SPR_SPRITE_BAT_COMPOUND_FRAMES[0];
+            spriteAtlasWords[0] := @SPR_SPRITE_BAT_COMPOUND_WORDS[0];
+            spriteAtlasFrameCount[0] := SPR_SPRITE_BAT_COMPOUND_FRAME_COUNT;
             end;
             $A0B0: begin // sprite_exit_eyes
             spriteAtlasFrames[0] := @SPR_SPRITE_EXIT_EYES_W04_P0_FRAMES[0];

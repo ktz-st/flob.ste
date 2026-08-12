@@ -1,4 +1,8 @@
 {$i generated/sprite_assets_atlas/flob.inc}
+{$i generated/sprite_assets_atlas/flob_explode_p0.inc}
+{$i generated/sprite_assets_atlas/flob_explode_p1.inc}
+{$i generated/sprite_assets_atlas/flob_particle_p0.inc}
+{$i generated/sprite_assets_atlas/flob_particle_p1.inc}
 {$i generated/sprite_assets_atlas/slime.inc}
 {$i generated/sprite_assets_atlas/sprite_2consolas_p0.inc}
 {$i generated/sprite_assets_atlas/sprite_2consolas_p1.inc}
@@ -8,8 +12,7 @@
 {$i generated/sprite_assets_atlas/sprite_2flies_w02_p1.inc}
 {$i generated/sprite_assets_atlas/sprite_2flies_w04_p0.inc}
 {$i generated/sprite_assets_atlas/sprite_2flies_w04_p1.inc}
-{$i generated/sprite_assets_atlas/sprite_bat_p0.inc}
-{$i generated/sprite_assets_atlas/sprite_bat_p1.inc}
+{$i generated/sprite_assets_atlas/sprite_bat_compound.inc}
 {$i generated/sprite_assets_atlas/sprite_bell_flame_p0.inc}
 {$i generated/sprite_assets_atlas/sprite_bell_flame_p1.inc}
 {$i generated/sprite_assets_atlas/sprite_bench_portal_p0.inc}
@@ -88,8 +91,7 @@
 {$i generated/sprite_assets_atlas/sprite_fly_drop_p0.inc}
 {$i generated/sprite_assets_atlas/sprite_fly_drop_p1.inc}
 {$i generated/sprite_assets_atlas/sprite_fly_p0.inc}
-{$i generated/sprite_assets_atlas/sprite_gear_p0.inc}
-{$i generated/sprite_assets_atlas/sprite_gear_p1.inc}
+{$i generated/sprite_assets_atlas/sprite_gear_compound.inc}
 {$i generated/sprite_assets_atlas/sprite_hole1_p0.inc}
 {$i generated/sprite_assets_atlas/sprite_hole1_p1.inc}
 {$i generated/sprite_assets_atlas/sprite_hole2_p0.inc}
@@ -118,13 +120,11 @@
 {$i generated/sprite_assets_atlas/sprite_map_merged.inc}
 {$i generated/sprite_assets_atlas/sprite_mice_console_p0.inc}
 {$i generated/sprite_assets_atlas/sprite_mice_console_p1.inc}
-{$i generated/sprite_assets_atlas/sprite_phone_p0.inc}
-{$i generated/sprite_assets_atlas/sprite_phone_p1.inc}
+{$i generated/sprite_assets_atlas/sprite_phone_compound.inc}
 {$i generated/sprite_assets_atlas/sprite_rat_p0.inc}
 {$i generated/sprite_assets_atlas/sprite_screen_lever_p0.inc}
 {$i generated/sprite_assets_atlas/sprite_screen_lever_p1.inc}
-{$i generated/sprite_assets_atlas/sprite_spiderjump_p0.inc}
-{$i generated/sprite_assets_atlas/sprite_spiderjump_p1.inc}
+{$i generated/sprite_assets_atlas/sprite_spiderjump_compound.inc}
 {$i generated/sprite_assets_atlas/sprite_sprays_p0.inc}
 {$i generated/sprite_assets_atlas/sprite_sprays_p1.inc}
 {$i generated/sprite_assets_atlas/sprite_stats_portal_p0.inc}

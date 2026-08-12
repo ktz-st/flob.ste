@@ -37,13 +37,12 @@ end;
 procedure InstallInput;
 var vt: PKBDVECS;
 begin
-    // ResetJoystickState;
+    oldConterm := PByte(pointer(longword($00000484)))^;
+    PByte(pointer(longword($00000484)))^ := oldConterm and $FE;
     xbios_ikbdws(0, @joy_on);
     vt := xbios_kbdvbase();
     old_joyvec := vt^.joyvec;
     vt^.joyvec := @ReadJoyStatus;
-    // oldConterm := PByte(pointer(longword($00000484)))^;
-    // PByte(pointer(longword($00000484)))^ := oldConterm and $FA; // disable TOS keyclick/bell
 end;
 
 procedure UnInstallInput;
@@ -54,7 +53,7 @@ begin
     xbios_ikbdws(0, @mouse_on);
     vt := xbios_kbdvbase();
     vt^.joyvec := old_joyvec;
-    // PByte(pointer(longword($00000484)))^ := oldConterm;
+    PByte(pointer(longword($00000484)))^ := oldConterm;
 end;
 
 procedure InstallGameplayInput;
