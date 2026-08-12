@@ -300,6 +300,9 @@ Lista potrzebnych SFX jest w `TODO.md`.
 
 Aktualnie hold `H` przy starcie wlacza `cheatmode`, ktory:
 
+- pokazuje `Wn Rnn` na gornym pasku,
+- pozwala przechodzic po pokojach klawiszami `[` (poprzedni) i `]` (nastepny), z zawijaniem,
+- odczytuje te klawisze przez odchudzony handler AGT-style (128 key states + 256 event ring), bez przywracania BIOS-owego odczytu klawiatury w gameplayu,
 - daje max slime,
 - odblokowuje swiaty w selectorze.
 

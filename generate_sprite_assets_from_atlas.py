@@ -21,6 +21,8 @@ from pathlib import Path
 
 from PIL import Image
 
+from sprite_combined_config import MERGED_OVERLAY_ATLAS_NAMES
+
 ROOT = Path("/Users/kriss/GCC.ELF")
 FLOB_STE = ROOT / "flob-ste"
 DEFAULT_ATLAS_NAME = "used_sprites"
@@ -125,8 +127,36 @@ def main() -> None:
     for frames in by_sprite.values():
         frames.sort(key=lambda item: item["frame"])
 
+    generated_sprites: dict[str, list[dict]] = dict(by_sprite)
+    for base_name in sorted(MERGED_OVERLAY_ATLAS_NAMES):
+        p0_name = f"{base_name}_p0"
+        p1_name = f"{base_name}_p1"
+        if p0_name not in by_sprite or p1_name not in by_sprite:
+            raise ValueError(f"Missing overlay rows {p0_name}/{p1_name}")
+        p0_frames = by_sprite[p0_name]
+        p1_frames = by_sprite[p1_name]
+        if len(p0_frames) != len(p1_frames):
+            raise ValueError(f"Overlay frame count differs for {base_name}")
+
+        merged_frames: list[dict] = []
+        for p0_frame, p1_frame in zip(p0_frames, p1_frames):
+            if (p0_frame["w"], p0_frame["h"]) != (p1_frame["w"], p1_frame["h"]):
+                raise ValueError(f"Overlay frame dimensions differ for {base_name}")
+            merged_frames.append({
+                "frame": p0_frame["frame"],
+                "x": p0_frame["x"],
+                "y": p0_frame["y"],
+                "w": p0_frame["w"],
+                "h": p0_frame["h"],
+                "merge_p0": p0_frame,
+                "merge_p1": p1_frame,
+            })
+        del generated_sprites[p0_name]
+        del generated_sprites[p1_name]
+        generated_sprites[f"{base_name}_merged"] = merged_frames
+
     outputs: list[Path] = []
-    for sprite_name in sorted(by_sprite):
+    for sprite_name in sorted(generated_sprites):
         ident = to_ident(sprite_name)
         frames_meta = []
         word_blob: list[int] = []
@@ -137,14 +167,29 @@ def main() -> None:
             w = int(frame_meta["w"])
             h = int(frame_meta["h"])
             indices: list[int] = []
-            row_range = range(y + h - 1, y - 1, -1) if vertical_flip else range(y, y + h)
-            for py in row_range:
-                for px in range(x, x + w):
-                    color_index = int(atlas_px[px, py])
+            merge_p0 = frame_meta.get("merge_p0")
+            merge_p1 = frame_meta.get("merge_p1")
+            row_range = range(h - 1, -1, -1) if vertical_flip else range(h)
+            for row_y in row_range:
+                for column_x in range(w):
+                    if merge_p0 is not None and merge_p1 is not None:
+                        p0_index = int(atlas_px[
+                            int(merge_p0["x"]) + column_x,
+                            int(merge_p0["y"]) + row_y,
+                        ])
+                        p1_index = int(atlas_px[
+                            int(merge_p1["x"]) + column_x,
+                            int(merge_p1["y"]) + row_y,
+                        ])
+                        # This matches the existing P0-then-P1 masked blit order.
+                        color_index = p1_index if p1_index != 0 else p0_index
+                    else:
+                        color_index = int(atlas_px[x + column_x, y + row_y])
                     if color_index > 15:
                         raise ValueError(
                             f"{args.atlas}.png uses palette index {color_index} at "
-                            f"({px},{py}) in sprite {sprite_name}; STE sprites support only indices 0..15"
+                            f"frame pixel ({column_x},{row_y}) in sprite {sprite_name}; "
+                            "STE sprites support only indices 0..15"
                         )
                     indices.append(color_index)
 
@@ -165,9 +210,9 @@ def main() -> None:
                 )
             )
 
-        for frame_meta in by_sprite[sprite_name]:
+        for frame_meta in generated_sprites[sprite_name]:
             append_frame(frame_meta)
-        for frame_meta in by_sprite[sprite_name]:
+        for frame_meta in generated_sprites[sprite_name]:
             append_frame(frame_meta, vertical_flip=True)
 
         out_path = OUT_DIR / f"{sprite_name}.inc"

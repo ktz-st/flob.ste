@@ -15,6 +15,8 @@ import re
 import hashlib
 from pathlib import Path
 
+from sprite_combined_config import MERGED_OVERLAY_BY_WORLD_LABEL
+
 ROOT = Path("/Users/kriss/GCC.ELF")
 FLOB_SRC = ROOT / "flob"
 FLOB_STE = ROOT / "flob-ste"
@@ -202,6 +204,7 @@ def main() -> None:
             if label not in labels:
                 continue
             atlas_label = atlas_label_for_source(world_idx, label, duplicate_labels)
+            merged_label = MERGED_OVERLAY_BY_WORLD_LABEL.get((world_idx, label))
             p0 = f"{atlas_label}_p0"
             p1 = f"{atlas_label}_p1"
             has_p0 = p0 in atlas_names
@@ -211,9 +214,11 @@ def main() -> None:
                 continue
             mapped += 1
             lines.append(f"            ${labels[label]:04X}: begin // {label}")
-            if has_p0:
+            if merged_label is not None:
+                lines.extend(emit_assign(0, f"{merged_label}_merged"))
+            elif has_p0:
                 lines.extend(emit_assign(0, p0))
-            if has_p1:
+            if (merged_label is None) and has_p1:
                 lines.extend(emit_assign(1, p1))
             lines.append("            end;")
         lines.append("        end;")

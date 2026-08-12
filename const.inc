@@ -166,3 +166,5 @@ KEY_ESC_CODE   = $01;   // Escape
 KEY_SPACE_CODE = $39;   // Spacebar
 KEY_H_CODE     = $23;   // H
 KEY_M_CODE     = $32;   // M (music toggle)
+KEY_LBRACKET_CODE = $1A; // [ (previous room in cheat mode)
+KEY_RBRACKET_CODE = $1B; // ] (next room in cheat mode)

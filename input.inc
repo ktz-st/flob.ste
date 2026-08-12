@@ -9,10 +9,12 @@ var
     old_ikbdvec: pointer;
     oldConterm: byte;
     joy_on: byte = $14;        // IKBD command: enable joystick event reporting
-    raw_joy_on: array[0..1] of byte = ($12, $14); // disable mouse, enable joystick events
+    raw_joy_on: array[0..2] of byte = ($11, $14, $12); // resume, joystick events, mouse off
     mouse_on: byte = $08;      // IKBD command: disable joy, restore mouse
     keyboardInputEnabled: boolean = true;
     gameplayInputInstalled: boolean = false;
+    gameplayKeyPressed: array[0..127] of boolean;
+    gameplayKeyEventTail: byte = 0;
 
 // Called from IKBD interrupt; A0 points to 3-byte joy packet, byte 2 = joy1.
 procedure ReadJoyStatus(); assembler;
@@ -28,6 +30,8 @@ begin
     strig0 := 1;
     prevFireDown := false;
     firePressedEdge := false;
+    FillChar(gameplayKeyPressed, SizeOf(gameplayKeyPressed), 0);
+    gameplayKeyEventTail := 0;
 end;
 
 procedure InstallInput;
@@ -59,9 +63,13 @@ begin
     ResetJoystickState;
     RawIkbdJoyStatus := 0;
     RawIkbdState := 0;
+    RawIkbdKeyEventHead := 0;
+    FillChar(RawIkbdKeyStates, 128, 0);
+    FillChar(RawIkbdKeyEventRing, 256, 0);
+    gameplayKeyEventTail := 0;
     old_ikbdvec := pointer(PLongWord(pointer(longword($00000118)))^);
     PLongWord(pointer(longword($00000118)))^ := longword(@RawIkbdHandler);
-    xbios_ikbdws(1, @raw_joy_on);
+    xbios_ikbdws(2, @raw_joy_on);
     gameplayInputInstalled := true;
 end;
 
@@ -71,12 +79,15 @@ begin
     PLongWord(pointer(longword($00000118)))^ := longword(old_ikbdvec);
     xbios_ikbdws(0, @joy_on);
     RawIkbdState := 0;
+    RawIkbdKeyEventHead := 0;
+    FillChar(RawIkbdKeyStates, 128, 0);
+    gameplayKeyEventTail := 0;
     gameplayInputInstalled := false;
     ResetJoystickState;
 end;
 
 procedure PollJoystickState;
-var rawJoy: byte;
+var rawJoy, eventHead, keyEvent: byte;
 begin
     if gameplayInputInstalled then
         joyStatus := RawIkbdJoyStatus;
@@ -91,6 +102,14 @@ begin
 
     firePressedEdge := ((rawJoy and $80) <> 0) and (not prevFireDown);
     prevFireDown := (rawJoy and $80) <> 0;
+
+    FillChar(gameplayKeyPressed, SizeOf(gameplayKeyPressed), 0);
+    eventHead := RawIkbdKeyEventHead;
+    while gameplayKeyEventTail <> eventHead do begin
+        keyEvent := PByte(@RawIkbdKeyEventRing)[gameplayKeyEventTail];
+        Inc(gameplayKeyEventTail);
+        if keyEvent < $80 then gameplayKeyPressed[keyEvent] := true;
+    end;
 end;
 
 // Poll keyboard and joystick; call once per frame (from WaitFrame).
@@ -134,6 +153,11 @@ begin Result := (strig0 = 0) or (kbcode = KEY_ENTER_CODE); end;
 
 function CRT_FirePressedEdge: boolean;
 begin Result := firePressedEdge; end;
+
+function CRT_GameplayKeyPressed(code: byte): boolean;
+begin
+    Result := (code < 128) and gameplayKeyPressed[code];
+end;
 
 function CRT_SelectPressed: boolean;
 begin Result := (kbcode = KEY_SPACE_CODE); end;

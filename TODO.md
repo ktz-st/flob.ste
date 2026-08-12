@@ -43,10 +43,10 @@
 - Keep room screens using level colors from original data mapped through `STE_PAL`.
 - Use atlas palette only during gameplay rooms, not title/cutscene/menu screens unless intended.
 - Replace temporary/converted graphics with final 16-color STE artwork where available.
-- Classify every `SPRITE_COMBINED` use before merging P0/P1 atlas rows.
-  - Merge offline only true PMG color overlays with compatible position, dimensions, frames, and animation.
-  - Keep independently animated, offset, or differently sized P0/P1 data as compound objects.
-  - Do not merge all `_p0`/`_p1` rows mechanically; several pairs have different frame counts.
+- Verify the new merged `SPRITE_COMBINED` color overlays in all listed rooms.
+  - All 26 `gap=0` uses now render one generated `*_merged` asset instead of separate P0/P1 blits.
+  - Check colors, animation, vertical flip and collision against `SPRITE_COMBINED_REPORT.md`.
+  - Keep `phone`, `gear`, `spiderjump` and `bat` as two-part compound objects until their wider collision geometry is implemented.
 - Rebuild sprite assets after any edited `images/sprite_atlas/used_sprites.png` palette/art changes.
   - Use `make sprite-atlas-assets-only && make clean && make`.
   - `make used-sprite-atlas` regenerates the PNG/JSON from source data and overwrites manual edits.

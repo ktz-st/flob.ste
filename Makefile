@@ -12,6 +12,7 @@ FULL_ATLAS_SPRITE_GEN = build_full_sprite_atlas.py
 USED_ATLAS_SPRITE_GEN = build_used_sprite_atlas.py
 ATLAS_SPRITE_ASSET_GEN = generate_sprite_assets_from_atlas.py
 WORLD_SPRITE_ATLAS_MAP_GEN = generate_world_sprite_atlas_map.py
+SPRITE_COMBINED_CONFIG = sprite_combined_config.py
 ACHIEVEMENT_GEN = generate_achievements.py
 ENDWORLD_ICON_GEN = generate_endworld_icons.py
 WORLD_ICON_GEN = generate_world_icons.py
@@ -38,6 +39,9 @@ SOURCES = \
 	worlds/world_03.inc worlds/world_04.inc worlds/world_05.inc \
 	worlds/world_00_assets.inc worlds/world_01_assets.inc worlds/world_02_assets.inc \
 	worlds/world_03_assets.inc worlds/world_04_assets.inc worlds/world_05_assets.inc \
+	generated/sprite_assets_atlas.inc \
+	generated/sprite_atlas_palette.inc \
+	generated/world_sprite_atlas_map.inc \
 	$(TILE_GEN) \
 	$(ACHIEVEMENT_GEN) \
 	$(ENDWORLD_ICON_GEN) \
@@ -92,11 +96,11 @@ flob-sheet: $(FLOB_SHEET_GEN)
 used-sprite-atlas: $(USED_ATLAS_SPRITE_GEN)
 	python3 $(USED_ATLAS_SPRITE_GEN)
 
-sprite-atlas-assets: $(USED_ATLAS_SPRITE_GEN) $(ATLAS_SPRITE_ASSET_GEN) $(WORLD_SPRITE_ATLAS_MAP_GEN)
+sprite-atlas-assets: $(USED_ATLAS_SPRITE_GEN) $(ATLAS_SPRITE_ASSET_GEN) $(WORLD_SPRITE_ATLAS_MAP_GEN) $(SPRITE_COMBINED_CONFIG)
 	python3 $(USED_ATLAS_SPRITE_GEN)
 	python3 $(ATLAS_SPRITE_ASSET_GEN)
 	python3 $(WORLD_SPRITE_ATLAS_MAP_GEN)
 
-sprite-atlas-assets-only: $(ATLAS_SPRITE_ASSET_GEN) $(WORLD_SPRITE_ATLAS_MAP_GEN)
+sprite-atlas-assets-only: $(ATLAS_SPRITE_ASSET_GEN) $(WORLD_SPRITE_ATLAS_MAP_GEN) $(SPRITE_COMBINED_CONFIG)
 	python3 $(ATLAS_SPRITE_ASSET_GEN)
 	python3 $(WORLD_SPRITE_ATLAS_MAP_GEN)

@@ -149,6 +149,9 @@ procedure RawIkbdHandler; external;
 var FlobFont: byte; external name 'FlobFont';
 var RawIkbdJoyStatus: byte; external name 'RawIkbdJoyStatus';
 var RawIkbdState: byte; external name 'RawIkbdState';
+var RawIkbdKeyStates: byte; external name 'RawIkbdKeyStates';
+var RawIkbdKeyEventHead: byte; external name 'RawIkbdKeyEventHead';
+var RawIkbdKeyEventRing: byte; external name 'RawIkbdKeyEventRing';
 
 procedure ClearScreen(buf: pword); forward;
 procedure SwapScreen; forward;
@@ -1674,13 +1677,22 @@ begin
 end;
 
 procedure DrawHudTo(scr: pword);
-var scoreStr: string;
+var scoreStr, roomStr: string;
+    scoreX, roomX: word;
 begin
     BlitterClearBitmap4(scr, 320, 20, 0, 0, 320);
     // FillRect16(scr, 0, HUD_HEIGHT, 320, 2, 1);
     DrawTextTo(scr, 8, 0, 1, 0, Antic2Ascii(world.name));
     scoreStr := PackedBcdToScore5(mySlime);
-    DrawTextTo(scr, 320 - 8 - Length(scoreStr) * 8, 0, 1, 0, scoreStr);
+    scoreX := 320 - 8 - Length(scoreStr) * 8;
+    DrawTextTo(scr, scoreX, 0, 1, 0, scoreStr);
+    if cheatmode then begin
+        roomStr := 'W' + ByteToStr(worldCurrent) + ' R';
+        if levelNum < 10 then roomStr := roomStr + '0';
+        roomStr := roomStr + ByteToStr(levelNum);
+        roomX := scoreX - 8 - Length(roomStr) * 8;
+        DrawTextTo(scr, roomX, 0, 2, 0, roomStr);
+    end;
 end;
 
 procedure RefreshHudCache;
@@ -3395,6 +3407,31 @@ begin
     room_changed := true;
 end;
 
+function HandleCheatRoomNavigation: boolean;
+var targetRoom: byte;
+begin
+    Result := false;
+    if not cheatmode then exit;
+
+    targetRoom := levelNum;
+    if CRT_GameplayKeyPressed(KEY_LBRACKET_CODE) then begin
+        if targetRoom = 0 then targetRoom := world.levelNum - 1
+        else Dec(targetRoom);
+    end else if CRT_GameplayKeyPressed(KEY_RBRACKET_CODE) then begin
+        Inc(targetRoom);
+        if targetRoom >= world.levelNum then targetRoom := 0;
+    end else
+        exit;
+
+    levelNum := targetRoom;
+    room_changed := true;
+    teleported := false;
+    triggerGrace := 0;
+    teleportTriggerReleasePending := false;
+    teleportPortalReleasePending := false;
+    Result := true;
+end;
+
 // ***************************************************
 // *** STATS SCREEN (1:1 from original, display stubs)
 // ***************************************************
@@ -4100,15 +4137,17 @@ begin
                     FlobFootUpdate;
 
                     joyRaw := joyStatus and $8F;
-                    if (joyRaw and %0100) <> 0 then begin
-                        spriteCollisionMovePending := false;
-                        FlobMove(DIR_LEFT);
+                    if not HandleCheatRoomNavigation then begin
+                        if (joyRaw and %0100) <> 0 then begin
+                            spriteCollisionMovePending := false;
+                            FlobMove(DIR_LEFT);
+                        end;
+                        if (joyRaw and %1000) <> 0 then begin
+                            spriteCollisionMovePending := false;
+                            FlobMove(DIR_RIGHT);
+                        end;
+                        if CRT_FirePressedEdge then Flip;
                     end;
-                    if (joyRaw and %1000) <> 0 then begin
-                        spriteCollisionMovePending := false;
-                        FlobMove(DIR_RIGHT);
-                    end;
-                    if CRT_FirePressedEdge then Flip;
 
                     if (not IsSolidPix(GetPix(flobFoot, flobY))) or (flobY > 80) then FlobFall
                     else begin
