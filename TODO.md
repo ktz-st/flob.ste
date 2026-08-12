@@ -12,11 +12,11 @@
 - Port the original `Reveal` effect for `doorReveal` / key reveal flow.
   - Original A8 version stores the "before" room in `REVEAL_BUFFER`, loads the "after" room, then flashes between both buffers/display lists.
   - Current STE version loads both states but still needs the visible flash/alternate-buffer effect.
-- Optimize sprite background restore.
-  - Current gameplay still copies the full playfield for safety.
-  - Target path: restore only old sprite rectangles from `SCREEN_BKG` to `SCREEN_LOG` using `BlitterCopyBitmap4`.
-  - Keep full playfield copy for room changes, flip, reveal, and other full redraw cases.
-- Re-check sprite/background restore after rectangle restore is implemented.
+- Verify the new dirty-sprite renderer in all rooms.
+  - Gameplay now restores merged old/new sprite rectangles from `SCREEN_BKG` with `BlitterCopyBitmap4`.
+  - Each LOG/PHY page retains unchanged sprites and redraws only sprites intersecting a dirty rectangle.
+  - A full-screen copy remains as an adaptive fallback for large dirty areas.
+  - Check moving/animated/removed sprites, overlaps, flip, death, teleport, and reveal paths.
 - Keep copy/clear blitter operations without HOG; keep HOG only for sprite/tile blits unless testing shows otherwise.
 - Continue verifying flip-specific collision and sprite positions in all rooms.
 
@@ -43,7 +43,13 @@
 - Keep room screens using level colors from original data mapped through `STE_PAL`.
 - Use atlas palette only during gameplay rooms, not title/cutscene/menu screens unless intended.
 - Replace temporary/converted graphics with final 16-color STE artwork where available.
-- Rebuild sprite atlas after any edited `images/sprite_atlas/all_sprites.png` palette/art changes.
+- Classify every `SPRITE_COMBINED` use before merging P0/P1 atlas rows.
+  - Merge offline only true PMG color overlays with compatible position, dimensions, frames, and animation.
+  - Keep independently animated, offset, or differently sized P0/P1 data as compound objects.
+  - Do not merge all `_p0`/`_p1` rows mechanically; several pairs have different frame counts.
+- Rebuild sprite assets after any edited `images/sprite_atlas/used_sprites.png` palette/art changes.
+  - Use `make sprite-atlas-assets-only && make clean && make`.
+  - `make used-sprite-atlas` regenerates the PNG/JSON from source data and overwrites manual edits.
 
 ## Input / Timing
 
