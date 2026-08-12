@@ -166,6 +166,7 @@ procedure RebuildDisplayBuffersFromBackground; forward;
 procedure BlitterCopyData16(src, dst: pointer; size: longword); forward;
 procedure BlitterCopyBitmap4(src, dst: pointer; width, height, srcX, srcY, dstX,
     dstY, srcWidth, dstWidth: word); forward;
+procedure DrawSquashedPlayfieldBlitter(src: pword; destH: word); forward;
 procedure BuildDisplayPalette(dst: PWord); forward;
 procedure UpdateDisplayPaletteIfNeeded(force: boolean); forward;
 procedure FillRect16(scr: pword; x, y, cellw, cellh, color: word); forward;
@@ -182,6 +183,23 @@ type
         palBase: PWord;
         palSlot: byte;
     end;
+    PQueuedSprite = ^TQueuedSprite;
+
+    TDirtyRect = record
+        x: word;
+        y: word;
+        widthPx: word;
+        heightPx: word;
+    end;
+
+const
+    MAX_QUEUED_SPRITES = 32;
+    MAX_DIRTY_RECTS = MAX_QUEUED_SPRITES * 2;
+    DIRTY_FULL_COPY_PIXELS = 48000;
+    DIRTY_FULL_COPY_RECTS = 40;
+
+type
+    TDirtyRectArray = array[0..MAX_DIRTY_RECTS - 1] of TDirtyRect;
 
 var
 // --- ST screen management ---
@@ -289,8 +307,10 @@ var
     spriteBgW: array[0..1] of word;
     spriteBgH: array[0..1] of word;
     spriteBgPixels: array[0..1, 0..8191] of byte;
-    queuedSprites: array[0..1, 0..31] of TQueuedSprite;
+    queuedSprites: array[0..1, 0..MAX_QUEUED_SPRITES - 1] of TQueuedSprite;
     queuedSpriteCount: array[0..1] of byte;
+    renderedSprites: array[0..1, 0..MAX_QUEUED_SPRITES - 1] of TQueuedSprite;
+    renderedSpriteCount: array[0..1] of byte;
 
     roomTriggers: array[0..3, 0..9] of byte;
     triggerCount: byte;
@@ -524,6 +544,7 @@ begin
     lastPaletteSlimeFrame := -1;
     lastPaletteMsgSource := -1;
     FillChar(queuedSpriteCount, SizeOf(queuedSpriteCount), 0);
+    FillChar(renderedSpriteCount, SizeOf(renderedSpriteCount), 0);
     xbios_setscreen(SCREEN_LOG, SCREEN_PHY, 0); // ST Low: 320x200x16
 end;
 
@@ -616,7 +637,7 @@ begin
     BlitterClearBitmap4(SCREEN_LOG, 320, PLAYFIELD_HEIGHT, 0, BG_IMAGE_OFFSET_Y, 320);
 end;
 
-procedure DrawSquashedPlayfield(src: pword; destH: word);
+procedure DrawSquashedPlayfieldCpu(src: pword; destH: word);
 var i, srcY, yDst: word;
     srcLine, dstLine: PByte;
 begin
@@ -632,29 +653,59 @@ begin
     end;
 end;
 
-procedure DrawFlipPlayfieldFrame(src: pword; destH: word);
+procedure ClearFlipFrameBorders(previousH, destH: word);
+var previousTop, destTop, stripH: word;
 begin
-    ClearPlayfieldLog;
-    DrawSquashedPlayfield(src, destH);
+    if SCREEN_LOG = nil then exit;
+    if previousH > PLAYFIELD_HEIGHT then previousH := PLAYFIELD_HEIGHT;
+    if destH >= previousH then exit;
+
+    previousTop := BG_IMAGE_OFFSET_Y + (PLAYFIELD_HEIGHT - previousH) div 2;
+    destTop := BG_IMAGE_OFFSET_Y + (PLAYFIELD_HEIGHT - destH) div 2;
+    stripH := destTop - previousTop;
+    if stripH = 0 then exit;
+    BlitterClearBitmap4(SCREEN_LOG, 320, stripH,
+        0, previousTop, 320);
+    BlitterClearBitmap4(SCREEN_LOG, 320, stripH,
+        0, destTop + destH, 320);
+end;
+
+procedure DrawFlipPlayfieldFrame(src: pword; previousH, destH: word;
+    clearBorders: boolean);
+begin
+    if clearBorders then ClearFlipFrameBorders(previousH, destH);
+    DrawSquashedPlayfieldBlitter(src, destH);
     SwapScreen;
 end;
 
 procedure FlipGameplayEffect(wantFlipped: boolean);
 var step: integer;
+    bufferHeight: array[0..1] of word;
+    bufferIndex: byte;
 begin
     if SCREEN_BKG = nil then exit;
 
     RefreshOverlayBuffers;
-    for step := 1 to FLIP_STEPS do
-        DrawFlipPlayfieldFrame(SCREEN_BKG, FLIP_H[step]);
+    bufferHeight[0] := PLAYFIELD_HEIGHT;
+    bufferHeight[1] := PLAYFIELD_HEIGHT;
+    for step := 1 to FLIP_STEPS do begin
+        bufferIndex := screenLogIndex;
+        DrawFlipPlayfieldFrame(SCREEN_BKG, bufferHeight[bufferIndex],
+            FLIP_H[step], true);
+        bufferHeight[bufferIndex] := FLIP_H[step];
+    end;
 
     if displayFlipped <> wantFlipped then begin
         FlipGameplayAreaInPlace(SCREEN_BKG);
         displayFlipped := wantFlipped;
     end;
 
-    for step := FLIP_STEPS - 1 downto 0 do
-        DrawFlipPlayfieldFrame(SCREEN_BKG, FLIP_H[step]);
+    for step := FLIP_STEPS - 1 downto 0 do begin
+        bufferIndex := screenLogIndex;
+        DrawFlipPlayfieldFrame(SCREEN_BKG, bufferHeight[bufferIndex],
+            FLIP_H[step], false);
+        bufferHeight[bufferIndex] := FLIP_H[step];
+    end;
 
     RebuildDisplayBuffersFromBackground;
 end;
@@ -670,6 +721,7 @@ begin
     CopyHudArea(SCREEN_BKG, SCREEN_PHY);
     CopyMessageArea(SCREEN_BKG, SCREEN_PHY);
     FillChar(queuedSpriteCount, SizeOf(queuedSpriteCount), 0);
+    FillChar(renderedSpriteCount, SizeOf(renderedSpriteCount), 0);
 end;
 
 procedure EnsureDisplayOrientation(wantFlipped: boolean);
@@ -742,6 +794,45 @@ end;
 procedure BlitterWritePtr(offset: word; p: pointer); inline;
 begin
     PLongWord(pointer(longword(BLITTER_BASE + offset)))^ := longword(p);
+end;
+
+procedure DrawSquashedPlayfieldBlitter(src: pword; destH: word);
+var srcStep, yDst: word;
+    srcIncY: word;
+    srcPtr, dstPtr: PByte;
+begin
+    if (src = nil) or (SCREEN_LOG = nil) then exit;
+    if (destH = 0) or (destH > PLAYFIELD_HEIGHT) then exit;
+    if (PLAYFIELD_HEIGHT mod destH) <> 0 then begin
+        DrawSquashedPlayfieldCpu(src, destH);
+        exit;
+    end;
+
+    srcStep := PLAYFIELD_HEIGHT div destH;
+    yDst := BG_IMAGE_OFFSET_Y + (PLAYFIELD_HEIGHT - destH) div 2;
+    srcPtr := PByte(longword(src) + longword(BG_IMAGE_OFFSET_Y) * SCREEN_LINE_BYTES);
+    dstPtr := PByte(longword(SCREEN_LOG) + longword(yDst) * SCREEN_LINE_BYTES);
+
+    // After the 80th word, advance directly to the next sampled source line.
+    srcIncY := srcStep * SCREEN_LINE_BYTES - (SCREEN_LINE_BYTES - 2);
+
+    BlitterWait;
+    BlitterWriteByte(BLITTER_SKEW, 0);
+    BlitterWriteWord(BLITTER_SRC_INC_X, 2);
+    BlitterWriteWord(BLITTER_SRC_INC_Y, srcIncY);
+    BlitterWritePtr(BLITTER_SRC_ADDR, srcPtr);
+    BlitterWriteWord(BLITTER_ENDMASK1, $FFFF);
+    BlitterWriteWord(BLITTER_ENDMASK2, $FFFF);
+    BlitterWriteWord(BLITTER_ENDMASK3, $FFFF);
+    BlitterWriteWord(BLITTER_DST_INC_X, 2);
+    BlitterWriteWord(BLITTER_DST_INC_Y, 2);
+    BlitterWritePtr(BLITTER_DST_ADDR, dstPtr);
+    BlitterWriteWord(BLITTER_COUNT_X, SCREEN_LINE_BYTES div 2);
+    BlitterWriteWord(BLITTER_COUNT_Y, destH);
+    BlitterWriteByte(BLITTER_HOP, BLITTER_HOP_SRC);
+    BlitterWriteByte(BLITTER_LOP, BLITTER_LOP_SRC);
+    BlitterWriteByte(BLITTER_MODE, BLITTER_START_COPY_MODE);
+    BlitterWait;
 end;
 
 procedure BlitterCopyData16(src, dst: pointer; size: longword);
@@ -884,19 +975,10 @@ begin
 end;
 
 procedure BeginQueuedSpritesFrame;
-var i: byte;
-    spr: ^TQueuedSprite;
-    messageWasDirty: boolean;
+var messageWasDirty: boolean;
 begin
     UpdateDisplayPaletteIfNeeded(false);
-    if queuedSpriteCount[screenLogIndex] > 0 then begin
-        // for i := 0 to queuedSpriteCount[screenLogIndex] - 1 do begin
-        //     spr := @queuedSprites[screenLogIndex, i];
-        //     RestoreBackgroundRect(SCREEN_LOG, spr^.x, spr^.y, spr^.widthPx, spr^.heightPx);
-        // end;
-        CopyPlayfieldArea(SCREEN_BKG, SCREEN_LOG);
-        queuedSpriteCount[screenLogIndex] := 0;
-    end;
+    queuedSpriteCount[screenLogIndex] := 0;
     messageWasDirty := messageCacheDirty;
     RefreshMessageCache;
     if messageWasDirty then begin
@@ -1292,29 +1374,180 @@ begin
     BlitterWait;
 end;
 
-procedure FlushQueuedSprites;
-var i: byte;
-    spr: ^TQueuedSprite;
+function QueuedSpritesEqual(a, b: PQueuedSprite): boolean; inline;
 begin
-    if queuedSpriteCount[screenLogIndex] = 0 then exit;
-    for i := 0 to queuedSpriteCount[screenLogIndex] - 1 do begin
-        spr := @queuedSprites[screenLogIndex, i];
-        if spr^.frame = nil then
-            continue;
-        DrawGeneratedSpriteFrameBlitter(
-            SCREEN_LOG,
-            spr^.x,
-            spr^.y,
-            spr^.frame,
-            spr^.wordsBase
-        );
+    Result :=
+        (a^.x = b^.x) and
+        (a^.y = b^.y) and
+        (a^.widthPx = b^.widthPx) and
+        (a^.heightPx = b^.heightPx) and
+        (a^.frame = b^.frame) and
+        (a^.wordsBase = b^.wordsBase) and
+        (a^.palBase = b^.palBase) and
+        (a^.palSlot = b^.palSlot);
+end;
+
+function DirtyRectsTouch(const a, b: TDirtyRect): boolean; inline;
+begin
+    Result :=
+        (a.x <= b.x + b.widthPx) and
+        (b.x <= a.x + a.widthPx) and
+        (a.y <= b.y + b.heightPx) and
+        (b.y <= a.y + a.heightPx);
+end;
+
+procedure MergeDirtyRect(var dst: TDirtyRect; const src: TDirtyRect);
+var right, bottom, srcRight, srcBottom: word;
+begin
+    right := dst.x + dst.widthPx;
+    bottom := dst.y + dst.heightPx;
+    srcRight := src.x + src.widthPx;
+    srcBottom := src.y + src.heightPx;
+    if src.x < dst.x then dst.x := src.x;
+    if src.y < dst.y then dst.y := src.y;
+    if srcRight > right then right := srcRight;
+    if srcBottom > bottom then bottom := srcBottom;
+    dst.widthPx := right - dst.x;
+    dst.heightPx := bottom - dst.y;
+end;
+
+procedure AddDirtySpriteRect(var rects: TDirtyRectArray; var count: byte;
+    spr: PQueuedSprite);
+var candidate: TDirtyRect;
+    right, bottom: longword;
+    i: byte;
+begin
+    if (spr = nil) or (spr^.widthPx = 0) or (spr^.heightPx = 0) then exit;
+    if (spr^.x >= 320) or (spr^.y >= 200) then exit;
+
+    candidate.x := spr^.x and $FFF0;
+    right := (longword(spr^.x) + spr^.widthPx + 15) and longword($FFFFFFF0);
+    if right > 320 then right := 320;
+    candidate.widthPx := word(right) - candidate.x;
+    candidate.y := spr^.y;
+    bottom := longword(spr^.y) + spr^.heightPx;
+    if bottom > 200 then bottom := 200;
+    candidate.heightPx := word(bottom) - candidate.y;
+    if (candidate.widthPx = 0) or (candidate.heightPx = 0) then exit;
+
+    i := 0;
+    while i < count do begin
+        if DirtyRectsTouch(candidate, rects[i]) then begin
+            MergeDirtyRect(candidate, rects[i]);
+            Dec(count);
+            rects[i] := rects[count];
+            i := 0;
+        end else
+            Inc(i);
     end;
+
+    if count >= MAX_DIRTY_RECTS then exit;
+    rects[count] := candidate;
+    Inc(count);
+end;
+
+function SpriteIntersectsDirty(spr: PQueuedSprite;
+    const rects: TDirtyRectArray; count: byte): boolean;
+var i: byte;
+begin
+    Result := false;
+    if (spr = nil) or (count = 0) then exit;
+    for i := 0 to count - 1 do
+        if (spr^.x < rects[i].x + rects[i].widthPx) and
+           (rects[i].x < spr^.x + spr^.widthPx) and
+           (spr^.y < rects[i].y + rects[i].heightPx) and
+           (rects[i].y < spr^.y + spr^.heightPx) then begin
+            Result := true;
+            exit;
+        end;
+end;
+
+procedure RestoreDirtyRects(const rects: TDirtyRectArray; count: byte;
+    forceFullCopy: boolean);
+var i: byte;
+begin
+    if forceFullCopy then begin
+        BlitterCopyData16(SCREEN_BKG, SCREEN_LOG, SCREEN_BYTES);
+        exit;
+    end;
+    if count = 0 then exit;
+    for i := 0 to count - 1 do
+        BlitterCopyBitmap4(
+            SCREEN_BKG, SCREEN_LOG,
+            rects[i].widthPx, rects[i].heightPx,
+            rects[i].x, rects[i].y,
+            rects[i].x, rects[i].y,
+            320, 320
+        );
+end;
+
+procedure RenderQueuedSprites;
+var rects: TDirtyRectArray;
+    dirtyCount, oldCount, newCount, compareCount: byte;
+    i: byte;
+    dirtyPixels: longword;
+    forceFullCopy: boolean;
+    spr: PQueuedSprite;
+begin
+    dirtyCount := 0;
+    oldCount := renderedSpriteCount[screenLogIndex];
+    newCount := queuedSpriteCount[screenLogIndex];
+    compareCount := oldCount;
+    if newCount > compareCount then compareCount := newCount;
+
+    if compareCount > 0 then
+        for i := 0 to compareCount - 1 do begin
+            if (i < oldCount) and (i < newCount) and
+               QueuedSpritesEqual(
+                   @renderedSprites[screenLogIndex, i],
+                   @queuedSprites[screenLogIndex, i]
+               ) then
+                continue;
+            if i < oldCount then
+                AddDirtySpriteRect(rects, dirtyCount,
+                    @renderedSprites[screenLogIndex, i]);
+            if i < newCount then
+                AddDirtySpriteRect(rects, dirtyCount,
+                    @queuedSprites[screenLogIndex, i]);
+        end;
+
+    dirtyPixels := 0;
+    if dirtyCount > 0 then
+        for i := 0 to dirtyCount - 1 do
+            Inc(dirtyPixels, longword(rects[i].widthPx) * rects[i].heightPx);
+    forceFullCopy := (dirtyCount >= DIRTY_FULL_COPY_RECTS) or
+        (dirtyPixels >= DIRTY_FULL_COPY_PIXELS);
+    RestoreDirtyRects(rects, dirtyCount, forceFullCopy);
+
+    if newCount > 0 then
+        for i := 0 to newCount - 1 do begin
+            spr := @queuedSprites[screenLogIndex, i];
+            if spr^.frame = nil then continue;
+            if forceFullCopy or SpriteIntersectsDirty(spr, rects, dirtyCount) then
+                DrawGeneratedSpriteFrameBlitter(
+                    SCREEN_LOG,
+                    spr^.x,
+                    spr^.y,
+                    spr^.frame,
+                    spr^.wordsBase
+                );
+        end;
+
+    renderedSpriteCount[screenLogIndex] := newCount;
+    if newCount > 0 then
+        for i := 0 to newCount - 1 do
+            renderedSprites[screenLogIndex, i] := queuedSprites[screenLogIndex, i];
+    queuedSpriteCount[screenLogIndex] := 0;
+end;
+
+procedure FlushQueuedSprites;
+begin
+    RenderQueuedSprites;
 end;
 
 procedure PresentQueuedSprites;
 begin
-    if queuedSpriteCount[screenLogIndex] > 0 then
-        FlushQueuedSprites;
+    FlushQueuedSprites;
     SwapScreen;
 end;
 
@@ -3048,6 +3281,7 @@ begin
     if flipped then EnsureDisplayOrientation(true)
     else EnsureDisplayOrientation(false);
     FillChar(queuedSpriteCount, SizeOf(queuedSpriteCount), 0);
+    FillChar(renderedSpriteCount, SizeOf(renderedSpriteCount), 0);
     if room_changed and not teleported then AdjustFlobPosition;  // teleport: designer chose spawn, no adjust
     room_changed := false;
     room_landed := false;
@@ -3067,10 +3301,10 @@ begin
     targetFlipped := not flipped;
     FlipGameplayEffect(targetFlipped);
     flipped := targetFlipped;
-    ShowSprites;
     flobY := 84 - flobY;
     spriteCollisionMovePending := true;
     BeginQueuedSpritesFrame;
+    ShowSprites;
     DrawFlob;
     PresentQueuedSprites;
     if flobFalling > 0 then flobFalling := 1;
@@ -3081,8 +3315,8 @@ procedure BackToLevel;
 begin
     BlackAll;               // palette black before image swap → no colour flash
     LoadLevel(levelNum);    // decompresses to SCREEN_LOG, SwapScreen; palette stays black
-    ShowSprites;
     BeginQueuedSpritesFrame;
+    ShowSprites;
     DrawFlob;
     PresentQueuedSprites;
     WaitFrame;
