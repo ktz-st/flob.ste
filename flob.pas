@@ -139,13 +139,18 @@ const
 {$i images/images.inc} // per-world room backgrounds + global screens (aplib compressed)
 {$i generated/sprite_assets_atlas.inc} // generated unified atlas -> masked sprite data
 {$i generated/sprite_atlas_palette.inc}
+{$i assets/sfx_raw.inc} // generated signed 8-bit mono DMA samples
 
 {$L unapl.o}
 {$L font.o}
 {$L ikbd.o}
+{$L dmasound.o}
 procedure UnApl(src, dst: pointer); external;
 procedure DrawChar(screen, font: pointer; x, y, ch, fg, bg: longword); cdecl; external;
 procedure RawIkbdHandler; external;
+procedure DmaSoundInit; external;
+procedure DmaSoundDone; external;
+procedure DmaPlayRaw(sample: pointer; length: cardinal); external;
 var FlobFont: byte; external name 'FlobFont';
 var RawIkbdJoyStatus: byte; external name 'RawIkbdJoyStatus';
 var RawIkbdState: byte; external name 'RawIkbdState';
@@ -338,6 +343,7 @@ var
     music_ingame: boolean;
     music_track: byte;
     escPressed: byte;
+    soundReady: boolean;
 
     globalStats: TGlobalStats;
     achievement: TAchievement;
@@ -1859,13 +1865,63 @@ begin
 end;
 
 // ***************************************************
-// *** SOUND STUBS
+// *** SOUND
 // ***************************************************
 
 procedure PlaySong(p: byte); begin end;
 procedure StopSong;          begin end;
-procedure FSfx(patch: byte); begin end;
-procedure Sfx(patch: byte);  begin end;
+
+procedure InitSound;
+begin
+    soundReady := false;
+    DmaSoundInit;
+    soundReady := true;
+end;
+
+procedure DoneSound;
+begin
+    if soundReady then DmaSoundDone;
+    soundReady := false;
+end;
+
+procedure FSfx(patch: byte);
+var
+    sample: pointer;
+    sampleLength: cardinal;
+begin
+    sample := nil;
+    sampleLength := 0;
+    case patch of
+        SFX_FLIP:      begin sample := @SFX_FLIP_RAW_DATA[0];       sampleLength := SizeOf(SFX_FLIP_RAW_DATA); end;
+        SFX_SLIMEPICK: begin sample := @SFX_SLIME_PICK_RAW_DATA[0]; sampleLength := SizeOf(SFX_SLIME_PICK_RAW_DATA); end;
+        SFX_DEAD:      begin sample := @SFX_DEAD_RAW_DATA[0];       sampleLength := SizeOf(SFX_DEAD_RAW_DATA); end;
+        SFX_PICKALL:   begin sample := @SFX_PICK_ALL_RAW_DATA[0];   sampleLength := SizeOf(SFX_PICK_ALL_RAW_DATA); end;
+        SFX_PICKGOAL:  begin sample := @SFX_PICK_GOAL_RAW_DATA[0];  sampleLength := SizeOf(SFX_PICK_GOAL_RAW_DATA); end;
+        SFX_REVEAL:    begin sample := @SFX_REVEAL_RAW_DATA[0];     sampleLength := SizeOf(SFX_REVEAL_RAW_DATA); end;
+        SFX_BIGSLIME:  begin sample := @SFX_BIG_SLIME_RAW_DATA[0];  sampleLength := SizeOf(SFX_BIG_SLIME_RAW_DATA); end;
+        SFX_CONSOLE:   begin sample := @SFX_CONSOLE_RAW_DATA[0];    sampleLength := SizeOf(SFX_CONSOLE_RAW_DATA); end;
+        SFX_WATERDROP: begin sample := @SFX_WATER_DROP_RAW_DATA[0]; sampleLength := SizeOf(SFX_WATER_DROP_RAW_DATA); end;
+        SFX_LEVER:     begin sample := @SFX_LEVER_RAW_DATA[0];      sampleLength := SizeOf(SFX_LEVER_RAW_DATA); end;
+        SFX_SIREN:     begin sample := @SFX_SIREN_RAW_DATA[0];      sampleLength := SizeOf(SFX_SIREN_RAW_DATA); end;
+        SFX_CIRCUIT:   begin sample := @SFX_CIRCUIT_RAW_DATA[0];    sampleLength := SizeOf(SFX_CIRCUIT_RAW_DATA); end;
+        SFX_GEAR:      begin sample := @SFX_GEAR_RAW_DATA[0];       sampleLength := SizeOf(SFX_GEAR_RAW_DATA); end;
+        SFX_VALVE:     begin sample := @SFX_VALVE_RAW_DATA[0];      sampleLength := SizeOf(SFX_VALVE_RAW_DATA); end;
+        SFX_BELL:      begin sample := @SFX_BELL_RAW_DATA[0];       sampleLength := SizeOf(SFX_BELL_RAW_DATA); end;
+        SFX_GAS:       begin sample := @SFX_GAS_RAW_DATA[0];        sampleLength := SizeOf(SFX_GAS_RAW_DATA); end;
+        SFX_INSECT:    begin sample := @SFX_INSECT_RAW_DATA[0];     sampleLength := SizeOf(SFX_INSECT_RAW_DATA); end;
+    end;
+
+    if soundReady and (sample <> nil) then DmaPlayRaw(sample, sampleLength);
+    sfxDelay := FORCE_SFX_DELAY;
+end;
+
+procedure Sfx(patch: byte);
+begin
+    if (not music_ingame) or (sfxDelay = 0) then begin
+        FSfx(patch);
+        sfxDelay := DEFAULT_SFX_DELAY;
+    end;
+end;
 
 {$i input.inc}
 
@@ -2114,7 +2170,10 @@ begin
     for i := 12 to 23 do CheckAchievement(i);
 end;
 
-procedure PlaySoundFx(patch: byte); begin end; // internal alias used below
+procedure PlaySoundFx(patch: byte);
+begin
+    Sfx(patch);
+end;
 
 procedure DrawEndWorldIcon(iconData: pointer);
 // Icon is END_ICON_WIDTH x END_ICON_HEIGHT (64x80 at 2x scale).
@@ -4415,6 +4474,7 @@ end;
 begin
     gemdos_super(pointer(0));
     ScreenInit;
+    InitSound;
     InstallInput;
     sysframe := 0;
 
@@ -4600,5 +4660,6 @@ begin
     until false;
 
     UnInstallInput;
+    DoneSound;
     ScreenDone;
 end.

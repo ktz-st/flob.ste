@@ -1,0 +1,269 @@
+{
+  "description": "Original Flob Atari 8-bit RMT SFX rendered through ASAP's POKEY emulator.",
+  "source_module": "worlds/00_Escape_From_The_Lab/_flob_ingame.rmt",
+  "source_player": "flob.xex:$0682-$0D93",
+  "render_seconds": 4.0,
+  "trailing_silence_seconds": 0.1,
+  "effects": {
+    "flip": {
+      "constant_value": 0,
+      "rmt_instrument": 16,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 18984,
+      "duration_seconds": 0.758359,
+      "silent": false,
+      "sha256": "f986b32e969cd2c6788514f981df3b3eb9c0663fa2357f5aa43a359d8e6de06e",
+      "file": "flip.wav"
+    },
+    "slime_pick": {
+      "constant_value": 1,
+      "rmt_instrument": 17,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 22473,
+      "duration_seconds": 0.897735,
+      "silent": false,
+      "sha256": "1bdf72703be9e7ce842af1cf3f5102136b5c627a0889ada9e0a23b3f308bdfc4",
+      "file": "slime_pick.wav"
+    },
+    "dead": {
+      "constant_value": 2,
+      "rmt_instrument": 18,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 30007,
+      "duration_seconds": 1.198698,
+      "silent": false,
+      "sha256": "668ea30d204746730ba38ebd7aa7131df1041df8d5a21bdca5f5f64950010808",
+      "file": "dead.wav"
+    },
+    "pick_all": {
+      "constant_value": 3,
+      "rmt_instrument": 19,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 37013,
+      "duration_seconds": 1.478568,
+      "silent": false,
+      "sha256": "a45cf000ebdf49eaa0075f54be6e69d6b6c011b76992a1468fdd6f4e8e5919a2",
+      "file": "pick_all.wav"
+    },
+    "pick_goal": {
+      "constant_value": 4,
+      "rmt_instrument": 20,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 86262,
+      "duration_seconds": 3.445931,
+      "silent": false,
+      "sha256": "d53b9510af3c93b706cf14df479557208d086e1de476dc682d5b8fc41afcd427",
+      "file": "pick_goal.wav"
+    },
+    "reveal": {
+      "constant_value": 5,
+      "rmt_instrument": 21,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 79201,
+      "duration_seconds": 3.163864,
+      "silent": false,
+      "sha256": "1c276342fdf29a0c190148e3ea94365946a0aeff00a8b8c5cb80eb803bff0dac",
+      "file": "reveal.wav"
+    },
+    "big_slime": {
+      "constant_value": 6,
+      "rmt_instrument": 22,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 51631,
+      "duration_seconds": 2.062517,
+      "silent": false,
+      "sha256": "6bed7e6364990984ff7f8c1346cf5c24dae9aa82710135ff0c0f26bda67590a3",
+      "file": "big_slime.wav"
+    },
+    "console": {
+      "constant_value": 7,
+      "rmt_instrument": 23,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 22352,
+      "duration_seconds": 0.892901,
+      "silent": false,
+      "sha256": "7b2b3aca6cecf82ff2badea2d9ed98141fd90cbc0c69f7bb1d27b0bab820880c",
+      "file": "console.wav"
+    },
+    "water_drop": {
+      "constant_value": 16,
+      "rmt_instrument": 32,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 43056,
+      "duration_seconds": 1.71997,
+      "silent": false,
+      "sha256": "3f26622a380650b7c0083f6bf4bfc435dca772dd7c28e25860c50644c9249618",
+      "file": "water_drop.wav"
+    },
+    "lever": {
+      "constant_value": 17,
+      "rmt_instrument": 33,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 37022,
+      "duration_seconds": 1.478928,
+      "silent": false,
+      "sha256": "96a4119cbc7bcbde3a48e01854aee4d89f54f95087f63cacea0731dfb04e6176",
+      "file": "lever.wav"
+    },
+    "siren": {
+      "constant_value": 18,
+      "rmt_instrument": 34,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 67147,
+      "duration_seconds": 2.682339,
+      "silent": false,
+      "sha256": "3bd8d5d158e407b596cad063a17b0a2ca9269a623874a9c165ecbc3df7c511c9",
+      "file": "siren.wav"
+    },
+    "circuit": {
+      "constant_value": 19,
+      "rmt_instrument": 35,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 28292,
+      "duration_seconds": 1.130188,
+      "silent": false,
+      "sha256": "59000f200d8a453753a02a31cebb212166d0a0f72a770fbb2e56c8f007cf8d65",
+      "file": "circuit.wav"
+    },
+    "gear": {
+      "constant_value": 20,
+      "rmt_instrument": 36,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 28517,
+      "duration_seconds": 1.139176,
+      "silent": false,
+      "sha256": "0b1c6d9592c18670b1989c8da63519467083952b5c243a94b11fb424fba52ac0",
+      "file": "gear.wav"
+    },
+    "valve": {
+      "constant_value": 21,
+      "rmt_instrument": 37,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 38542,
+      "duration_seconds": 1.539648,
+      "silent": false,
+      "sha256": "0bde8f7f9509e7a2357437a2397d8241005c301b5ae882f10206ea3da89848dc",
+      "file": "valve.wav"
+    },
+    "bell": {
+      "constant_value": 22,
+      "rmt_instrument": 38,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 41069,
+      "duration_seconds": 1.640594,
+      "silent": false,
+      "sha256": "3552a87406d1da8b12ebd4ca4ac4bc33e229271a48a95f1dbf1b95be366d2374",
+      "file": "bell.wav"
+    },
+    "gas": {
+      "constant_value": 23,
+      "rmt_instrument": 39,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 17441,
+      "duration_seconds": 0.69672,
+      "silent": false,
+      "sha256": "90a406fd3b1d541b8e8a4ddf43cd873e3a73585b5432c115f26eb4c37707fc60",
+      "file": "gas.wav"
+    },
+    "insect": {
+      "constant_value": 24,
+      "rmt_instrument": 40,
+      "note": 1,
+      "stereo_channels": [
+        0,
+        4
+      ],
+      "sample_rate": 25033,
+      "frames": 42104,
+      "duration_seconds": 1.68194,
+      "silent": false,
+      "sha256": "2eb509bafac45fa5a7bc0f8859c711117eb233f4bcda457f6f022fb7b3c89ce0",
+      "file": "insect.wav"
+    }
+  },
+  "aliases": {
+    "beep": "console",
+    "teleport": "reveal",
+    "scrape": "gas"
+  }
+}

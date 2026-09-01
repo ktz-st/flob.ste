@@ -27,6 +27,19 @@ GAME_CUTSCENE_GEN = create_game_cutscenes.py
 GAME_CUTSCENE_IMAGES = $(shell find game_cutscenes -type f -name '*.png' 2>/dev/null)
 GAME_TITLE_GEN = create_game_title.py
 GAME_TITLE_IMAGES = $(shell find game_title -type f -name '*.png' 2>/dev/null)
+SFX_WAV_GEN = extract_a8_sfx.py
+SFX_INC_GEN = generate_sfx_include.py
+SFX_INC = assets/sfx_raw.inc
+SFX_RAW = \
+	audio/ste_sfx_wav/flip.raw audio/ste_sfx_wav/slime_pick.raw \
+	audio/ste_sfx_wav/dead.raw audio/ste_sfx_wav/pick_all.raw \
+	audio/ste_sfx_wav/pick_goal.raw audio/ste_sfx_wav/reveal.raw \
+	audio/ste_sfx_wav/big_slime.raw audio/ste_sfx_wav/console.raw \
+	audio/ste_sfx_wav/water_drop.raw audio/ste_sfx_wav/lever.raw \
+	audio/ste_sfx_wav/siren.raw audio/ste_sfx_wav/circuit.raw \
+	audio/ste_sfx_wav/gear.raw audio/ste_sfx_wav/valve.raw \
+	audio/ste_sfx_wav/bell.raw audio/ste_sfx_wav/gas.raw \
+	audio/ste_sfx_wav/insect.raw
 WORLD_DATA_GEN = generate_world_data.py
 WORLD_BIN_FILES = $(shell find ../flob/worlds -type f -name 'world_??.bin' 2>/dev/null)
 WORLD_COLLISION_IMAGES = $(shell find game_rooms -type f -name 'room_??_collision.png' 2>/dev/null)
@@ -57,6 +70,7 @@ SOURCES = \
 	generated/sprite_assets_atlas.inc \
 	generated/sprite_atlas_palette.inc \
 	generated/world_sprite_atlas_map.inc \
+	$(SFX_INC) \
 	$(TILE_GEN) \
 	$(ACHIEVEMENT_GEN) \
 	$(ENDWORLD_ICON_GEN) \
@@ -65,9 +79,12 @@ SOURCES = \
 	images/images.inc \
 	images/global/IMG_TITLE_CROWN.inc
 
-.PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas game-sprite-sheet-init game-sprite-guide sprite-atlas-assets sprite-atlas-assets-only game-rooms-init room-assets game-tiles-init game-world-icons-init game-cutscenes-init game-title-init
+.PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas game-sprite-sheet-init game-sprite-guide sprite-atlas-assets sprite-atlas-assets-only game-rooms-init room-assets game-tiles-init game-world-icons-init game-cutscenes-init game-title-init sfx-wav
 
 all: unapl.o $(TARGET)
+
+$(SFX_INC): $(SFX_INC_GEN) $(SFX_RAW)
+	python3 $(SFX_INC_GEN)
 
 worlds/world_collisions.inc: $(WORLD_DATA_GEN) $(WORLD_BIN_FILES) $(WORLD_COLLISION_IMAGES)
 	python3 $(WORLD_DATA_GEN)
@@ -98,11 +115,14 @@ font.o: asm/font.s
 ikbd.o: asm/ikbd.s
 	$(AS) -quiet -Faout -o ikbd.o asm/ikbd.s
 
-$(TARGET): unapl.o font.o ikbd.o $(SOURCES) Makefile
+dmasound.o: dmasound.s
+	$(AS) -quiet -Faout -o dmasound.o dmasound.s
+
+$(TARGET): unapl.o font.o ikbd.o dmasound.o $(SOURCES) Makefile
 	$(PPC) $(PFLAGS) -o$(TARGET) $(MAIN)
 
 clean:
-	rm -f $(TARGET) flob.o flob.s unapl.o font.o ikbd.o *.ppu *.map
+	rm -f $(TARGET) flob.o flob.s unapl.o font.o ikbd.o dmasound.o *.ppu *.map
 
 run: $(TARGET)
 	$(HATARI) -w --monitor rgb --machine ste --fast-boot true $(TARGET) &
@@ -142,6 +162,9 @@ game-cutscenes-init: $(GAME_CUTSCENE_GEN)
 
 game-title-init: $(GAME_TITLE_GEN)
 	python3 $(GAME_TITLE_GEN)
+
+sfx-wav: $(SFX_WAV_GEN)
+	python3 $(SFX_WAV_GEN)
 
 sprite-atlas-assets: $(ATLAS_SPRITE_ASSET_GEN) $(WORLD_SPRITE_ATLAS_MAP_GEN) $(SPRITE_COMBINED_CONFIG)
 	python3 $(ATLAS_SPRITE_ASSET_GEN)
