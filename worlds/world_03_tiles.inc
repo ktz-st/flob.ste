@@ -1,9 +1,9 @@
 const W03_TILE_COUNT = 4;
 const W03_TILES : array[0..3] of TSteTile = (
-    (sourceAddr:$A000; widthPx:16; heightPx:18; rowWords:1; dataOffset:0),
-    (sourceAddr:$A014; widthPx:112; heightPx:18; rowWords:7; dataOffset:90),
-    (sourceAddr:$A094; widthPx:48; heightPx:62; rowWords:3; dataOffset:720),
-    (sourceAddr:$A150; widthPx:72; heightPx:24; rowWords:5; dataOffset:1650)
+    (sourceAddr:$A000; widthPx:16; heightPx:18; rowWords:1; dataOffset:0; collisionOffset:0),
+    (sourceAddr:$A014; widthPx:112; heightPx:18; rowWords:7; dataOffset:90; collisionOffset:18),
+    (sourceAddr:$A094; widthPx:48; heightPx:62; rowWords:3; dataOffset:720; collisionOffset:144),
+    (sourceAddr:$A150; widthPx:72; heightPx:24; rowWords:5; dataOffset:1650; collisionOffset:330)
 );
 
 const W03_TILE_WORDS : array[0..2249] of word=(
@@ -289,4 +289,37 @@ const W03_TILE_WORDS : array[0..2249] of word=(
   $0000,$0000,$F000,$0000,$0000,$0000,$0FC0,$0000,
   $0000,$0000,$0000,$0000,$0000,$0000,$0000,$0000,
   $0000,$0000
+);
+
+const W03_TILE_COLLISION : array[0..437] of byte=(
+  $0A,$AA,$0A,$AA,$0A,$AA,$0A,$AA,$0A,$AA,$0A,$AA,$2A,$AA,$2A,
+  $AA,$2A,$AA,$3F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,
+  $FF,$FF,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,
+  $FC,$00,$03,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$C0,
+  $00,$00,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00,
+  $00,$03,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FC,$00,$00,$00,
+  $00,$3F,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$C0,$00,$00,$00,$00,
+  $03,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00,$00,$00,$00,$00,
+  $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FC,$00,$00,$00,$00,$00,$00,$3F,
+  $FF,$FF,$FF,$FF,$FF,$FF,$F0,$00,$00,$00,$00,$00,$0C,$00,$F0,
+  $00,$00,$0C,$0F,$C3,$F0,$00,$00,$0F,$0F,$C3,$C0,$03,$C0,$0F,
+  $0F,$C3,$C0,$03,$F0,$0F,$0F,$C3,$C0,$03,$F0,$0F,$0F,$C3,$C0,
+  $00,$F0,$0F,$0F,$C3,$C0,$00,$F0,$0F,$0F,$C3,$C0,$00,$F0,$0F,
+  $0F,$C0,$C0,$00,$F0,$0F,$0F,$C0,$00,$00,$F0,$3F,$0F,$C0,$00,
+  $00,$F0,$3F,$03,$C0,$00,$00,$F0,$3F,$03,$C0,$00,$00,$F0,$3F,
+  $03,$C0,$00,$00,$F0,$3F,$03,$C0,$00,$00,$F0,$3F,$03,$C0,$00,
+  $00,$FC,$3C,$03,$F0,$30,$00,$3C,$3C,$00,$F0,$30,$00,$3C,$3C,
+  $00,$F0,$30,$00,$3C,$3C,$00,$F0,$30,$00,$3C,$3C,$00,$F0,$F0,
+  $C0,$3C,$3C,$00,$F0,$F0,$C0,$3C,$3C,$00,$F0,$F0,$C0,$3C,$3C,
+  $00,$30,$F0,$F0,$3C,$3C,$00,$30,$F0,$F0,$3C,$3C,$00,$30,$F0,
+  $FC,$3C,$30,$00,$30,$30,$FC,$3C,$30,$00,$30,$00,$FC,$0C,$30,
+  $00,$00,$00,$FC,$0C,$30,$00,$00,$00,$3C,$0C,$00,$00,$00,$00,
+  $00,$00,$00,$00,$F0,$00,$0F,$00,$00,$00,$00,$03,$FF,$FF,$FF,
+  $FF,$FF,$C0,$00,$00,$3F,$FF,$FF,$FF,$FF,$FF,$00,$00,$00,$00,
+  $0F,$00,$00,$F0,$00,$00,$00,$00,$00,$3C,$00,$03,$C0,$00,$00,
+  $00,$03,$FF,$FF,$FF,$FF,$FF,$FC,$00,$00,$3F,$FF,$FF,$FF,$FF,
+  $FF,$F0,$00,$00,$00,$0F,$C0,$00,$3F,$00,$00,$00,$00,$00,$3F,
+  $00,$00,$FC,$00,$00,$00,$03,$FF,$FF,$FF,$FF,$FF,$FF,$C0,$00,
+  $3F,$FF,$FF,$FF,$FF,$FF,$FF,$00,$00,$00,$03,$F0,$00,$0F,$C0,
+  $00,$00,$00
 );

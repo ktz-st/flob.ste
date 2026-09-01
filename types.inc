@@ -132,6 +132,7 @@ type TSteTile = record
     heightPx: word;
     rowWords: word;
     dataOffset: word;
+    collisionOffset: word;
 end;
 
 type PSteTile = ^TSteTile;

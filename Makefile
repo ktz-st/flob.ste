@@ -20,6 +20,8 @@ WORLD_SPRITE_ATLAS_MAP_GEN = generate_world_sprite_atlas_map.py
 SPRITE_COMBINED_CONFIG = sprite_combined_config.py
 ACHIEVEMENT_GEN = generate_achievements.py
 ENDWORLD_ICON_GEN = generate_endworld_icons.py
+GAME_ENDWORLD_ICON_GEN = create_game_endworld_icons.py
+GAME_ENDWORLD_ICON_IMAGES = $(shell find game_endworld_icons -type f -name '*.png' 2>/dev/null)
 WORLD_ICON_GEN = generate_world_icons.py
 GAME_WORLD_ICON_GEN = create_game_world_icons.py
 GAME_WORLD_ICON_IMAGES = $(shell find game_world_icons -type f -name '*.png' 2>/dev/null)
@@ -30,6 +32,8 @@ GAME_TITLE_IMAGES = $(shell find game_title -type f -name '*.png' 2>/dev/null)
 SFX_WAV_GEN = extract_a8_sfx.py
 SFX_INC_GEN = generate_sfx_include.py
 SFX_INC = assets/sfx_raw.inc
+SFX_SYNTH_GEN = generate_sfx_synth.py
+SFX_SYNTH_INC = assets/sfx_synth.inc
 SFX_RAW = \
 	audio/ste_sfx_wav/flip.raw audio/ste_sfx_wav/slime_pick.raw \
 	audio/ste_sfx_wav/dead.raw audio/ste_sfx_wav/pick_all.raw \
@@ -70,7 +74,7 @@ SOURCES = \
 	generated/sprite_assets_atlas.inc \
 	generated/sprite_atlas_palette.inc \
 	generated/world_sprite_atlas_map.inc \
-	$(SFX_INC) \
+	$(SFX_SYNTH_INC) \
 	$(TILE_GEN) \
 	$(ACHIEVEMENT_GEN) \
 	$(ENDWORLD_ICON_GEN) \
@@ -79,14 +83,17 @@ SOURCES = \
 	images/images.inc \
 	images/global/IMG_TITLE_CROWN.inc
 
-.PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas game-sprite-sheet-init game-sprite-guide sprite-atlas-assets sprite-atlas-assets-only game-rooms-init room-assets game-tiles-init game-world-icons-init game-cutscenes-init game-title-init sfx-wav
+.PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas game-sprite-sheet-init game-sprite-guide sprite-atlas-assets sprite-atlas-assets-only game-rooms-init room-assets game-tiles-init game-world-icons-init game-endworld-icons-init game-cutscenes-init game-title-init sfx-wav
 
 all: unapl.o $(TARGET)
 
 $(SFX_INC): $(SFX_INC_GEN) $(SFX_RAW)
 	python3 $(SFX_INC_GEN)
 
-worlds/world_collisions.inc: $(WORLD_DATA_GEN) $(WORLD_BIN_FILES) $(WORLD_COLLISION_IMAGES)
+$(SFX_SYNTH_INC): $(SFX_SYNTH_GEN) $(SFX_WAV_GEN) ../flob/flob.xex $(shell find ../flob/worlds -name '_flob_ingame.rmt')
+	python3 $(SFX_SYNTH_GEN)
+
+worlds/world_collisions.inc: $(WORLD_DATA_GEN) game_rooms/manifest.json $(WORLD_BIN_FILES) $(WORLD_COLLISION_IMAGES)
 	python3 $(WORLD_DATA_GEN)
 
 $(TILE_OUT): $(TILE_GEN) game_tiles/manifest.json $(GAME_TILE_IMAGES)
@@ -95,7 +102,7 @@ $(TILE_OUT): $(TILE_GEN) game_tiles/manifest.json $(GAME_TILE_IMAGES)
 assets/achievements.inc: $(ACHIEVEMENT_GEN) ../flob/assets/achievements.asm
 	python3 $(ACHIEVEMENT_GEN)
 
-assets/endworld_icons.inc: $(ENDWORLD_ICON_GEN) ../flob/assets/bigmap.gif ../flob/assets/bigvial.gif ../flob/assets/bigformula.gif ../flob/assets/skull.gif
+assets/endworld_icons.inc: $(ENDWORLD_ICON_GEN) game_endworld_icons/manifest.json $(GAME_ENDWORLD_ICON_IMAGES)
 	python3 $(ENDWORLD_ICON_GEN)
 
 assets/world_icons.inc: $(WORLD_ICON_GEN) game_world_icons/manifest.json $(GAME_WORLD_ICON_IMAGES)
@@ -118,11 +125,17 @@ ikbd.o: asm/ikbd.s
 dmasound.o: dmasound.s
 	$(AS) -quiet -Faout -o dmasound.o dmasound.s
 
-$(TARGET): unapl.o font.o ikbd.o dmasound.o $(SOURCES) Makefile
+sfxsynth.o: asm/sfxsynth.s
+	$(AS) -quiet -Faout -o sfxsynth.o asm/sfxsynth.s
+
+psgsound.o: asm/psgsound.s
+	$(AS) -quiet -Faout -o psgsound.o asm/psgsound.s
+
+$(TARGET): unapl.o font.o ikbd.o dmasound.o sfxsynth.o psgsound.o $(SOURCES) Makefile
 	$(PPC) $(PFLAGS) -o$(TARGET) $(MAIN)
 
 clean:
-	rm -f $(TARGET) flob.o flob.s unapl.o font.o ikbd.o dmasound.o *.ppu *.map
+	rm -f $(TARGET) flob.o flob.s unapl.o font.o ikbd.o dmasound.o sfxsynth.o psgsound.o *.ppu *.map
 
 run: $(TARGET)
 	$(HATARI) -w --monitor rgb --machine ste --fast-boot true $(TARGET) &
@@ -156,6 +169,9 @@ game-tiles-init: $(GAME_TILE_GEN)
 
 game-world-icons-init: $(GAME_WORLD_ICON_GEN)
 	python3 $(GAME_WORLD_ICON_GEN)
+
+game-endworld-icons-init: $(GAME_ENDWORLD_ICON_GEN)
+	python3 $(GAME_ENDWORLD_ICON_GEN)
 
 game-cutscenes-init: $(GAME_CUTSCENE_GEN)
 	python3 $(GAME_CUTSCENE_GEN)

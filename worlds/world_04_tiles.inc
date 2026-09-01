@@ -1,12 +1,12 @@
 const W04_TILE_COUNT = 7;
 const W04_TILES : array[0..6] of TSteTile = (
-    (sourceAddr:$A460; widthPx:32; heightPx:26; rowWords:2; dataOffset:0),
-    (sourceAddr:$A496; widthPx:32; heightPx:14; rowWords:2; dataOffset:260),
-    (sourceAddr:$A4B4; widthPx:48; heightPx:70; rowWords:3; dataOffset:400),
-    (sourceAddr:$A588; widthPx:16; heightPx:28; rowWords:1; dataOffset:1450),
-    (sourceAddr:$A5A6; widthPx:32; heightPx:8; rowWords:2; dataOffset:1590),
-    (sourceAddr:$A5B8; widthPx:24; heightPx:70; rowWords:2; dataOffset:1670),
-    (sourceAddr:$A623; widthPx:16; heightPx:56; rowWords:1; dataOffset:2370)
+    (sourceAddr:$A460; widthPx:32; heightPx:26; rowWords:2; dataOffset:0; collisionOffset:0),
+    (sourceAddr:$A496; widthPx:32; heightPx:14; rowWords:2; dataOffset:260; collisionOffset:52),
+    (sourceAddr:$A4B4; widthPx:48; heightPx:70; rowWords:3; dataOffset:400; collisionOffset:80),
+    (sourceAddr:$A588; widthPx:16; heightPx:28; rowWords:1; dataOffset:1450; collisionOffset:290),
+    (sourceAddr:$A5A6; widthPx:32; heightPx:8; rowWords:2; dataOffset:1590; collisionOffset:318),
+    (sourceAddr:$A5B8; widthPx:24; heightPx:70; rowWords:2; dataOffset:1670; collisionOffset:334),
+    (sourceAddr:$A623; widthPx:16; heightPx:56; rowWords:1; dataOffset:2370; collisionOffset:439)
 );
 
 const W04_TILE_WORDS : array[0..2649] of word=(
@@ -342,4 +342,41 @@ const W04_TILE_WORDS : array[0..2649] of word=(
   $0000,$0000,$3F80,$0000,$0000,$0000,$7FE0,$0000,
   $0000,$0000,$FFFF,$0000,$0000,$0000,$FFFF,$0000,
   $0000,$0000
+);
+
+const W04_TILE_COLLISION : array[0..495] of byte=(
+  $56,$AA,$AA,$40,$56,$AA,$AA,$80,$56,$BF,$FE,$80,$56,$BF,$FE,
+  $80,$56,$BF,$FE,$80,$56,$AA,$AA,$80,$56,$AA,$AA,$80,$56,$AA,
+  $BE,$80,$56,$AA,$AA,$80,$56,$AA,$AA,$80,$56,$AA,$AA,$80,$5A,
+  $AA,$AA,$80,$6A,$AA,$AA,$80,$BF,$FF,$FF,$E0,$FA,$AA,$AA,$F0,
+  $EA,$AF,$AA,$B0,$EA,$AF,$AA,$B0,$FA,$AA,$AA,$F0,$FF,$FF,$FF,
+  $F0,$BF,$FF,$FF,$E0,$0C,$0F,$00,$00,$00,$00,$3C,$0F,$C0,$C0,
+  $00,$00,$3C,$0F,$C0,$C0,$C0,$00,$3C,$0F,$C0,$F0,$C0,$00,$3C,
+  $0F,$C0,$F0,$C0,$00,$3F,$03,$C0,$F0,$C0,$00,$3F,$03,$C0,$F0,
+  $C0,$00,$3F,$03,$C0,$F0,$C0,$00,$0F,$03,$C0,$F0,$C0,$00,$0F,
+  $03,$C0,$F0,$F0,$00,$0F,$03,$C0,$F0,$F0,$00,$0F,$00,$C0,$F0,
+  $F0,$00,$03,$C0,$C0,$F0,$F0,$00,$03,$C0,$C0,$F0,$F0,$00,$03,
+  $C0,$C0,$F0,$F0,$00,$03,$C0,$C0,$F0,$FC,$00,$03,$C0,$C0,$F0,
+  $FC,$00,$03,$C0,$00,$F0,$3C,$00,$03,$C0,$00,$F0,$3C,$00,$03,
+  $C0,$00,$F0,$3C,$00,$00,$C0,$00,$F0,$3C,$00,$00,$C0,$00,$F0,
+  $3C,$00,$00,$C0,$00,$F0,$3F,$00,$00,$C0,$00,$F0,$3F,$00,$00,
+  $C0,$00,$F0,$3F,$00,$00,$C0,$00,$C0,$3F,$00,$00,$C0,$00,$C0,
+  $0F,$00,$00,$F0,$00,$C0,$0F,$00,$00,$F0,$00,$C0,$0F,$C0,$00,
+  $30,$03,$C0,$0F,$C0,$00,$30,$03,$C0,$0F,$C0,$00,$3C,$03,$00,
+  $03,$C0,$00,$3C,$03,$00,$03,$C0,$00,$0C,$03,$00,$00,$00,$00,
+  $0C,$00,$00,$00,$00,$05,$40,$2A,$40,$2A,$40,$2A,$40,$2A,$40,
+  $2A,$40,$6A,$40,$6A,$40,$6A,$40,$6A,$40,$6A,$40,$6A,$40,$6A,
+  $40,$59,$40,$05,$55,$55,$50,$06,$AA,$AA,$A8,$06,$AA,$AA,$AA,
+  $02,$AA,$AA,$A8,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,
+  $00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,
+  $00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,
+  $00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,
+  $00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,
+  $00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,$00,$0C,$CC,
+  $00,$0C,$CC,$00,$0C,$CF,$FC,$0C,$C0,$00,$0C,$FF,$FC,$0C,$00,
+  $00,$0F,$FF,$FC,$FF,$C0,$3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,
+  $00,$3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,$00,
+  $3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,
+  $00,$3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,$00,$3F,$C0,$FF,$FF,
+  $00
 );

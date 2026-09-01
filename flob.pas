@@ -23,6 +23,13 @@ const
     FLOB_FALL_STEP = 2;
     HUD_HEIGHT = 8;
     MESSAGE_TEXT_COLOR = 15;
+    DYNAMIC_DANGER_BYTES = 160 * 80 div 8;
+    PSG_SFX_DEFAULT = true;
+    SFX_SAMPLES_PER_FRAME = 250;
+    SFX_BUFFER_HALVES = 4;
+    SFX_SAMPLE_RATE = 12517;
+    SFX_POKEY_BASE_DIV = 28;
+    SFX_AMPLITUDE_STEP = 3;
     FLIP_STEPS = 4;
     SLIME_RENDER_OFFSET_X = -50 * LEVEL_SCALE_X;
     SLIME_RENDER_OFFSET_Y = 16;
@@ -139,18 +146,27 @@ const
 {$i images/images.inc} // per-world room backgrounds + global screens (aplib compressed)
 {$i generated/sprite_assets_atlas.inc} // generated unified atlas -> masked sprite data
 {$i generated/sprite_atlas_palette.inc}
-{$i assets/sfx_raw.inc} // generated signed 8-bit mono DMA samples
+{$i assets/sfx_synth.inc} // generated 50 Hz POKEY register streams
 
 {$L unapl.o}
 {$L font.o}
 {$L ikbd.o}
 {$L dmasound.o}
+{$L sfxsynth.o}
+{$L psgsound.o}
 procedure UnApl(src, dst: pointer); external;
 procedure DrawChar(screen, font: pointer; x, y, ch, fg, bg: longword); cdecl; external;
 procedure RawIkbdHandler; external;
 procedure DmaSoundInit; external;
 procedure DmaSoundDone; external;
+procedure DmaSoundStop; external;
 procedure DmaPlayRaw(sample: pointer; length: cardinal); external;
+procedure DmaPlayLoop(sample: pointer; length: cardinal); external;
+procedure SfxRenderBlockAsm(dst: pointer; count: cardinal; state: pointer); cdecl; external;
+procedure PsgSoundInit; external;
+procedure PsgSoundDone; external;
+procedure PsgSoundStop; external;
+procedure PsgSoundPlay(data: pointer; dataSize: cardinal); cdecl; external;
 var FlobFont: byte; external name 'FlobFont';
 var RawIkbdJoyStatus: byte; external name 'RawIkbdJoyStatus';
 var RawIkbdState: byte; external name 'RawIkbdState';
@@ -183,6 +199,20 @@ procedure DrawGeneratedSpriteFrameBlitter(scr: pword; dstX, dstY: word;
     frame: PSteSpriteFrame; wordsBase: PWord); forward;
 
 type
+    TSfxSynthAsmState = packed record
+        phase: longword;
+        threshold: longword;
+        noise: longword;
+        poly4Pos: word;
+        poly5Pos: word;
+        stride4: word;
+        stride5: word;
+        positiveSample: byte;
+        negativeSample: byte;
+        flags: byte;
+        output: byte;
+    end;
+
     TQueuedSprite = record
         x: word;
         y: word;
@@ -298,6 +328,8 @@ var
     worldCurrent: byte;
     worldDataBuffer: array[0..WORLD_DATA_BYTES - 1] of byte;
     collisionDataBuffer: array[0..COLLISION_DATA_BYTES - 1] of byte;
+    dynamicTileDanger: array[0..DYNAMIC_DANGER_BYTES - 1] of byte;
+    dynamicTileDangerActive: boolean;
     currentWorldData: PByte;
     currentWorldImgPtrs: ^pointer;
     currentWorldPalPtrs: ^pointer;
@@ -307,6 +339,7 @@ var
     currentWorldAssetsSize: word;
     currentWorldTiles: PSteTile;
     currentWorldTileWords: PWord;
+    currentWorldTileCollision: PByte;
     currentWorldTileCount: word;
     spriteColorsRaw: array[0..1] of PByte;
     spriteFramesRaw: array[0..1, 0..15] of PByte;
@@ -332,6 +365,7 @@ var
     messages: array[0..3] of word;
     messageTypes: array[0..3] of byte;
     currentMessageLines: array[0..1] of string;
+    currentMessageAddr: word;
     sceneImg: array[0..1] of byte;
     sceneMsg: array[0..1] of word;
     sceneCol0, sceneCol1, sceneCol2: array[0..1] of byte;
@@ -344,6 +378,24 @@ var
     music_track: byte;
     escPressed: byte;
     soundReady: boolean;
+    usePsgSfx: boolean;
+    sfxSynthActive: boolean;
+    sfxSynthData: PByte;
+    sfxSynthDataSize: word;
+    sfxSynthOffset: word;
+    sfxSynthRunFrames: byte;
+    sfxSynthAudf: byte;
+    sfxSynthAudc: byte;
+    sfxSynthOutput: byte;
+    sfxSynthPoly4Pos: word;
+    sfxSynthPoly5Pos: word;
+    sfxSynthPhase: longword;
+    sfxSynthNoise: longword;
+    sfxSynthStreaming: boolean;
+    sfxSynthBufferIndex: byte;
+    sfxSynthSilentHalves: byte;
+    sfxSynthLastVbl: longword;
+    sfxSynthBuffer: array[0..SFX_BUFFER_HALVES - 1, 0..SFX_SAMPLES_PER_FRAME - 1] of byte;
 
     globalStats: TGlobalStats;
     achievement: TAchievement;
@@ -402,6 +454,7 @@ procedure SetLevelColors; forward;
 procedure ShowScene(scene: byte); forward;
 procedure SetLanded; forward;
 procedure SetLandingSafe; forward;
+procedure SfxSynthFrame; forward;
 
 // ***************************************************
 // *** COMPATIBILITY LAYER (replaces 8-bit builtins)
@@ -412,6 +465,7 @@ var vbl: longword;
 begin
     vbl := PLongWord(pointer(longword($00000466)))^;
     while PLongWord(pointer(longword($00000466)))^ = vbl do ;
+    SfxSynthFrame;
 end;
 
 procedure WaitFrame;
@@ -751,6 +805,7 @@ procedure ClearTxt2;
 begin
     currentMessageLines[0] := '';
     currentMessageLines[1] := '';
+    currentMessageAddr := $FFFF;
     messageCacheDirty := true;
 end;
 
@@ -1049,17 +1104,66 @@ begin
     DrawGeneratedSpriteFrameBlitter(scr, dstX, dstY, @frame, currentWorldTileWords);
 end;
 
+procedure ApplyTileCollision(x, y: byte; tile: PSteTile; flip: byte);
+var srcData: PByte;
+    srcWidth, srcHeight, srcRowBytes: word;
+    srcX, srcY, readY, dstX, dstY: word;
+    packedByte, srcColor, shift, mask, dangerMask: byte;
+    dstOffset, dangerOffset: word;
+begin
+    if (tile = nil) or (currentWorldTileCollision = nil) or
+       (currentCollisionData = nil) then exit;
+
+    srcWidth := tile^.widthPx shr 1;
+    srcHeight := tile^.heightPx shr 1;
+    srcRowBytes := srcWidth shr 2;
+    srcData := currentWorldTileCollision;
+    Inc(srcData, tile^.collisionOffset);
+
+    for srcY := 0 to srcHeight - 1 do begin
+        if flip <> 0 then readY := srcHeight - 1 - srcY
+        else readY := srcY;
+        dstY := word(y) + srcY;
+        if dstY >= 80 then continue;
+
+        for srcX := 0 to srcWidth - 1 do begin
+            dstX := word(x) * 4 + srcX;
+            if dstX >= 160 then continue;
+            packedByte := srcData[readY * srcRowBytes + (srcX shr 2)];
+            shift := 6 - ((srcX and 3) shl 1);
+            srcColor := (packedByte shr shift) and 3;
+            if srcColor = 0 then continue;
+
+            dstOffset := dstY * 40 + (dstX shr 2);
+            shift := 6 - ((dstX and 3) shl 1);
+            mask := byte(3 shl shift);
+            currentCollisionData[dstOffset] :=
+                (currentCollisionData[dstOffset] and not mask) or
+                (srcColor shl shift);
+
+            dangerOffset := dstY * 20 + (dstX shr 3);
+            dangerMask := byte($80 shr (dstX and 7));
+            if srcColor = DANGER_COLLISION_COLOR then begin
+                dynamicTileDanger[dangerOffset] :=
+                    dynamicTileDanger[dangerOffset] or dangerMask;
+                dynamicTileDangerActive := true;
+            end else
+                dynamicTileDanger[dangerOffset] :=
+                    dynamicTileDanger[dangerOffset] and not dangerMask;
+        end;
+    end;
+end;
+
 procedure PutTile(x, y: byte; src: word; flip: byte);
 var tile: PSteTile;
     dstX, dstY: word;
-    px: word;
-    color: word;
 begin
     tile := FindSteTile(src);
     if tile <> nil then begin
         dstX := word(x) * 4 * LEVEL_SCALE_X;
-        dstY := LEVEL_OFFSET_Y + word(y) * LEVEL_SCALE_Y;
+        dstY := BG_IMAGE_OFFSET_Y + word(y) * LEVEL_SCALE_Y;
         DrawSteTile(SCREEN_LOG, dstX, dstY, tile, flip);
+        ApplyTileCollision(x, y, tile, flip);
         exit;
     end;
 end;
@@ -1075,6 +1179,8 @@ begin
     imgPtr := PPointer(currentWorldImgPtrs)[imgNum];
     palPtr := PPointer(currentWorldPalPtrs)[imgNum];
     currentCollisionData := nil;
+    FillChar(dynamicTileDanger[0], SizeOf(dynamicTileDanger), 0);
+    dynamicTileDangerActive := false;
     if currentWorldColAplPtrs <> nil then begin
         colAplPtr := PPointer(currentWorldColAplPtrs)[imgNum];
         UnApl(colAplPtr, @collisionDataBuffer[0]);
@@ -1645,13 +1751,11 @@ begin
     scoreStr := PackedBcdToScore5(mySlime);
     scoreX := 320 - 8 - Length(scoreStr) * 8;
     DrawTextTo(scr, scoreX, 0, 1, 0, scoreStr);
-    if cheatmode then begin
-        roomStr := 'W' + ByteToStr(worldCurrent) + ' R';
-        if levelNum < 10 then roomStr := roomStr + '0';
-        roomStr := roomStr + ByteToStr(levelNum);
-        roomX := scoreX - 8 - Length(roomStr) * 8;
-        DrawTextTo(scr, roomX, 0, 2, 0, roomStr);
-    end;
+    roomStr := 'W' + ByteToStr(worldCurrent) + ' R';
+    if levelNum < 10 then roomStr := roomStr + '0';
+    roomStr := roomStr + ByteToStr(levelNum);
+    roomX := scoreX - 8 - Length(roomStr) * 8;
+    DrawTextTo(scr, roomX, 0, 2, 0, roomStr);
 end;
 
 procedure RefreshHudCache;
@@ -1874,44 +1978,191 @@ procedure StopSong;          begin end;
 procedure InitSound;
 begin
     soundReady := false;
+    usePsgSfx := PSG_SFX_DEFAULT;
+    sfxSynthActive := false;
     DmaSoundInit;
+    PsgSoundInit;
     soundReady := true;
 end;
 
 procedure DoneSound;
 begin
-    if soundReady then DmaSoundDone;
+    if soundReady then begin
+        PsgSoundDone;
+        DmaSoundDone;
+    end;
     soundReady := false;
+end;
+
+procedure StartSynthSfx(data: PByte; dataSize: word);
+begin
+    if soundReady then DmaSoundStop;
+    sfxSynthData := data;
+    sfxSynthDataSize := dataSize;
+    sfxSynthOffset := 0;
+    sfxSynthRunFrames := 0;
+    sfxSynthAudf := 0;
+    sfxSynthAudc := 0;
+    sfxSynthOutput := 0;
+    sfxSynthPoly4Pos := 0;
+    sfxSynthPoly5Pos := 0;
+    sfxSynthPhase := 0;
+    sfxSynthNoise := $13579BDF;
+    sfxSynthStreaming := false;
+    sfxSynthBufferIndex := 0;
+    sfxSynthSilentHalves := 0;
+    sfxSynthActive := (data <> nil) and (dataSize >= 3);
+end;
+
+function RenderSynthBlock(dst: PByte): boolean;
+const
+    SFX_ASM_GATE_POLY5 = 1;
+    SFX_ASM_PURE = 2;
+    SFX_ASM_POLY4 = 4;
+    SFX_ASM_NOISE = 8;
+var
+    divider: word;
+    volume: byte;
+    gateWithPoly5, usePure, usePoly4, useNoise: boolean;
+    state: TSfxSynthAsmState;
+begin
+    if sfxSynthRunFrames = 0 then begin
+        if sfxSynthOffset + 2 >= sfxSynthDataSize then begin
+            FillChar(dst^, SFX_SAMPLES_PER_FRAME, 0);
+            exit(false);
+        end;
+        sfxSynthRunFrames := sfxSynthData[sfxSynthOffset];
+        sfxSynthAudf := sfxSynthData[sfxSynthOffset + 1];
+        sfxSynthAudc := sfxSynthData[sfxSynthOffset + 2];
+        Inc(sfxSynthOffset, 3);
+    end;
+
+    volume := sfxSynthAudc and 15;
+    if volume = 0 then
+        FillChar(dst^, SFX_SAMPLES_PER_FRAME, 0)
+    else begin
+        divider := (word(sfxSynthAudf) + 1) * SFX_POKEY_BASE_DIV;
+        gateWithPoly5 := (sfxSynthAudc and $80) = 0;
+        usePure := (sfxSynthAudc and $20) <> 0;
+        usePoly4 := (not usePure) and ((sfxSynthAudc and $40) <> 0);
+        useNoise := (not usePure) and (not usePoly4);
+
+        state.phase := sfxSynthPhase;
+        state.threshold := longword(divider) * SFX_SAMPLE_RATE;
+        state.noise := sfxSynthNoise;
+        state.poly4Pos := sfxSynthPoly4Pos;
+        state.poly5Pos := sfxSynthPoly5Pos;
+        state.stride4 := divider mod 15;
+        state.stride5 := divider mod 31;
+        state.positiveSample := volume * SFX_AMPLITUDE_STEP;
+        state.negativeSample := byte(-shortint(state.positiveSample));
+        state.flags := 0;
+        if gateWithPoly5 then state.flags := state.flags or SFX_ASM_GATE_POLY5;
+        if usePure then state.flags := state.flags or SFX_ASM_PURE;
+        if usePoly4 then state.flags := state.flags or SFX_ASM_POLY4;
+        if useNoise then state.flags := state.flags or SFX_ASM_NOISE;
+        state.output := sfxSynthOutput;
+
+        SfxRenderBlockAsm(dst, SFX_SAMPLES_PER_FRAME, @state);
+        sfxSynthPhase := state.phase;
+        sfxSynthNoise := state.noise;
+        sfxSynthPoly4Pos := state.poly4Pos;
+        sfxSynthPoly5Pos := state.poly5Pos;
+        sfxSynthOutput := state.output;
+    end;
+
+    Dec(sfxSynthRunFrames);
+    Result := true;
+end;
+
+procedure SfxSynthFrame;
+var
+    rendered: boolean;
+    currentVbl, elapsedVbl: longword;
+    blocks, i: byte;
+begin
+    if (not soundReady) or (not sfxSynthActive) then exit;
+
+    if not sfxSynthStreaming then begin
+        for i := 0 to SFX_BUFFER_HALVES - 1 do begin
+            rendered := RenderSynthBlock(@sfxSynthBuffer[i, 0]);
+            if rendered then sfxSynthSilentHalves := 0
+            else Inc(sfxSynthSilentHalves);
+        end;
+
+        if sfxSynthSilentHalves >= SFX_BUFFER_HALVES then begin
+            sfxSynthActive := false;
+            exit;
+        end;
+        DmaPlayLoop(@sfxSynthBuffer[0, 0], SizeOf(sfxSynthBuffer));
+        sfxSynthStreaming := true;
+        sfxSynthBufferIndex := 0;
+        sfxSynthLastVbl := PLongWord(pointer(longword($00000466)))^;
+        exit;
+    end;
+
+    currentVbl := PLongWord(pointer(longword($00000466)))^;
+    elapsedVbl := currentVbl - sfxSynthLastVbl;
+    if elapsedVbl = 0 then exit;
+    sfxSynthLastVbl := currentVbl;
+
+    if elapsedVbl > SFX_BUFFER_HALVES then blocks := SFX_BUFFER_HALVES
+    else blocks := byte(elapsedVbl);
+    for i := 1 to blocks do begin
+        rendered := RenderSynthBlock(
+            @sfxSynthBuffer[sfxSynthBufferIndex, 0]
+        );
+        if rendered then sfxSynthSilentHalves := 0
+        else Inc(sfxSynthSilentHalves);
+        Inc(sfxSynthBufferIndex);
+        if sfxSynthBufferIndex >= SFX_BUFFER_HALVES then
+            sfxSynthBufferIndex := 0;
+    end;
+
+    if sfxSynthSilentHalves >= SFX_BUFFER_HALVES then begin
+        DmaSoundStop;
+        sfxSynthStreaming := false;
+        sfxSynthActive := false;
+    end;
 end;
 
 procedure FSfx(patch: byte);
 var
-    sample: pointer;
-    sampleLength: cardinal;
+    synthData: PByte;
+    synthDataSize: word;
 begin
-    sample := nil;
-    sampleLength := 0;
+    synthData := nil;
+    synthDataSize := 0;
     case patch of
-        SFX_FLIP:      begin sample := @SFX_FLIP_RAW_DATA[0];       sampleLength := SizeOf(SFX_FLIP_RAW_DATA); end;
-        SFX_SLIMEPICK: begin sample := @SFX_SLIME_PICK_RAW_DATA[0]; sampleLength := SizeOf(SFX_SLIME_PICK_RAW_DATA); end;
-        SFX_DEAD:      begin sample := @SFX_DEAD_RAW_DATA[0];       sampleLength := SizeOf(SFX_DEAD_RAW_DATA); end;
-        SFX_PICKALL:   begin sample := @SFX_PICK_ALL_RAW_DATA[0];   sampleLength := SizeOf(SFX_PICK_ALL_RAW_DATA); end;
-        SFX_PICKGOAL:  begin sample := @SFX_PICK_GOAL_RAW_DATA[0];  sampleLength := SizeOf(SFX_PICK_GOAL_RAW_DATA); end;
-        SFX_REVEAL:    begin sample := @SFX_REVEAL_RAW_DATA[0];     sampleLength := SizeOf(SFX_REVEAL_RAW_DATA); end;
-        SFX_BIGSLIME:  begin sample := @SFX_BIG_SLIME_RAW_DATA[0];  sampleLength := SizeOf(SFX_BIG_SLIME_RAW_DATA); end;
-        SFX_CONSOLE:   begin sample := @SFX_CONSOLE_RAW_DATA[0];    sampleLength := SizeOf(SFX_CONSOLE_RAW_DATA); end;
-        SFX_WATERDROP: begin sample := @SFX_WATER_DROP_RAW_DATA[0]; sampleLength := SizeOf(SFX_WATER_DROP_RAW_DATA); end;
-        SFX_LEVER:     begin sample := @SFX_LEVER_RAW_DATA[0];      sampleLength := SizeOf(SFX_LEVER_RAW_DATA); end;
-        SFX_SIREN:     begin sample := @SFX_SIREN_RAW_DATA[0];      sampleLength := SizeOf(SFX_SIREN_RAW_DATA); end;
-        SFX_CIRCUIT:   begin sample := @SFX_CIRCUIT_RAW_DATA[0];    sampleLength := SizeOf(SFX_CIRCUIT_RAW_DATA); end;
-        SFX_GEAR:      begin sample := @SFX_GEAR_RAW_DATA[0];       sampleLength := SizeOf(SFX_GEAR_RAW_DATA); end;
-        SFX_VALVE:     begin sample := @SFX_VALVE_RAW_DATA[0];      sampleLength := SizeOf(SFX_VALVE_RAW_DATA); end;
-        SFX_BELL:      begin sample := @SFX_BELL_RAW_DATA[0];       sampleLength := SizeOf(SFX_BELL_RAW_DATA); end;
-        SFX_GAS:       begin sample := @SFX_GAS_RAW_DATA[0];        sampleLength := SizeOf(SFX_GAS_RAW_DATA); end;
-        SFX_INSECT:    begin sample := @SFX_INSECT_RAW_DATA[0];     sampleLength := SizeOf(SFX_INSECT_RAW_DATA); end;
+        SFX_FLIP:      begin synthData := @SFX_FLIP_SYNTH_DATA[0];       synthDataSize := SizeOf(SFX_FLIP_SYNTH_DATA); end;
+        SFX_SLIMEPICK: begin synthData := @SFX_SLIME_PICK_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_SLIME_PICK_SYNTH_DATA); end;
+        SFX_DEAD:      begin synthData := @SFX_DEAD_SYNTH_DATA[0];       synthDataSize := SizeOf(SFX_DEAD_SYNTH_DATA); end;
+        SFX_PICKALL:   begin synthData := @SFX_PICK_ALL_SYNTH_DATA[0];   synthDataSize := SizeOf(SFX_PICK_ALL_SYNTH_DATA); end;
+        SFX_PICKGOAL:  begin synthData := @SFX_PICK_GOAL_SYNTH_DATA[0];  synthDataSize := SizeOf(SFX_PICK_GOAL_SYNTH_DATA); end;
+        SFX_REVEAL:    begin synthData := @SFX_REVEAL_SYNTH_DATA[0];     synthDataSize := SizeOf(SFX_REVEAL_SYNTH_DATA); end;
+        SFX_BIGSLIME:  begin synthData := @SFX_BIG_SLIME_SYNTH_DATA[0];  synthDataSize := SizeOf(SFX_BIG_SLIME_SYNTH_DATA); end;
+        SFX_CONSOLE:   begin synthData := @SFX_CONSOLE_SYNTH_DATA[0];    synthDataSize := SizeOf(SFX_CONSOLE_SYNTH_DATA); end;
+        SFX_WATERDROP: begin synthData := @SFX_WATER_DROP_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_WATER_DROP_SYNTH_DATA); end;
+        SFX_LEVER:     begin synthData := @SFX_LEVER_SYNTH_DATA[0];      synthDataSize := SizeOf(SFX_LEVER_SYNTH_DATA); end;
+        SFX_SIREN:     begin synthData := @SFX_SIREN_SYNTH_DATA[0];      synthDataSize := SizeOf(SFX_SIREN_SYNTH_DATA); end;
+        SFX_CIRCUIT:   begin synthData := @SFX_CIRCUIT_SYNTH_DATA[0];    synthDataSize := SizeOf(SFX_CIRCUIT_SYNTH_DATA); end;
+        SFX_GEAR:      begin synthData := @SFX_GEAR_SYNTH_DATA[0];       synthDataSize := SizeOf(SFX_GEAR_SYNTH_DATA); end;
+        SFX_VALVE:     begin synthData := @SFX_VALVE_SYNTH_DATA[0];      synthDataSize := SizeOf(SFX_VALVE_SYNTH_DATA); end;
+        SFX_BELL:      begin synthData := @SFX_BELL_SYNTH_DATA[0];       synthDataSize := SizeOf(SFX_BELL_SYNTH_DATA); end;
+        SFX_GAS:       begin synthData := @SFX_GAS_SYNTH_DATA[0];        synthDataSize := SizeOf(SFX_GAS_SYNTH_DATA); end;
+        SFX_INSECT:    begin synthData := @SFX_INSECT_SYNTH_DATA[0];     synthDataSize := SizeOf(SFX_INSECT_SYNTH_DATA); end;
     end;
 
-    if soundReady and (sample <> nil) then DmaPlayRaw(sample, sampleLength);
+    if soundReady and (synthData <> nil) then begin
+        if usePsgSfx then begin
+            DmaSoundStop;
+            sfxSynthActive := false;
+            PsgSoundPlay(synthData, synthDataSize);
+        end else begin
+            PsgSoundStop;
+            StartSynthSfx(synthData, synthDataSize);
+        end;
+    end;
     sfxDelay := FORCE_SFX_DELAY;
 end;
 
@@ -2309,6 +2560,20 @@ begin
     Result := p = GROUND_COLLISION_COLOR;
 end;
 
+function IsDynamicDangerPix(x, y: byte): boolean; inline;
+var sampleY: byte;
+    offset: word;
+    mask: byte;
+begin
+    Result := false;
+    if (x >= 160) or (y >= 80) then exit;
+    if flipped then sampleY := 79 - y
+    else sampleY := y;
+    offset := word(sampleY) * 20 + word(x shr 3);
+    mask := byte($80 shr (x and 7));
+    Result := (dynamicTileDanger[offset] and mask) <> 0;
+end;
+
 procedure ArmTrigger(ptr: word);
 begin
     Move(leveldata[ptr], roomTriggers[triggerCount][0], 10);
@@ -2335,6 +2600,7 @@ begin
             currentWorldImgCount := W00_IMG_COUNT;
             currentWorldTiles := @W00_TILES[0];
             currentWorldTileWords := @W00_TILE_WORDS[0];
+            currentWorldTileCollision := @W00_TILE_COLLISION[0];
             currentWorldTileCount := W00_TILE_COUNT;
         end;
         1: begin
@@ -2347,6 +2613,7 @@ begin
             currentWorldImgCount := W01_IMG_COUNT;
             currentWorldTiles := @W01_TILES[0];
             currentWorldTileWords := @W01_TILE_WORDS[0];
+            currentWorldTileCollision := @W01_TILE_COLLISION[0];
             currentWorldTileCount := W01_TILE_COUNT;
         end;
         2: begin
@@ -2359,6 +2626,7 @@ begin
             currentWorldImgCount := W02_IMG_COUNT;
             currentWorldTiles := @W02_TILES[0];
             currentWorldTileWords := @W02_TILE_WORDS[0];
+            currentWorldTileCollision := @W02_TILE_COLLISION[0];
             currentWorldTileCount := W02_TILE_COUNT;
         end;
         3: begin
@@ -2371,6 +2639,7 @@ begin
             currentWorldImgCount := W03_IMG_COUNT;
             currentWorldTiles := @W03_TILES[0];
             currentWorldTileWords := @W03_TILE_WORDS[0];
+            currentWorldTileCollision := @W03_TILE_COLLISION[0];
             currentWorldTileCount := W03_TILE_COUNT;
         end;
         4: begin
@@ -2383,6 +2652,7 @@ begin
             currentWorldImgCount := W04_IMG_COUNT;
             currentWorldTiles := @W04_TILES[0];
             currentWorldTileWords := @W04_TILE_WORDS[0];
+            currentWorldTileCollision := @W04_TILE_COLLISION[0];
             currentWorldTileCount := W04_TILE_COUNT;
         end;
         5: begin
@@ -2395,6 +2665,7 @@ begin
             currentWorldImgCount := W05_IMG_COUNT;
             currentWorldTiles := @W05_TILES[0];
             currentWorldTileWords := @W05_TILE_WORDS[0];
+            currentWorldTileCollision := @W05_TILE_COLLISION[0];
             currentWorldTileCount := W05_TILE_COUNT;
         end;
     end;
@@ -2765,17 +3036,15 @@ begin
 end;
 
 procedure CheckSpriteCollisions;
-// Flob renders at screen_Y = FLOB_RENDER_OFFSET_Y + flobY * LEVEL_SCALE_Y = 2 + flobY*2
+// Flob renders at screen_Y = FLOB_RENDER_OFFSET_Y + flobY * LEVEL_SCALE_Y.
 // Sprites render at screen_Y = LEVEL_OFFSET_Y + sprites.y * LEVEL_SCALE_Y + WORLD_SPRITE_OFFSET_Y = 20 + y*2
-// Delta = 18 screen px = 9 game units: flobY must be shifted down by 9 before comparing to sprite Y.
-const FLOB_TO_SPRITE_Y = (LEVEL_OFFSET_Y + WORLD_SPRITE_OFFSET_Y - FLOB_RENDER_OFFSET_Y) div LEVEL_SCALE_Y; // = 9
+const FLOB_TO_SPRITE_Y =
+    (LEVEL_OFFSET_Y + WORLD_SPRITE_OFFSET_Y - FLOB_RENDER_OFFSET_Y) div LEVEL_SCALE_Y;
 var fx, fy, fw, fh: byte;
     sx, sy, sw, sh: byte;
     p: byte;
     waitingForPortalRelease: boolean;
 begin
-    if spriteCollisionMovePending then exit;
-
     fx := flobX;
     if flobY >= FLOB_TO_SPRITE_Y then
         fy := flobY - FLOB_TO_SPRITE_Y
@@ -2788,6 +3057,11 @@ begin
         if not SpriteCollisionRect(p, sx, sy, sw, sh) then
             continue;
         if RectsOverlap(fx, fy, fw, fh, sx, sy, sw, sh) then begin
+            // Interactive objects wait for deliberate movement after a flip,
+            // but moving enemies must remain lethal while Flob stands still.
+            if spriteCollisionMovePending and
+               (sprites.stype[p] <> STYPE_ENEMY) then
+                continue;
             if not WorldSpritePixelCollision(p) then
                 continue;
             if teleportPortalReleasePending and (sprites.stype[p] = STYPE_PORTAL) then begin
@@ -2830,12 +3104,61 @@ begin
 end;
 
 function FlobTouchesDangerColor: boolean;
+var frameIdx: byte;
+    frame: PSteSpriteFrame;
+    frameLeft, frameTop, frameRight, frameBottom: smallint;
+    leftCell, topCell, rightCell, bottomCell: smallint;
+    cellX, cellY: smallint;
+    localX0, localY0, localX1, localY1: smallint;
+    px, py: smallint;
 begin
     Result :=
-        (GetPix(flobFoot, flobY    ) = DANGER_COLLISION_COLOR) or  // feet / ground level
-        (GetPix(flobFoot, flobY - 1) = DANGER_COLLISION_COLOR) or  // lower body
-        (GetPix(flobFace, flobY - 2) = DANGER_COLLISION_COLOR) or  // mid body
-        (GetPix(flobFace, flobY - 3) = DANGER_COLLISION_COLOR);    // head
+        (GetPix(flobFoot, flobY - 1) = DANGER_COLLISION_COLOR) or
+        (GetPix(flobFace, flobY - 2) = DANGER_COLLISION_COLOR) or
+        (GetPix(flobFace, flobY - 3) = DANGER_COLLISION_COLOR);
+    if Result or (not dynamicTileDangerActive) then exit;
+    if currentCollisionData = nil then exit;
+    frameIdx := flobFrame + flobDir;
+    if frameIdx > High(SPR_FLOB_FRAMES) then exit;
+    frame := @SPR_FLOB_FRAMES[frameIdx];
+
+    frameLeft := smallint(flobX) * LEVEL_SCALE_X;
+    frameTop := FLOB_RENDER_OFFSET_Y + smallint(flobY) * LEVEL_SCALE_Y;
+    frameRight := frameLeft + smallint(frame^.widthPx) - 1;
+    frameBottom := frameTop + smallint(frame^.heightPx) - 1;
+
+    leftCell := frameLeft div LEVEL_SCALE_X;
+    rightCell := frameRight div LEVEL_SCALE_X;
+    if frameTop < BG_IMAGE_OFFSET_Y then topCell := 0
+    else topCell := (frameTop - BG_IMAGE_OFFSET_Y) div LEVEL_SCALE_Y;
+    if frameBottom < BG_IMAGE_OFFSET_Y then exit;
+    bottomCell := (frameBottom - BG_IMAGE_OFFSET_Y) div LEVEL_SCALE_Y;
+    if rightCell >= 160 then rightCell := 159;
+    if bottomCell >= 80 then bottomCell := 79;
+
+    for cellY := topCell to bottomCell do
+        for cellX := leftCell to rightCell do begin
+            if not IsDynamicDangerPix(byte(cellX), byte(cellY)) then
+                continue;
+
+            localX0 := cellX * LEVEL_SCALE_X - frameLeft;
+            localY0 := BG_IMAGE_OFFSET_Y + cellY * LEVEL_SCALE_Y - frameTop;
+            localX1 := localX0 + LEVEL_SCALE_X - 1;
+            localY1 := localY0 + LEVEL_SCALE_Y - 1;
+            if localX0 < 0 then localX0 := 0;
+            if localY0 < 0 then localY0 := 0;
+            if localX1 >= frame^.widthPx then localX1 := frame^.widthPx - 1;
+            if localY1 >= frame^.heightPx then localY1 := frame^.heightPx - 1;
+
+            for py := localY0 to localY1 do
+                for px := localX0 to localX1 do
+                    if GeneratedSpriteOpaqueAt(
+                        frame, @SPR_FLOB_WORDS[0], px, py
+                    ) then begin
+                        Result := true;
+                        exit;
+                    end;
+        end;
 end;
 
 // ***************************************************
@@ -3083,13 +3406,23 @@ begin
 end;
 
 procedure ShowMessage(msg, mtype, count: byte);
+var textAddr: word;
 begin
     msgDisplayCounter := count;
     msgDisplayType := mtype;
+    textAddr := $FFFF;
+    if msg <= High(messages) then textAddr := messages[msg];
+
+    // Conditional triggers may fire every frame. Preserve their original timer
+    // refresh without decoding and drawing the same 80-byte message repeatedly.
+    if (textAddr <> $FFFF) and (currentMessageAddr = textAddr) and
+        (not messageCacheDirty) then exit;
+
     ClearTxt2;
     if msg <= High(messages) then begin
-        currentMessageLines[0] := DecodeWorldTextLine(messages[msg], 0);
-        currentMessageLines[1] := DecodeWorldTextLine(messages[msg], 1);
+        currentMessageLines[0] := DecodeWorldTextLine(textAddr, 0);
+        currentMessageLines[1] := DecodeWorldTextLine(textAddr, 1);
+        currentMessageAddr := textAddr;
     end;
     messageCacheDirty := true;
     RefreshOverlayBuffers;
@@ -4512,6 +4845,10 @@ begin
             BlackAll;   // ensure screen is black before first FadeIn
             repeat
                 if exploded then begin
+                    // LoadLevel expects SCREEN_BKG and displayFlipped to agree before it
+                    // rebuilds the respawn room. Hide that technical orientation change;
+                    // otherwise the completed death frame visibly flips for one frame.
+                    BlackAll;
                     if lastSafeLanded.flipped then EnsureDisplayOrientation(true)
                     else EnsureDisplayOrientation(false);
                     flipped  := lastSafeLanded.flipped;

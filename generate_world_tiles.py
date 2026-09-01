@@ -41,6 +41,12 @@ ATARI_TO_ST_INDEX = {
     2: 1,
     3: 3,
 }
+CANONICAL_TO_COLLISION_INDEX = {
+    0: 0,
+    1: 3,
+    2: 2,
+    3: 1,
+}
 
 
 def strip_comment(line: str) -> str:
@@ -228,6 +234,17 @@ def words_to_pascal_array(name: str, data: list[int]) -> str:
     return f"const {name} : array[0..{len(data)-1}] of word=(\n{body}\n);\n"
 
 
+def bytes_to_pascal_array(name: str, data: list[int]) -> str:
+    if len(data) & 1:
+        data = data + [0]
+    vals = [f"${value:02X}" for value in data]
+    rows = []
+    for i in range(0, len(vals), 15):
+        rows.append("  " + ",".join(vals[i:i + 15]))
+    body = ",\n".join(rows)
+    return f"const {name} : array[0..{len(data)-1}] of byte=(\n{body}\n);\n"
+
+
 def pack_st_masked_words(src_pixels: list[int], width_px: int, height_px: int) -> tuple[int, list[int], list[int]]:
     width_words = (width_px + 15) // 16
     mask_words: list[int] = []
@@ -265,6 +282,38 @@ def pack_st_masked_words(src_pixels: list[int], width_px: int, height_px: int) -
             gfx_words.extend([p0, p1, p2, p3])
 
     return width_words, mask_words, gfx_words
+
+
+def pack_collision_pixels(src_pixels: list[int], width_px: int, height_px: int) -> list[int]:
+    """Downsample Scale2x artwork to packed 2bpp collision semantics."""
+    if (width_px & 1) or (height_px & 1) or ((width_px // 2) & 3):
+        raise ValueError(f"tile size {width_px}x{height_px} cannot form packed collision data")
+
+    source_width = width_px // 2
+    source_height = height_px // 2
+    packed: list[int] = []
+    for y in range(source_height):
+        row: list[int] = []
+        for x in range(source_width):
+            samples = [
+                src_pixels[(y * 2) * width_px + x * 2],
+                src_pixels[(y * 2) * width_px + x * 2 + 1],
+                src_pixels[(y * 2 + 1) * width_px + x * 2],
+                src_pixels[(y * 2 + 1) * width_px + x * 2 + 1],
+            ]
+            # Scale2x retains the source value in at least half of each 2x2 block.
+            max_count = max(samples.count(value) for value in range(4))
+            candidates = [value for value in range(4) if samples.count(value) == max_count]
+            canonical = samples[3] if samples[3] in candidates else candidates[0]
+            row.append(CANONICAL_TO_COLLISION_INDEX[canonical])
+        for x in range(0, source_width, 4):
+            packed.append(
+                (row[x] << 6)
+                | (row[x + 1] << 4)
+                | (row[x + 2] << 2)
+                | row[x + 3]
+            )
+    return packed
 
 
 def extract_tiles(asm_path: Path, labels: dict[str, int]) -> list[dict]:
@@ -335,6 +384,7 @@ def extract_tiles(asm_path: Path, labels: dict[str, int]) -> list[dict]:
 
 def write_world_tile_include(world_idx: int, tiles: list[dict]) -> None:
     word_blob: list[int] = []
+    collision_blob: list[int] = []
     records: list[str] = []
 
     for tile in tiles:
@@ -344,10 +394,14 @@ def write_world_tile_include(world_idx: int, tiles: list[dict]) -> None:
         data_offset = len(word_blob)
         word_blob.extend(mask)
         word_blob.extend(gfx)
+        collision_offset = len(collision_blob)
+        collision_blob.extend(
+            pack_collision_pixels(tile["pixels"], tile["width_px"], tile["height_px"])
+        )
         records.append(
             f"    (sourceAddr:${tile['source_addr']:04X}; widthPx:{tile['width_px']}; "
             f"heightPx:{tile['height_px']}; rowWords:{row_words}; "
-            f"dataOffset:{data_offset})"
+            f"dataOffset:{data_offset}; collisionOffset:{collision_offset})"
         )
 
     world_name = f"W{world_idx:02d}"
@@ -359,11 +413,14 @@ def write_world_tile_include(world_idx: int, tiles: list[dict]) -> None:
             f.write(",\n".join(records))
             f.write("\n);\n\n")
             f.write(words_to_pascal_array(f"{world_name}_TILE_WORDS", word_blob))
+            f.write("\n")
+            f.write(bytes_to_pascal_array(f"{world_name}_TILE_COLLISION", collision_blob))
         else:
             f.write(f"const {world_name}_TILES : array[0..0] of TSteTile = (\n")
-            f.write("    (sourceAddr:0; widthPx:0; heightPx:0; rowWords:0; dataOffset:0)\n")
+            f.write("    (sourceAddr:0; widthPx:0; heightPx:0; rowWords:0; dataOffset:0; collisionOffset:0)\n")
             f.write(");\n\n")
             f.write(f"const {world_name}_TILE_WORDS : array[0..0] of word=(\n  $0000\n);\n")
+            f.write(f"const {world_name}_TILE_COLLISION : array[0..0] of byte=(\n  $00\n);\n")
 
 
 def write_master_include() -> None:

@@ -19,6 +19,10 @@
   - Check moving/animated/removed sprites, overlaps, flip, death, teleport, and reveal paths.
 - Keep copy/clear blitter operations without HOG; keep HOG only for sprite/tile blits unless testing shows otherwise.
 - Continue verifying flip-specific collision and sprite positions in all rooms.
+- Verify dynamic tile collision in every room using animated hazards or blockers.
+  - `PUT_TILE` now updates room collision data when a tile changes state.
+  - Dangerous dynamic pixels use a compact 1bpp mask and exact Flob-mask tests.
+  - Confirm gas, cables, gates and other on/off tiles in both orientations.
 - Verify the STE Flob death animation on floors, platforms, flipped rooms and screen edges.
   - `poof3`/`poof4` are generated as separate atlas layers; their 2x2 particles fall independently against room collision data.
 
@@ -32,6 +36,8 @@
   - Later: improve full-screen layout, text style, locked/playable state presentation, and preview animation.
 - Polish game-over/end-world screens.
   - Current flow is functional.
+  - Four end-world icons now come from canonical Scale2x `game_endworld_icons/*.png` files.
+  - Verify map, vial, formula and skull placement/palette in every summary variant.
   - Later: match final art direction and fade timing.
 - Revisit HUD rendering after final font decisions.
   - HUD is functional.
@@ -65,8 +71,9 @@
 - Rebuild sprite assets after any edited `images/sprite_atlas/game_sprites.png` palette/art changes.
   - Use `make sprite-atlas-assets-only && make clean && make`.
   - `make used-sprite-atlas` only regenerates the reference export and never overwrites artist work.
+  - Do not apply Scale2x automatically to the whole production atlas: the preview distorted several small sprites. Smooth selected sprites manually.
 - Reduce the generated planar sprite atlas footprint for the 1 MB build.
-  - World data and collision maps are now Apultra-compressed. The PRG dropped to about 957 KiB, while runtime uses shared 8192-byte world and 3200-byte collision buffers.
+  - World data and collision maps are now Apultra-compressed. The current PRG is about 971 KiB, while runtime uses shared 8192-byte world and 3200-byte collision buffers.
   - Runtime world loading and per-room collision decompression are verified in gameplay.
   - Current atlas is about 220.5 KiB: 159.8 KiB graphics, 40.0 KiB masks and 20.8 KiB frame metadata.
   - The generator stores 1636 frames because every source frame receives an unconditional vertical-flip copy.
@@ -90,15 +97,18 @@
   - Achievements.
 - Verify achievements unlock and persistence after completing worlds, finding secrets, speed runs, and global milestones.
 
-## Audio (Final Stage)
+## Audio
 
-- Audio will be implemented near the end, after gameplay and rendering stabilize.
+- Core SFX are implemented from original POKEY register streams.
+  - Default playback uses one PSG channel and a lightweight TOS VBL callback.
+  - An alternate STE DMA software-synth backend remains available for comparison.
+  - Verify final volume, pitch and distortion for every effect during full playthroughs.
 - Implement music playback on STE.
   - Title/menu music.
   - In-game world music.
   - Cutscene music.
   - End/game-over music if present in original assets.
-- Implement gameplay sound effects:
+- Verify gameplay sound effects already connected through `Sfx` / `FSfx`:
   - `SFX_FLIP`
   - `SFX_SLIMEPICK`
   - `SFX_DEAD`
@@ -116,10 +126,10 @@
   - `SFX_BELL`
   - `SFX_GAS`
   - `SFX_INSECT`
-  - `SFX_SCRAPE`
   - aliases currently mapped in constants: `SFX_BEEP`, `SFX_TELEPORT`
-- Decide final audio format/player for STE.
-- Audit original `Sfx` / `FSfx` delay behavior when implementing audio.
+- Implement or deliberately map the remaining `SFX_SCRAPE` effect if its gameplay path is used.
+- Decide whether the alternate DMA backend should remain in the final release.
+- Audit original `Sfx` / `FSfx` delay and priority behavior during final audio polish.
 
 ## Cleanup
 
@@ -171,4 +181,4 @@
 - Stable joystick under gameplay blitter load.
 - No visible tearing in gameplay/cutscenes.
 - No debug text or fallback graphics left.
-- Music and core SFX implemented.
+- Music and core SFX verified.

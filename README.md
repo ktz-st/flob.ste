@@ -22,13 +22,16 @@ Gra kompiluje sie do `flob.prg` i ma juz dzialajacy glowny przeplyw:
 - joystick w trybie gry przez raw IKBD handler,
 - klawiatura w menu / title / ekranach pomocniczych,
 - podstawowe kolizje, teleporty, sprite keys, portals, slimes, enemies, exits,
+- dynamiczna aktualizacja kolizji po `PUT_TILE`, w tym gaz, kable i zapory,
 - wspolna paleta sprite atlasu dla pokojow gry,
-- level colors mapowane z danych A8 przez `STE_PAL`.
+- level colors mapowane z danych A8 przez `STE_PAL`,
+- efekty SFX odtworzone z danych POKEY przez PSG lub syntezator DMA STE.
 
-Najwazniejsze braki sa w `TODO.md`. Na dzis glowne otwarte obszary to audio, dalsza optymalizacja restore tła pod sprite'ami oraz pelna weryfikacja wszystkich swiatow i nowych ekranow STE.
+Najwazniejsze braki sa w `TODO.md`. Na dzis glowne otwarte obszary to muzyka,
+dalsza optymalizacja pamieci atlasu oraz pelna weryfikacja wszystkich swiatow.
 
 Aktualny build po migracji kanonicznych assetow oraz kompresji danych ma
-`980256 B` (okolo 957 KiB). Wygładzony title screen, ladowanie skompresowanych
+`994124 B` (okolo 971 KiB). Wygladzony title screen, ladowanie skompresowanych
 danych swiatow i dekompresja kolizji per pokoj zostaly potwierdzone w grze.
 
 ## Build
@@ -89,12 +92,14 @@ Wazne generatory:
 - `create_game_sprite_sheet.py` - jednorazowa migracja eksportu do produkcyjnego arkusza na siatce 16 px oraz generator podpisanego guide'a.
 - `create_game_rooms.py` - jednorazowy Scale2x oryginalnych pokojow do kanonicznych PNG 320x160.
 - `create_game_world_icons.py` - jednorazowy Scale2x ikon selektora do kanonicznych PNG 192x80.
+- `create_game_endworld_icons.py` - jednorazowy Scale2x czterech ikon podsumowania swiata do kanonicznych PNG 64x80.
 - `create_game_cutscenes.py` - jednorazowy Scale2x slajdow intro/outro do kanonicznych PNG 320x160.
 - `create_game_title.py` - jednorazowy Scale2x zwyklego i ukoronowanego title screenu do kanonicznych PNG 320x184.
 - `generate_world_data.py` - kompresja Apultra danych poziomow per swiat i kolizji per pokoj.
 - `convert_images.py` - konwersja kanonicznych pokojow i cutscenek bez skalowania do planarnych danych STE oraz kompresja Apultra.
 - `generate_sprite_assets_from_atlas.py` - konwersja atlasu PNG do blitterowych masek/danych `.inc`.
 - `generate_world_sprite_atlas_map.py` - mapowanie oryginalnych adresow sprite'ow ze swiata na atlasowe dane STE.
+- `generate_sfx_synth.py` - ekstrakcja kompaktowych strumieni rejestrow POKEY 50 Hz dla PSG/DMA.
 - `generate_achievements.py`, `generate_endworld_icons.py`, `generate_world_icons.py` - konwersja UI assets.
 
 ## Rendering
@@ -158,6 +163,11 @@ uzywany przez build i mozna go odswiezyc przez `make game-sprite-guide`.
 
 `used_sprites.png/json` oraz `all_sprites.png/json` sa tylko eksportami
 referencyjnymi z oryginalnych danych. Build nie czyta ich automatycznie.
+
+Nie stosujemy automatycznego Scale2x do produkcyjnego atlasu. Testowy podglad
+pokazal, ze algorytm dobrze wygladza czesc duzych ksztaltow, ale znieksztalca
+drobne sprite'y i szczegoly animacji. Finalne wygladzanie `game_sprites.png`
+pozostaje praca grafika wykonywana selektywnie, przy zachowaniu siatki i palety.
 
 Po recznej zmianie grafiki lub palety w `game_sprites.png`:
 
@@ -299,6 +309,34 @@ make
 `create_game_world_icons.py --force` odtwarza ikony z oryginalnych GIF-ow i
 nadpisuje prace grafika, dlatego nie jest czescia normalnego builda.
 
+## End-world Icons
+
+Kanonicznym zrodlem czterech ikon ekranu podsumowania swiata sa indeksowane
+PNG `64x80`:
+
+```text
+game_endworld_icons/bigmap.png
+game_endworld_icons/bigvial.png
+game_endworld_icons/bigformula.png
+game_endworld_icons/skull.png
+game_endworld_icons/manifest.json
+```
+
+Poczatkowy zestaw powstal przez jednorazowy Scale2x oryginalnych GIF-ow
+`32x40`. Normalny build pakuje gotowe PNG bez dalszego skalowania do formatu
+ST-low zgodnego z `BlitterCopyBitmap4`. Wszystkie cztery grafiki zachowuja
+wspolne indeksy palety `0..3`.
+
+Po edycji PNG wystarczy `make`. Pierwszy import wykonuje:
+
+```sh
+make game-endworld-icons-init
+make
+```
+
+Importer zachowuje istniejace PNG. Opcja `create_game_endworld_icons.py
+--force` swiadomie odtwarza je z oryginalnych GIF-ow i nadpisuje prace grafika.
+
 ## Title Artwork
 
 Kanonicznym zrodlem title screenu sa indeksowane PNG `320x184`:
@@ -436,6 +474,9 @@ Oryginal A8 uzywal:
 Port STE:
 
 - podloga/zagrozenia sa sprawdzane przez `GetPix` z danych tla,
+- `PUT_TILE` od razu aktualizuje bazowa mape kolizji pod dynamicznym kaflem,
+- dynamiczne niebezpieczne piksele maja dodatkowa maske 1bpp i sa testowane
+  przeciw rzeczywistej masce Floba, zamiast kosztownego skanowania calego ekranu,
 - slime collision jest osobna logika ekranowa,
 - world sprite collision ma najpierw szybki rect check, a potem pikselowa kolizje maska-vs-maska z atlasowych sprite'ow,
 - po teleportach jest release guard, zeby nie wyjsc natychmiast z portalu,
@@ -483,18 +524,23 @@ Do dopracowania:
 
 ## Audio
 
-Audio jest celowo zostawione na koniec.
+Efekty zostaly wyciagniete z oryginalnego RMT/POKEY do kompaktowych rekordow
+`run, AUDF, AUDC` odswiezanych z czestotliwoscia 50 Hz. `Sfx` i `FSfx` wybieraja
+dane z `assets/sfx_synth.inc`.
 
-Aktualnie:
+Domyslny backend PSG:
 
-```pascal
-procedure FSfx(patch: byte); begin end;
-procedure Sfx(patch: byte);  begin end;
-```
+- `asm/psgsound.s` instaluje callback w kolejce VBL TOS,
+- uzywa jednego kanalu YM2149 i zachowuje jego poprzedni stan,
+- mapuje czestotliwosc, distortion/noise oraz glosnosc POKEY na PSG,
+- nie zatrzymuje petli gry i nie wykonuje kosztownej syntezy probek co klatke.
 
-Kod gry juz wywoluje `Sfx` / `FSfx` w miejscach zgodnych z oryginalem, wiec pozniejsza implementacja audio powinna podpiac sie do tych procedur.
+Alternatywny backend DMA pozostaje do porownan. `asm/sfxsynth.s` renderuje
+przebieg POKEY do buforow 8-bit signed mono, a DMA STE odtwarza je w tle.
+Wariant PSG zostal wybrany jako domyslny, bo daje dobra responsywnosc i czytelne
+efekty. Wszystkie obecnie podpiete SFX korzystaja z jednego kanalu.
 
-Lista potrzebnych SFX jest w `TODO.md`.
+Do zrobienia pozostaje muzyka oraz koncowy balans i test wszystkich efektow.
 
 ## Debug / Cheat
 
@@ -557,6 +603,12 @@ Jednorazowy import ikon selektora z oryginalu:
 
 ```sh
 make game-world-icons-init
+```
+
+Jednorazowy import ikon podsumowania swiata z oryginalu:
+
+```sh
+make game-endworld-icons-init
 ```
 
 Jednorazowy import slajdow intro/outro z oryginalu:

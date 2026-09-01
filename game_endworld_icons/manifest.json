@@ -1,0 +1,75 @@
+{
+  "canonical_build_source": true,
+  "scale_algorithm": "Scale2x",
+  "source_size": [
+    32,
+    40
+  ],
+  "target_size": [
+    64,
+    80
+  ],
+  "icon_count": 4,
+  "icons": [
+    {
+      "name": "bigmap",
+      "source": "flob/assets/bigmap.gif",
+      "image": "game_endworld_icons/bigmap.png",
+      "size": [
+        64,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "bigvial",
+      "source": "flob/assets/bigvial.gif",
+      "image": "game_endworld_icons/bigvial.png",
+      "size": [
+        64,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "bigformula",
+      "source": "flob/assets/bigformula.gif",
+      "image": "game_endworld_icons/bigformula.png",
+      "size": [
+        64,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "skull",
+      "source": "flob/assets/skull.gif",
+      "image": "game_endworld_icons/skull.png",
+      "size": [
+        64,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    }
+  ]
+}
