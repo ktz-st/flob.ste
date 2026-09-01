@@ -1,0 +1,20 @@
+{
+  "source": "/Users/kriss/GCC.ELF/flob/assets/intro/_flob_intro.rmt",
+  "song": 0,
+  "source_loop_seconds": 62.75,
+  "loop_seconds": 62.58,
+  "looping": false,
+  "frame_rate": 50,
+  "frame_count": 3129,
+  "left_pokey_channels": "dynamic 8-to-3",
+  "pokey_side": "stereo",
+  "format": "FYM1 register delta stream",
+  "register_count": 11,
+  "stream_bytes": 14789,
+  "wav_rate": 22050,
+  "noise_volume_attenuation": 3,
+  "noise_period_scale": 1.25,
+  "volume_attenuation": 0,
+  "deduplicate_stereo": false,
+  "distortion_c_noise": false
+}

@@ -34,6 +34,15 @@ SFX_INC_GEN = generate_sfx_include.py
 SFX_INC = assets/sfx_raw.inc
 SFX_SYNTH_GEN = generate_sfx_synth.py
 SFX_SYNTH_INC = assets/sfx_synth.inc
+MUSIC_INC_GEN = generate_music_include.py
+MUSIC_THEME_INC = assets/music_theme.inc
+MUSIC_FYM = \
+	audio/ym_music/flob_theme.fym audio/ym_music/flob_world_00.fym \
+	audio/ym_music/flob_world_01.fym audio/ym_music/flob_world_02.fym \
+	audio/ym_music/flob_world_03.fym audio/ym_music/flob_world_04.fym \
+	audio/ym_music/flob_intro.fym audio/ym_music/flob_outro.fym \
+	audio/ym_music/flob_endgame.fym
+MUSIC_FYM_APL = $(addsuffix .apl,$(MUSIC_FYM))
 SFX_RAW = \
 	audio/ste_sfx_wav/flip.raw audio/ste_sfx_wav/slime_pick.raw \
 	audio/ste_sfx_wav/dead.raw audio/ste_sfx_wav/pick_all.raw \
@@ -75,6 +84,7 @@ SOURCES = \
 	generated/sprite_atlas_palette.inc \
 	generated/world_sprite_atlas_map.inc \
 	$(SFX_SYNTH_INC) \
+	$(MUSIC_THEME_INC) \
 	$(TILE_GEN) \
 	$(ACHIEVEMENT_GEN) \
 	$(ENDWORLD_ICON_GEN) \
@@ -92,6 +102,9 @@ $(SFX_INC): $(SFX_INC_GEN) $(SFX_RAW)
 
 $(SFX_SYNTH_INC): $(SFX_SYNTH_GEN) $(SFX_WAV_GEN) ../flob/flob.xex $(shell find ../flob/worlds -name '_flob_ingame.rmt')
 	python3 $(SFX_SYNTH_GEN)
+
+$(MUSIC_THEME_INC): $(MUSIC_INC_GEN) $(MUSIC_FYM) $(MUSIC_FYM_APL)
+	python3 $(MUSIC_INC_GEN)
 
 worlds/world_collisions.inc: $(WORLD_DATA_GEN) game_rooms/manifest.json $(WORLD_BIN_FILES) $(WORLD_COLLISION_IMAGES)
 	python3 $(WORLD_DATA_GEN)

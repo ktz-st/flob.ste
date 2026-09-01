@@ -1,0 +1,19 @@
+{
+  "source": "/Users/kriss/GCC.ELF/flob/worlds/04_Silver_Dust_Mines/_flob_ingame.rmt",
+  "song": 0,
+  "source_loop_seconds": 179.7,
+  "loop_seconds": 179.2,
+  "frame_rate": 50,
+  "frame_count": 8960,
+  "left_pokey_channels": "dynamic 8-to-3",
+  "pokey_side": "stereo",
+  "format": "FYM1 register delta stream",
+  "register_count": 11,
+  "stream_bytes": 37550,
+  "wav_rate": 22050,
+  "noise_volume_attenuation": 3,
+  "noise_period_scale": 1.25,
+  "volume_attenuation": 2,
+  "deduplicate_stereo": true,
+  "distortion_c_noise": false
+}

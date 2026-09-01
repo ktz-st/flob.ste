@@ -1,0 +1,17 @@
+{
+  "source": "/Users/kriss/GCC.ELF/flob/worlds/00_Escape_From_The_Lab/_flob_ingame.rmt",
+  "song": 0,
+  "source_loop_seconds": 85.31,
+  "loop_seconds": 85.08,
+  "frame_rate": 50,
+  "frame_count": 4254,
+  "left_pokey_channels": "dynamic 8-to-3",
+  "pokey_side": "stereo",
+  "format": "FYM1 register delta stream",
+  "register_count": 11,
+  "stream_bytes": 26405,
+  "wav_rate": 22050,
+  "noise_volume_attenuation": 3,
+  "noise_period_scale": 1.25,
+  "volume_attenuation": 2
+}

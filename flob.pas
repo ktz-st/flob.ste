@@ -147,6 +147,7 @@ const
 {$i generated/sprite_assets_atlas.inc} // generated unified atlas -> masked sprite data
 {$i generated/sprite_atlas_palette.inc}
 {$i assets/sfx_synth.inc} // generated 50 Hz POKEY register streams
+{$i assets/music_theme.inc} // converted title music, FYM1 register deltas
 
 {$L unapl.o}
 {$L font.o}
@@ -167,6 +168,8 @@ procedure PsgSoundInit; external;
 procedure PsgSoundDone; external;
 procedure PsgSoundStop; external;
 procedure PsgSoundPlay(data: pointer; dataSize: cardinal); cdecl; external;
+procedure PsgMusicPlay(data: pointer); cdecl; external;
+procedure PsgMusicStop; external;
 var FlobFont: byte; external name 'FlobFont';
 var RawIkbdJoyStatus: byte; external name 'RawIkbdJoyStatus';
 var RawIkbdState: byte; external name 'RawIkbdState';
@@ -376,6 +379,7 @@ var
     lastSfxCh: byte;
     music_ingame: boolean;
     music_track: byte;
+    musicBuffer: array[0..MUSIC_BUFFER_BYTES - 1] of byte;
     escPressed: byte;
     soundReady: boolean;
     usePsgSfx: boolean;
@@ -1972,8 +1976,40 @@ end;
 // *** SOUND
 // ***************************************************
 
-procedure PlaySong(p: byte); begin end;
-procedure StopSong;          begin end;
+procedure PlaySong(p: byte);
+var packedMusic: pointer;
+begin
+    if not soundReady then exit;
+    packedMusic := nil;
+    case p of
+        MUSIC_THEME:   packedMusic := @MUSIC_THEME_FYM_APL[0];
+        MUSIC_LEVEL: begin
+            case music_track of
+                0: packedMusic := @MUSIC_WORLD_00_FYM_APL[0];
+                1: packedMusic := @MUSIC_WORLD_01_FYM_APL[0];
+                2: packedMusic := @MUSIC_WORLD_02_FYM_APL[0];
+                3: packedMusic := @MUSIC_WORLD_03_FYM_APL[0];
+                4: packedMusic := @MUSIC_WORLD_04_FYM_APL[0];
+            end;
+        end;
+        MUSIC_INTRO:   packedMusic := @MUSIC_INTRO_FYM_APL[0];
+        MUSIC_OUTRO:   packedMusic := @MUSIC_OUTRO_FYM_APL[0];
+        MUSIC_ENDGAME: packedMusic := @MUSIC_ENDGAME_FYM_APL[0];
+    end;
+
+    PsgMusicStop;
+    music_on := 0;
+    if packedMusic = nil then exit;
+    UnApl(packedMusic, @musicBuffer[0]);
+    PsgMusicPlay(@musicBuffer[0]);
+    music_on := 1;
+end;
+
+procedure StopSong;
+begin
+    if soundReady then PsgMusicStop;
+    music_on := 0;
+end;
 
 procedure InitSound;
 begin
@@ -4314,11 +4350,25 @@ end;
 // *** CUTSCENE / CREDITS (1:1 from original, stubs)
 // ***************************************************
 
+function CutsceneLineDelay(const line: string): word;
+var i: byte;
+begin
+    i := Length(line);
+    while (i > 0) and (line[i] = ' ') do Dec(i);
+    if (i > 0) and (line[i] = '!') then
+        CutsceneLineDelay := 250
+    else if (i > 0) and (line[i] = '.') then
+        CutsceneLineDelay := 150
+    else
+        CutsceneLineDelay := 55;
+end;
+
 procedure ShowCutScene(csbank, cscount: byte);
 var slide: byte;
     slideDelay: word;
     visibleLines: byte;
     cutsceneHold: boolean;
+    syncMusicTiming: boolean;
     c0, c1, c2, bg: byte;
     l0, l1, l2, l3: string;
 begin
@@ -4329,7 +4379,9 @@ begin
     ClearScreen(SCREEN_PHY);
     slide := 0;
     WaitFrame;
-    PlaySong(0);
+    if csbank = INTRO_BANK then PlaySong(MUSIC_INTRO)
+    else if csbank = OUTRO_BANK then PlaySong(MUSIC_OUTRO);
+    syncMusicTiming := (csbank = INTRO_BANK) or (csbank = OUTRO_BANK);
     repeat
         FillChar(messageTypes, SizeOf(messageTypes), 0);
         LoadCutsceneSlide(slide, csbank);
@@ -4338,7 +4390,8 @@ begin
         RebuildCutscenePalette(c0, c1, c2, bg);
         FadeIn;
         visibleLines := 0;
-        slideDelay := 18;
+        if syncMusicTiming then slideDelay := 18
+        else slideDelay := 18;
         cutsceneHold := false;
         repeat
             if slideDelay = 0 then begin
@@ -4346,10 +4399,19 @@ begin
                     Inc(visibleLines);
                     RenderCutsceneText(SCREEN_LOG, l0, l1, l2, l3, visibleLines);
                     SwapScreen;
-                    slideDelay := 22;
+                    if syncMusicTiming then begin
+                        case visibleLines of
+                            1: slideDelay := CutsceneLineDelay(l0);
+                            2: slideDelay := CutsceneLineDelay(l1);
+                            3: slideDelay := CutsceneLineDelay(l2);
+                            4: slideDelay := CutsceneLineDelay(l3);
+                        end;
+                    end else
+                        slideDelay := 22;
                 end else if not cutsceneHold then begin
                     cutsceneHold := true;
-                    slideDelay := 300;
+                    if syncMusicTiming then slideDelay := 55
+                    else slideDelay := 300;
                 end;
             end;
             if slideDelay > 0 then
@@ -4974,8 +5036,6 @@ begin
                             Inc(music_track);
                             if music_track > 4 then music_track := 0;
                             StopSong;
-                            LoadWorld(music_track);
-                            LoadWorld(worldCurrent);
                             PlaySong(MUSIC_LEVEL);
                             actionDelay := 20;
                         end;
