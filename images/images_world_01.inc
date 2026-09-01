@@ -67,26 +67,3 @@ const W01_PAL_PTRS: array[0..20] of pointer = (
     @W01_IMG_19_PAL[0],
     @W01_IMG_20_PAL[0]
 );
-const W01_COL_PTRS: array[0..20] of pointer = (
-    @W01_IMG_00_COL[0],
-    @W01_IMG_01_COL[0],
-    @W01_IMG_02_COL[0],
-    @W01_IMG_03_COL[0],
-    @W01_IMG_04_COL[0],
-    @W01_IMG_05_COL[0],
-    @W01_IMG_06_COL[0],
-    @W01_IMG_07_COL[0],
-    @W01_IMG_08_COL[0],
-    @W01_IMG_09_COL[0],
-    @W01_IMG_10_COL[0],
-    @W01_IMG_11_COL[0],
-    @W01_IMG_12_COL[0],
-    @W01_IMG_13_COL[0],
-    @W01_IMG_14_COL[0],
-    @W01_IMG_15_COL[0],
-    @W01_IMG_16_COL[0],
-    @W01_IMG_17_COL[0],
-    @W01_IMG_18_COL[0],
-    @W01_IMG_19_COL[0],
-    @W01_IMG_20_COL[0]
-);

@@ -28,6 +28,7 @@
   - Six per-world pages and one global page are rendered with STE-native text and support joystick or keyboard navigation.
 - Polish the world selector.
   - Icons are implemented with STE-native world icon rendering.
+  - Selector icons now come from canonical Scale2x `game_world_icons/world_XX.png` files; verify all six visually after the migration.
   - Later: improve full-screen layout, text style, locked/playable state presentation, and preview animation.
 - Polish game-over/end-world screens.
   - Current flow is functional.
@@ -37,6 +38,8 @@
   - Message rendering should remain cached/event-driven, not per-frame.
 - Verify title, cutscenes, achievements, selector, stats, game-over, and credits palette order.
   - Draw to LOG first, swap, then fade into target palette.
+  - Normal title from canonical Scale2x `game_title/title.png` is visually verified; verify the crowned achievement variant separately.
+  - Intro/outro slides now come from canonical Scale2x `game_cutscenes/*.png`; verify all nine slides, text placement and transitions in Hatari.
 - Verify gameplay pause with `P`, Enter and FIRE resume.
   - Check restoring an active message and ensure FIRE resume does not trigger an immediate flip.
 
@@ -46,14 +49,29 @@
 - Keep room screens using level colors from original data mapped through `STE_PAL`.
 - Use atlas palette only during gameplay rooms, not title/cutscene/menu screens unless intended.
 - Replace temporary/converted graphics with final 16-color STE artwork where available.
+- Polish canonical `game_rooms/world_XX/room_XX.png` backgrounds at 320x160.
+  - Initial artwork is Scale2x and remains restricted to palette indices 0..3.
+  - Canonical `room_XX_collision.png` maps remain 160x80 and use semantic indices 0..3.
+  - Original room GIFs are reference/import inputs only; normal builds use `game_rooms` exclusively.
+- Verify all canonical Scale2x `game_tiles/world_XX/*.png` overlays in-game.
+  - Normal builds use only the indexed PNG files and `game_tiles/manifest.json`; original `.gfx/.asm` files are reference/import inputs.
+  - Tiles now use one unshifted mask + 4-plane payload and Blitter skew, reducing their planar data from about 145.7 KiB to 65.4 KiB.
+  - Check transparent contours and seams for doors, bridges, cables, water, smoke and paired on/off states.
 - Verify the new merged `SPRITE_COMBINED` color overlays in all listed rooms.
   - All 26 `gap=0` uses now render one generated `*_merged` asset instead of separate P0/P1 blits.
   - All 7 `gap>0` uses now render generated 20/30/32 px `*_compound` assets with full-width pixel collision.
   - Check colors, animation, vertical flip and collision against `SPRITE_COMBINED_REPORT.md`.
   - `phone` is visually verified; verify `gear`, `spiderjump` and `bat` in the rooms listed in the report.
-- Rebuild sprite assets after any edited `images/sprite_atlas/used_sprites.png` palette/art changes.
+- Rebuild sprite assets after any edited `images/sprite_atlas/game_sprites.png` palette/art changes.
   - Use `make sprite-atlas-assets-only && make clean && make`.
-  - `make used-sprite-atlas` regenerates the PNG/JSON from source data and overwrites manual edits.
+  - `make used-sprite-atlas` only regenerates the reference export and never overwrites artist work.
+- Reduce the generated planar sprite atlas footprint for the 1 MB build.
+  - World data and collision maps are now Apultra-compressed. The PRG dropped to about 957 KiB, while runtime uses shared 8192-byte world and 3200-byte collision buffers.
+  - Runtime world loading and per-room collision decompression are verified in gameplay.
+  - Current atlas is about 220.5 KiB: 159.8 KiB graphics, 40.0 KiB masks and 20.8 KiB frame metadata.
+  - The generator stores 1636 frames because every source frame receives an unconditional vertical-flip copy.
+  - 575 frame blobs are already byte-identical to another frame in the same asset; sharing their offsets would save about 71 KiB without changing the Blitter renderer.
+  - Generate vertical copies only for sprites that need them, or investigate negative Blitter source increments for runtime vertical flip; the theoretical footprint is close to 110 KiB.
 
 ## Input / Timing
 

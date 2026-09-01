@@ -174,6 +174,8 @@ procedure BuildDisplayPalette(dst: PWord); forward;
 procedure UpdateDisplayPaletteIfNeeded(force: boolean); forward;
 procedure FillRect16(scr: pword; x, y, cellw, cellh, color: word); forward;
 procedure Collided(pnum: byte); forward;
+procedure DrawGeneratedSpriteFrameBlitter(scr: pword; dstX, dstY: word;
+    frame: PSteSpriteFrame; wordsBase: PWord); forward;
 
 type
     TQueuedSprite = record
@@ -289,10 +291,12 @@ var
 
     worldsBanks: array[0..WORLD_COUNT-1] of byte = (8, 16, 24, 32, 40, 48);
     worldCurrent: byte;
+    worldDataBuffer: array[0..WORLD_DATA_BYTES - 1] of byte;
+    collisionDataBuffer: array[0..COLLISION_DATA_BYTES - 1] of byte;
     currentWorldData: PByte;
     currentWorldImgPtrs: ^pointer;
     currentWorldPalPtrs: ^pointer;
-    currentWorldColPtrs: ^pointer;
+    currentWorldColAplPtrs: ^pointer;
     currentWorldImgCount: byte;
     currentWorldAssets: PByte;
     currentWorldAssetsSize: word;
@@ -1025,75 +1029,18 @@ begin
 end;
 
 procedure DrawSteTile(scr: pword; dstX, dstY: word; tile: PSteTile; flip: byte);
-var y, xw: word;
-    rowWords: word;
-    dataOffset: word;
-    dstWords: pword;
-    maskBase, gfxBase: PWord;
-    plane: word;
-    dstPlane: pword;
-    srcPlane: PWord;
-    maskRow: PWord;
-    gfxRow: PWord;
-    maskWord: word;
+var frame: TSteSpriteFrame;
 begin
     if tile = nil then exit;
     if flip <> 0 then exit;
-
-    if (dstX and 15) = 0 then begin
-        rowWords := tile^.widthWords0;
-        dataOffset := tile^.dataOffset0;
-    end else if (dstX and 15) = 8 then begin
-        rowWords := tile^.widthWords8;
-        dataOffset := tile^.dataOffset8;
-    end else
-        exit;
-
-    maskBase := currentWorldTileWords;
-    Inc(maskBase, dataOffset);
-    gfxBase := maskBase;
-    Inc(gfxBase, tile^.heightPx * rowWords);
-
-    BlitterWait;
-    BlitterWriteWord(BLITTER_COUNT_X, rowWords);
-    BlitterWriteWord(BLITTER_DST_INC_X, 8);
-    BlitterWriteWord(BLITTER_DST_INC_Y, (SCREEN_LINE_BYTES + 8) - (rowWords shl 3));
-    BlitterWriteWord(BLITTER_ENDMASK1, $FFFF);
-    BlitterWriteWord(BLITTER_ENDMASK2, $FFFF);
-    BlitterWriteWord(BLITTER_ENDMASK3, $FFFF);
-    BlitterWriteByte(BLITTER_HOP, BLITTER_HOP_SRC);
-    BlitterWriteByte(BLITTER_SKEW, 0);
-
-    dstWords := scr;
-    Inc(dstWords, (longword(dstY) * SCREEN_LINE_BYTES + longword(dstX shr 4) * 8) shr 1);
-
-    BlitterWriteByte(BLITTER_LOP, BLITTER_LOP_SRC_AND_DST);
-    BlitterWriteWord(BLITTER_SRC_INC_X, 2);
-    BlitterWriteWord(BLITTER_SRC_INC_Y, 2);
-    for plane := 0 to 3 do begin
-        BlitterWait;
-        BlitterWritePtr(BLITTER_DST_ADDR, dstWords + plane);
-        BlitterWritePtr(BLITTER_SRC_ADDR, maskBase);
-        BlitterWriteWord(BLITTER_COUNT_Y, tile^.heightPx);
-        BlitterWriteByte(BLITTER_MODE, BLITTER_START_SPRITE_MODE);
-    end;
-
-    BlitterWait;
-    BlitterWriteByte(BLITTER_LOP, BLITTER_LOP_SRC_OR_DST);
-    BlitterWriteWord(BLITTER_SRC_INC_X, 8);
-    BlitterWriteWord(BLITTER_SRC_INC_Y, 8);
-    for plane := 0 to 3 do begin
-        BlitterWait;
-        dstPlane := dstWords + plane;
-        srcPlane := gfxBase + plane;
-        BlitterWritePtr(BLITTER_DST_ADDR, dstPlane);
-        BlitterWritePtr(BLITTER_SRC_ADDR, srcPlane);
-        BlitterWriteWord(BLITTER_COUNT_Y, tile^.heightPx);
-        BlitterWriteByte(BLITTER_MODE, BLITTER_START_SPRITE_MODE);
-    end;
-
-    BlitterWait;
-    exit;
+    frame.widthPx := tile^.widthPx;
+    frame.heightPx := tile^.heightPx;
+    frame.rowWords := tile^.rowWords;
+    frame.maskOffset := tile^.dataOffset;
+    frame.dataOffset := tile^.dataOffset + tile^.heightPx * tile^.rowWords;
+    frame.paletteOffset := 0;
+    frame.paletteCount := 0;
+    DrawGeneratedSpriteFrameBlitter(scr, dstX, dstY, @frame, currentWorldTileWords);
 end;
 
 procedure PutTile(x, y: byte; src: word; flip: byte);
@@ -1115,15 +1062,18 @@ end;
 {$i text.inc}
 
 procedure LoadImage(imgNum: byte);
-var imgPtr, palPtr: pointer;
+var imgPtr, palPtr, colAplPtr: pointer;
 begin
     if currentWorldImgPtrs = nil then exit;
     if imgNum >= currentWorldImgCount then exit;
     imgPtr := PPointer(currentWorldImgPtrs)[imgNum];
     palPtr := PPointer(currentWorldPalPtrs)[imgNum];
     currentCollisionData := nil;
-    if currentWorldColPtrs <> nil then
-        currentCollisionData := PByte(PPointer(currentWorldColPtrs)[imgNum]);
+    if currentWorldColAplPtrs <> nil then begin
+        colAplPtr := PPointer(currentWorldColAplPtrs)[imgNum];
+        UnApl(colAplPtr, @collisionDataBuffer[0]);
+        currentCollisionData := @collisionDataBuffer[0];
+    end;
     ClearScreen(SCREEN_LOG);
     UnApl(imgPtr, SCREEN_LOG);
     currentBasePal := palPtr;
@@ -1626,7 +1576,7 @@ begin
     ofs := addr - $A000;
 
     dataPtr := nil;
-    if (currentWorldData <> nil) and (ofs + 79 < 8192) then
+    if (currentWorldData <> nil) and (ofs + 79 < WORLD_DATA_BYTES) then
         dataPtr := PByte(longword(currentWorldData) + ofs);
 
     assetPtr := nil;
@@ -2311,87 +2261,87 @@ end;
 // ***************************************************
 
 procedure LoadWorld(w: byte);
+var packedWorldData: pointer;
 begin
+    packedWorldData := nil;
+    currentWorldData := @worldDataBuffer[0];
     case w of
         0: begin
-            Move(WORLD_00_DATA[0], world, SizeOf(TWorld));
-            currentWorldData    := @WORLD_00_DATA[0];
+            packedWorldData := @WORLD_00_DATA_APL[0];
             currentWorldAssets  := @WORLD_00_ASSETS[0];
             currentWorldAssetsSize := High(WORLD_00_ASSETS) + 1;
             currentWorldImgPtrs := @W00_IMG_PTRS[0];
             currentWorldPalPtrs := @W00_PAL_PTRS[0];
-            currentWorldColPtrs := @W00_COL_PTRS[0];
+            currentWorldColAplPtrs := @W00_COL_APL_PTRS[0];
             currentWorldImgCount := W00_IMG_COUNT;
             currentWorldTiles := @W00_TILES[0];
             currentWorldTileWords := @W00_TILE_WORDS[0];
             currentWorldTileCount := W00_TILE_COUNT;
         end;
         1: begin
-            Move(WORLD_01_DATA[0], world, SizeOf(TWorld));
-            currentWorldData    := @WORLD_01_DATA[0];
+            packedWorldData := @WORLD_01_DATA_APL[0];
             currentWorldAssets  := @WORLD_01_ASSETS[0];
             currentWorldAssetsSize := High(WORLD_01_ASSETS) + 1;
             currentWorldImgPtrs := @W01_IMG_PTRS[0];
             currentWorldPalPtrs := @W01_PAL_PTRS[0];
-            currentWorldColPtrs := @W01_COL_PTRS[0];
+            currentWorldColAplPtrs := @W01_COL_APL_PTRS[0];
             currentWorldImgCount := W01_IMG_COUNT;
             currentWorldTiles := @W01_TILES[0];
             currentWorldTileWords := @W01_TILE_WORDS[0];
             currentWorldTileCount := W01_TILE_COUNT;
         end;
         2: begin
-            Move(WORLD_02_DATA[0], world, SizeOf(TWorld));
-            currentWorldData    := @WORLD_02_DATA[0];
+            packedWorldData := @WORLD_02_DATA_APL[0];
             currentWorldAssets  := @WORLD_02_ASSETS[0];
             currentWorldAssetsSize := High(WORLD_02_ASSETS) + 1;
             currentWorldImgPtrs := @W02_IMG_PTRS[0];
             currentWorldPalPtrs := @W02_PAL_PTRS[0];
-            currentWorldColPtrs := @W02_COL_PTRS[0];
+            currentWorldColAplPtrs := @W02_COL_APL_PTRS[0];
             currentWorldImgCount := W02_IMG_COUNT;
             currentWorldTiles := @W02_TILES[0];
             currentWorldTileWords := @W02_TILE_WORDS[0];
             currentWorldTileCount := W02_TILE_COUNT;
         end;
         3: begin
-            Move(WORLD_03_DATA[0], world, SizeOf(TWorld));
-            currentWorldData    := @WORLD_03_DATA[0];
+            packedWorldData := @WORLD_03_DATA_APL[0];
             currentWorldAssets  := @WORLD_03_ASSETS[0];
             currentWorldAssetsSize := High(WORLD_03_ASSETS) + 1;
             currentWorldImgPtrs := @W03_IMG_PTRS[0];
             currentWorldPalPtrs := @W03_PAL_PTRS[0];
-            currentWorldColPtrs := @W03_COL_PTRS[0];
+            currentWorldColAplPtrs := @W03_COL_APL_PTRS[0];
             currentWorldImgCount := W03_IMG_COUNT;
             currentWorldTiles := @W03_TILES[0];
             currentWorldTileWords := @W03_TILE_WORDS[0];
             currentWorldTileCount := W03_TILE_COUNT;
         end;
         4: begin
-            Move(WORLD_04_DATA[0], world, SizeOf(TWorld));
-            currentWorldData    := @WORLD_04_DATA[0];
+            packedWorldData := @WORLD_04_DATA_APL[0];
             currentWorldAssets  := @WORLD_04_ASSETS[0];
             currentWorldAssetsSize := High(WORLD_04_ASSETS) + 1;
             currentWorldImgPtrs := @W04_IMG_PTRS[0];
             currentWorldPalPtrs := @W04_PAL_PTRS[0];
-            currentWorldColPtrs := @W04_COL_PTRS[0];
+            currentWorldColAplPtrs := @W04_COL_APL_PTRS[0];
             currentWorldImgCount := W04_IMG_COUNT;
             currentWorldTiles := @W04_TILES[0];
             currentWorldTileWords := @W04_TILE_WORDS[0];
             currentWorldTileCount := W04_TILE_COUNT;
         end;
         5: begin
-            Move(WORLD_05_DATA[0], world, SizeOf(TWorld));
-            currentWorldData    := @WORLD_05_DATA[0];
+            packedWorldData := @WORLD_05_DATA_APL[0];
             currentWorldAssets  := @WORLD_05_ASSETS[0];
             currentWorldAssetsSize := High(WORLD_05_ASSETS) + 1;
             currentWorldImgPtrs := @W05_IMG_PTRS[0];
             currentWorldPalPtrs := @W05_PAL_PTRS[0];
-            currentWorldColPtrs := @W05_COL_PTRS[0];
+            currentWorldColAplPtrs := @W05_COL_APL_PTRS[0];
             currentWorldImgCount := W05_IMG_COUNT;
             currentWorldTiles := @W05_TILES[0];
             currentWorldTileWords := @W05_TILE_WORDS[0];
             currentWorldTileCount := W05_TILE_COUNT;
         end;
     end;
+    if packedWorldData = nil then exit;
+    UnApl(packedWorldData, currentWorldData);
+    Move(currentWorldData[0], world, SizeOf(TWorld));
     FixWorldEndian(world);
 end;
 
@@ -3425,8 +3375,8 @@ begin
     Move(currentWorldData[fileOffset], level, SizeOf(TLevel));
     Move(level.colors[0], levelRawColors[0], 4);
     cmdBytes := MAX_LEVEL_DATA;
-    if fileOffset + SizeOf(TLevel) + cmdBytes > 8192 then
-        cmdBytes := 8192 - fileOffset - SizeOf(TLevel);
+    if fileOffset + SizeOf(TLevel) + cmdBytes > WORLD_DATA_BYTES then
+        cmdBytes := WORLD_DATA_BYTES - fileOffset - SizeOf(TLevel);
     Move(currentWorldData[fileOffset + SizeOf(TLevel)], leveldata[0], cmdBytes);
 
     sprites.state := SPRITE_NONE;
@@ -4283,7 +4233,7 @@ begin
         // Active: read 3 CTIA colour bytes embedded at world.iconPtr in world data
         // (same bytes the original reads via MoveColors(pointer(icon), titleColors, 3))
         iconColOfs := world.iconPtr - $A000;
-        if (currentWorldData <> nil) and (iconColOfs + 2 < 8192) then begin
+        if (currentWorldData <> nil) and (iconColOfs + 2 < WORLD_DATA_BYTES) then begin
             colPtr := PByte(longword(currentWorldData) + iconColOfs);
             titlePalette[1] := STE_PAL[colPtr[0]];
             titlePalette[2] := STE_PAL[colPtr[1]];

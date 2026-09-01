@@ -10,7 +10,10 @@ Raport obejmuje wszystkie faktyczne komendy `PUT_SPRITES`, ktore ustawiaja `spri
 | Obiekt zlozony | 7 | 4 | Zaimplementowane jako jeden szerszy sprite `*_compound` |
 | Razem | 33 | 13 | Nie zmieniac mechanicznie wszystkich par `_p0/_p1` |
 
-Wniosek: tylko 13 logicznych sprite'ow wystepuje jako `SPRITE_COMBINED`. Pozostale pary `_p0/_p1` w `used_sprites.png` sa uzywane przez inne tryby, przede wszystkim `SPRITE_DOUBLE`, i nie sa kandydatami do automatycznego scalania na podstawie tego raportu.
+Wniosek: tylko 13 logicznych sprite'ow wystepuje jako `SPRITE_COMBINED` i sa
+one zapisane w `game_sprites.png` bezposrednio jako finalne `*_merged` lub
+`*_compound`. Pozostale pary `_p0/_p1` sa uzywane przez inne tryby, przede
+wszystkim `SPRITE_DOUBLE`, dlatego pozostaja osobnymi obiektami.
 
 ## Stan Implementacji
 

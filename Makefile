@@ -5,17 +5,31 @@ HATARI = hatari
 TARGET = flob.prg
 MAIN   = flob.pas
 TILE_GEN = generate_world_tiles.py
+GAME_TILE_GEN = create_game_tiles.py
 LSY_SHEET_GEN = export_lsy_sheets.py
 SPRITE_ASSET_GEN = generate_sprite_assets.py
 FLOB_SHEET_GEN = export_flob_sheet.py
 FULL_ATLAS_SPRITE_GEN = build_full_sprite_atlas.py
 USED_ATLAS_SPRITE_GEN = build_used_sprite_atlas.py
+GAME_SPRITE_SHEET_GEN = create_game_sprite_sheet.py
+GAME_ROOM_GEN = create_game_rooms.py
+GAME_ROOM_IMAGES = $(shell find game_rooms -type f -name 'room_??.png' 2>/dev/null)
+GAME_TILE_IMAGES = $(shell find game_tiles -type f -name '*.png' 2>/dev/null)
 ATLAS_SPRITE_ASSET_GEN = generate_sprite_assets_from_atlas.py
 WORLD_SPRITE_ATLAS_MAP_GEN = generate_world_sprite_atlas_map.py
 SPRITE_COMBINED_CONFIG = sprite_combined_config.py
 ACHIEVEMENT_GEN = generate_achievements.py
 ENDWORLD_ICON_GEN = generate_endworld_icons.py
 WORLD_ICON_GEN = generate_world_icons.py
+GAME_WORLD_ICON_GEN = create_game_world_icons.py
+GAME_WORLD_ICON_IMAGES = $(shell find game_world_icons -type f -name '*.png' 2>/dev/null)
+GAME_CUTSCENE_GEN = create_game_cutscenes.py
+GAME_CUTSCENE_IMAGES = $(shell find game_cutscenes -type f -name '*.png' 2>/dev/null)
+GAME_TITLE_GEN = create_game_title.py
+GAME_TITLE_IMAGES = $(shell find game_title -type f -name '*.png' 2>/dev/null)
+WORLD_DATA_GEN = generate_world_data.py
+WORLD_BIN_FILES = $(shell find ../flob/worlds -type f -name 'world_??.bin' 2>/dev/null)
+WORLD_COLLISION_IMAGES = $(shell find game_rooms -type f -name 'room_??_collision.png' 2>/dev/null)
 TILE_OUT = \
 	worlds/world_tiles.inc \
 	worlds/world_00_tiles.inc worlds/world_01_tiles.inc worlds/world_02_tiles.inc \
@@ -39,6 +53,7 @@ SOURCES = \
 	worlds/world_03.inc worlds/world_04.inc worlds/world_05.inc \
 	worlds/world_00_assets.inc worlds/world_01_assets.inc worlds/world_02_assets.inc \
 	worlds/world_03_assets.inc worlds/world_04_assets.inc worlds/world_05_assets.inc \
+	worlds/world_collisions.inc \
 	generated/sprite_assets_atlas.inc \
 	generated/sprite_atlas_palette.inc \
 	generated/world_sprite_atlas_map.inc \
@@ -50,11 +65,14 @@ SOURCES = \
 	images/images.inc \
 	images/global/IMG_TITLE_CROWN.inc
 
-.PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas sprite-atlas-assets sprite-atlas-assets-only
+.PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas game-sprite-sheet-init game-sprite-guide sprite-atlas-assets sprite-atlas-assets-only game-rooms-init room-assets game-tiles-init game-world-icons-init game-cutscenes-init game-title-init
 
 all: unapl.o $(TARGET)
 
-$(TILE_OUT): $(TILE_GEN)
+worlds/world_collisions.inc: $(WORLD_DATA_GEN) $(WORLD_BIN_FILES) $(WORLD_COLLISION_IMAGES)
+	python3 $(WORLD_DATA_GEN)
+
+$(TILE_OUT): $(TILE_GEN) game_tiles/manifest.json $(GAME_TILE_IMAGES)
 	python3 $(TILE_GEN)
 
 assets/achievements.inc: $(ACHIEVEMENT_GEN) ../flob/assets/achievements.asm
@@ -63,11 +81,13 @@ assets/achievements.inc: $(ACHIEVEMENT_GEN) ../flob/assets/achievements.asm
 assets/endworld_icons.inc: $(ENDWORLD_ICON_GEN) ../flob/assets/bigmap.gif ../flob/assets/bigvial.gif ../flob/assets/bigformula.gif ../flob/assets/skull.gif
 	python3 $(ENDWORLD_ICON_GEN)
 
-assets/world_icons.inc: $(WORLD_ICON_GEN) ../flob/worlds/00_Escape_From_The_Lab/images/icon.gif ../flob/worlds/01_Abominable_Sewers/images/icon.gif ../flob/worlds/02_Suburbian_Parkour/images/icon.gif ../flob/worlds/03_Hazardous_Mudlands/images/icon.gif ../flob/worlds/04_Silver_Dust_Mines/images/icon.gif ../flob/worlds/05_Return_To_The_Lab/images/icon.gif
+assets/world_icons.inc: $(WORLD_ICON_GEN) game_world_icons/manifest.json $(GAME_WORLD_ICON_IMAGES)
 	python3 $(WORLD_ICON_GEN)
 
-images/global/IMG_TITLE_CROWN.inc: convert_images.py ../flob/assets/flob_title.gif ../flob/assets/crown2.gif
+images/images.inc: convert_images.py $(GAME_ROOM_IMAGES) game_cutscenes/manifest.json $(GAME_CUTSCENE_IMAGES) game_title/manifest.json $(GAME_TITLE_IMAGES)
 	python3 convert_images.py
+
+images/global/IMG_TITLE_CROWN.inc: images/images.inc
 
 unapl.o: unapl.s
 	$(AS) -quiet -Faout -o unapl.o unapl.s
@@ -100,8 +120,30 @@ flob-sheet: $(FLOB_SHEET_GEN)
 used-sprite-atlas: $(USED_ATLAS_SPRITE_GEN)
 	python3 $(USED_ATLAS_SPRITE_GEN)
 
-sprite-atlas-assets: $(USED_ATLAS_SPRITE_GEN) $(ATLAS_SPRITE_ASSET_GEN) $(WORLD_SPRITE_ATLAS_MAP_GEN) $(SPRITE_COMBINED_CONFIG)
-	python3 $(USED_ATLAS_SPRITE_GEN)
+game-sprite-sheet-init: $(GAME_SPRITE_SHEET_GEN)
+	python3 $(GAME_SPRITE_SHEET_GEN)
+
+game-sprite-guide: $(GAME_SPRITE_SHEET_GEN)
+	python3 $(GAME_SPRITE_SHEET_GEN) --guide-only
+
+game-rooms-init: $(GAME_ROOM_GEN)
+	python3 $(GAME_ROOM_GEN)
+
+room-assets: images/images.inc
+
+game-tiles-init: $(GAME_TILE_GEN)
+	python3 $(GAME_TILE_GEN)
+
+game-world-icons-init: $(GAME_WORLD_ICON_GEN)
+	python3 $(GAME_WORLD_ICON_GEN)
+
+game-cutscenes-init: $(GAME_CUTSCENE_GEN)
+	python3 $(GAME_CUTSCENE_GEN)
+
+game-title-init: $(GAME_TITLE_GEN)
+	python3 $(GAME_TITLE_GEN)
+
+sprite-atlas-assets: $(ATLAS_SPRITE_ASSET_GEN) $(WORLD_SPRITE_ATLAS_MAP_GEN) $(SPRITE_COMBINED_CONFIG)
 	python3 $(ATLAS_SPRITE_ASSET_GEN)
 	python3 $(WORLD_SPRITE_ATLAS_MAP_GEN)
 

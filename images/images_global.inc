@@ -1,4 +1,5 @@
 {$i images/global/IMG_TITLE.inc}
+{$i images/global/IMG_TITLE_CROWN.inc}
 {$i images/global/IMG_CREDITS.inc}
 {$i images/global/IMG_INTRO_00.inc}
 {$i images/global/IMG_INTRO_01.inc}
@@ -9,7 +10,6 @@
 {$i images/global/IMG_OUTRO_00.inc}
 {$i images/global/IMG_OUTRO_01.inc}
 {$i images/global/IMG_OUTRO_02.inc}
-{$i images/global/IMG_SCENE_00.inc}
 {$i images/global/IMG_CREDITS_01.inc}
 {$i images/global/IMG_CREDITS_02.inc}
 {$i images/global/IMG_CREDITS_03.inc}
@@ -18,4 +18,3 @@
 {$i images/global/IMG_CREDITS_06.inc}
 {$i images/global/IMG_CREDITS_07.inc}
 {$i images/global/IMG_CREDITS_08.inc}
-{$i images/global/IMG_TITLE_CROWN.inc}

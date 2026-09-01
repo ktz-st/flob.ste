@@ -1,0 +1,168 @@
+{
+  "canonical_build_source": true,
+  "scale_algorithm": "Scale2x",
+  "source_size": [
+    160,
+    80
+  ],
+  "target_size": [
+    320,
+    160
+  ],
+  "image_count": 9,
+  "images": [
+    {
+      "name": "IMG_INTRO_00",
+      "kind": "intro",
+      "slide": 0,
+      "source": "flob/assets/intro/intro_00.gif",
+      "image": "game_cutscenes/intro_00.png",
+      "size": [
+        320,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "IMG_INTRO_01",
+      "kind": "intro",
+      "slide": 1,
+      "source": "flob/assets/intro/intro_01.gif",
+      "image": "game_cutscenes/intro_01.png",
+      "size": [
+        320,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "IMG_INTRO_02",
+      "kind": "intro",
+      "slide": 2,
+      "source": "flob/assets/intro/intro_02.gif",
+      "image": "game_cutscenes/intro_02.png",
+      "size": [
+        320,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "IMG_INTRO_03",
+      "kind": "intro",
+      "slide": 3,
+      "source": "flob/assets/intro/intro_03.gif",
+      "image": "game_cutscenes/intro_03.png",
+      "size": [
+        320,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "IMG_INTRO_04",
+      "kind": "intro",
+      "slide": 4,
+      "source": "flob/assets/intro/intro_04.gif",
+      "image": "game_cutscenes/intro_04.png",
+      "size": [
+        320,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "IMG_INTRO_05",
+      "kind": "intro",
+      "slide": 5,
+      "source": "flob/assets/intro/intro_05.gif",
+      "image": "game_cutscenes/intro_05.png",
+      "size": [
+        320,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "IMG_OUTRO_00",
+      "kind": "outro",
+      "slide": 0,
+      "source": "flob/assets/intro/outro_00.gif",
+      "image": "game_cutscenes/outro_00.png",
+      "size": [
+        320,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "IMG_OUTRO_01",
+      "kind": "outro",
+      "slide": 1,
+      "source": "flob/assets/intro/outro_01.gif",
+      "image": "game_cutscenes/outro_01.png",
+      "size": [
+        320,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "name": "IMG_OUTRO_02",
+      "kind": "outro",
+      "slide": 2,
+      "source": "flob/assets/intro/outro_02.gif",
+      "image": "game_cutscenes/outro_02.png",
+      "size": [
+        320,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    }
+  ]
+}

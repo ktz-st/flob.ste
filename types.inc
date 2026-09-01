@@ -130,10 +130,8 @@ type TSteTile = record
     sourceAddr: word;
     widthPx: word;
     heightPx: word;
-    widthWords0: word;
-    widthWords8: word;
-    dataOffset0: word;
-    dataOffset8: word;
+    rowWords: word;
+    dataOffset: word;
 end;
 
 type PSteTile = ^TSteTile;

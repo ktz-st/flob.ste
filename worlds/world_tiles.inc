@@ -1,4 +1,4 @@
-// Generated from flob/worlds/world_XX.asm tile definitions.
+// Generated from canonical game_tiles indexed PNG files.
 {$i worlds/world_00_tiles.inc}
 {$i worlds/world_01_tiles.inc}
 {$i worlds/world_02_tiles.inc}

@@ -3,8 +3,8 @@
 Generate STE-native masked sprite assets from the indexed sprite atlas.
 
 Input:
-  flob-ste/images/sprite_atlas/used_sprites.png
-  flob-ste/images/sprite_atlas/used_sprites.json
+  flob-ste/images/sprite_atlas/game_sprites.png
+  flob-ste/images/sprite_atlas/game_sprites.json
 
 Output:
   flob-ste/generated/sprite_assets_atlas/*.inc
@@ -28,7 +28,7 @@ from sprite_combined_config import (
 
 ROOT = Path("/Users/kriss/GCC.ELF")
 FLOB_STE = ROOT / "flob-ste"
-DEFAULT_ATLAS_NAME = "used_sprites"
+DEFAULT_ATLAS_NAME = "game_sprites"
 OUT_DIR = FLOB_STE / "generated" / "sprite_assets_atlas"
 MASTER_INC = FLOB_STE / "generated" / "sprite_assets_atlas.inc"
 PALETTE_INC = FLOB_STE / "generated" / "sprite_atlas_palette.inc"
@@ -139,6 +139,11 @@ def main() -> None:
     for base_name in sorted(MERGED_OVERLAY_ATLAS_NAMES):
         p0_name = f"{base_name}_p0"
         p1_name = f"{base_name}_p1"
+        final_name = f"{base_name}_merged"
+        if final_name in by_sprite:
+            generated_sprites.pop(p0_name, None)
+            generated_sprites.pop(p1_name, None)
+            continue
         if p0_name not in by_sprite or p1_name not in by_sprite:
             raise ValueError(f"Missing overlay rows {p0_name}/{p1_name}")
         p0_frames = by_sprite[p0_name]
@@ -161,11 +166,16 @@ def main() -> None:
             })
         del generated_sprites[p0_name]
         del generated_sprites[p1_name]
-        generated_sprites[f"{base_name}_merged"] = merged_frames
+        generated_sprites[final_name] = merged_frames
 
     for base_name, gap_a8 in sorted(MERGED_COMPOUND_ATLAS_GAPS.items()):
         p0_name = f"{base_name}_p0"
         p1_name = f"{base_name}_p1"
+        final_name = f"{base_name}_compound"
+        if final_name in by_sprite:
+            generated_sprites.pop(p0_name, None)
+            generated_sprites.pop(p1_name, None)
+            continue
         if p0_name not in by_sprite or p1_name not in by_sprite:
             raise ValueError(f"Missing compound rows {p0_name}/{p1_name}")
         p0_frames = by_sprite[p0_name]
@@ -190,7 +200,7 @@ def main() -> None:
             })
         del generated_sprites[p0_name]
         del generated_sprites[p1_name]
-        generated_sprites[f"{base_name}_compound"] = compound_frames
+        generated_sprites[final_name] = compound_frames
 
     # The A8 death effect moves Flob's final P0/P1 patterns independently.
     # Keep deriving these helper sprites from the editable atlas so recolouring

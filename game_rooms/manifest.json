@@ -1,0 +1,3018 @@
+{
+  "canonical_build_source": true,
+  "scale_algorithm": "Scale2x",
+  "source_size": [
+    160,
+    80
+  ],
+  "target_size": [
+    320,
+    160
+  ],
+  "room_count": 143,
+  "rooms": [
+    {
+      "world": 0,
+      "room": 0,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_00.gif",
+      "image": "game_rooms/world_00/room_00.png",
+      "collision": "game_rooms/world_00/room_00_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 1,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_01.gif",
+      "image": "game_rooms/world_00/room_01.png",
+      "collision": "game_rooms/world_00/room_01_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 2,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_02.gif",
+      "image": "game_rooms/world_00/room_02.png",
+      "collision": "game_rooms/world_00/room_02_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 3,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_03.gif",
+      "image": "game_rooms/world_00/room_03.png",
+      "collision": "game_rooms/world_00/room_03_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 4,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_04.gif",
+      "image": "game_rooms/world_00/room_04.png",
+      "collision": "game_rooms/world_00/room_04_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 5,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_05.gif",
+      "image": "game_rooms/world_00/room_05.png",
+      "collision": "game_rooms/world_00/room_05_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 6,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_06.gif",
+      "image": "game_rooms/world_00/room_06.png",
+      "collision": "game_rooms/world_00/room_06_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 7,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_07.gif",
+      "image": "game_rooms/world_00/room_07.png",
+      "collision": "game_rooms/world_00/room_07_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 8,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_08.gif",
+      "image": "game_rooms/world_00/room_08.png",
+      "collision": "game_rooms/world_00/room_08_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 9,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_09.gif",
+      "image": "game_rooms/world_00/room_09.png",
+      "collision": "game_rooms/world_00/room_09_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 10,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_10.gif",
+      "image": "game_rooms/world_00/room_10.png",
+      "collision": "game_rooms/world_00/room_10_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 11,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_11.gif",
+      "image": "game_rooms/world_00/room_11.png",
+      "collision": "game_rooms/world_00/room_11_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 12,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_12.gif",
+      "image": "game_rooms/world_00/room_12.png",
+      "collision": "game_rooms/world_00/room_12_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 13,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_13.gif",
+      "image": "game_rooms/world_00/room_13.png",
+      "collision": "game_rooms/world_00/room_13_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 14,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_14.gif",
+      "image": "game_rooms/world_00/room_14.png",
+      "collision": "game_rooms/world_00/room_14_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 15,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_15.gif",
+      "image": "game_rooms/world_00/room_15.png",
+      "collision": "game_rooms/world_00/room_15_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 16,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_16.gif",
+      "image": "game_rooms/world_00/room_16.png",
+      "collision": "game_rooms/world_00/room_16_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 17,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_17.gif",
+      "image": "game_rooms/world_00/room_17.png",
+      "collision": "game_rooms/world_00/room_17_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 18,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_18.gif",
+      "image": "game_rooms/world_00/room_18.png",
+      "collision": "game_rooms/world_00/room_18_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 19,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_19.gif",
+      "image": "game_rooms/world_00/room_19.png",
+      "collision": "game_rooms/world_00/room_19_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 20,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_20.gif",
+      "image": "game_rooms/world_00/room_20.png",
+      "collision": "game_rooms/world_00/room_20_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 21,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_21.gif",
+      "image": "game_rooms/world_00/room_21.png",
+      "collision": "game_rooms/world_00/room_21_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 22,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_22.gif",
+      "image": "game_rooms/world_00/room_22.png",
+      "collision": "game_rooms/world_00/room_22_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 0,
+      "room": 23,
+      "source": "flob/worlds/00_Escape_From_The_Lab/images/room_23.gif",
+      "image": "game_rooms/world_00/room_23.png",
+      "collision": "game_rooms/world_00/room_23_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 0,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_00.gif",
+      "image": "game_rooms/world_01/room_00.png",
+      "collision": "game_rooms/world_01/room_00_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 1,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_01.gif",
+      "image": "game_rooms/world_01/room_01.png",
+      "collision": "game_rooms/world_01/room_01_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 2,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_02.gif",
+      "image": "game_rooms/world_01/room_02.png",
+      "collision": "game_rooms/world_01/room_02_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 3,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_03.gif",
+      "image": "game_rooms/world_01/room_03.png",
+      "collision": "game_rooms/world_01/room_03_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 4,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_04.gif",
+      "image": "game_rooms/world_01/room_04.png",
+      "collision": "game_rooms/world_01/room_04_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 5,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_05.gif",
+      "image": "game_rooms/world_01/room_05.png",
+      "collision": "game_rooms/world_01/room_05_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 6,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_06.gif",
+      "image": "game_rooms/world_01/room_06.png",
+      "collision": "game_rooms/world_01/room_06_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 7,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_07.gif",
+      "image": "game_rooms/world_01/room_07.png",
+      "collision": "game_rooms/world_01/room_07_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 8,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_08.gif",
+      "image": "game_rooms/world_01/room_08.png",
+      "collision": "game_rooms/world_01/room_08_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 9,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_09.gif",
+      "image": "game_rooms/world_01/room_09.png",
+      "collision": "game_rooms/world_01/room_09_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 10,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_10.gif",
+      "image": "game_rooms/world_01/room_10.png",
+      "collision": "game_rooms/world_01/room_10_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 11,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_11.gif",
+      "image": "game_rooms/world_01/room_11.png",
+      "collision": "game_rooms/world_01/room_11_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 12,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_12.gif",
+      "image": "game_rooms/world_01/room_12.png",
+      "collision": "game_rooms/world_01/room_12_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 13,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_13.gif",
+      "image": "game_rooms/world_01/room_13.png",
+      "collision": "game_rooms/world_01/room_13_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 14,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_14.gif",
+      "image": "game_rooms/world_01/room_14.png",
+      "collision": "game_rooms/world_01/room_14_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 15,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_15.gif",
+      "image": "game_rooms/world_01/room_15.png",
+      "collision": "game_rooms/world_01/room_15_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 16,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_16.gif",
+      "image": "game_rooms/world_01/room_16.png",
+      "collision": "game_rooms/world_01/room_16_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 17,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_17.gif",
+      "image": "game_rooms/world_01/room_17.png",
+      "collision": "game_rooms/world_01/room_17_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 18,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_18.gif",
+      "image": "game_rooms/world_01/room_18.png",
+      "collision": "game_rooms/world_01/room_18_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 19,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_19.gif",
+      "image": "game_rooms/world_01/room_19.png",
+      "collision": "game_rooms/world_01/room_19_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 1,
+      "room": 20,
+      "source": "flob/worlds/01_Abominable_Sewers/images/room_20.gif",
+      "image": "game_rooms/world_01/room_20.png",
+      "collision": "game_rooms/world_01/room_20_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 0,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_00.gif",
+      "image": "game_rooms/world_02/room_00.png",
+      "collision": "game_rooms/world_02/room_00_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 1,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_01.gif",
+      "image": "game_rooms/world_02/room_01.png",
+      "collision": "game_rooms/world_02/room_01_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 2,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_02.gif",
+      "image": "game_rooms/world_02/room_02.png",
+      "collision": "game_rooms/world_02/room_02_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 3,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_03.gif",
+      "image": "game_rooms/world_02/room_03.png",
+      "collision": "game_rooms/world_02/room_03_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 4,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_04.gif",
+      "image": "game_rooms/world_02/room_04.png",
+      "collision": "game_rooms/world_02/room_04_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 5,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_05.gif",
+      "image": "game_rooms/world_02/room_05.png",
+      "collision": "game_rooms/world_02/room_05_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 6,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_06.gif",
+      "image": "game_rooms/world_02/room_06.png",
+      "collision": "game_rooms/world_02/room_06_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 7,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_07.gif",
+      "image": "game_rooms/world_02/room_07.png",
+      "collision": "game_rooms/world_02/room_07_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 8,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_08.gif",
+      "image": "game_rooms/world_02/room_08.png",
+      "collision": "game_rooms/world_02/room_08_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 9,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_09.gif",
+      "image": "game_rooms/world_02/room_09.png",
+      "collision": "game_rooms/world_02/room_09_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 10,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_10.gif",
+      "image": "game_rooms/world_02/room_10.png",
+      "collision": "game_rooms/world_02/room_10_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 11,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_11.gif",
+      "image": "game_rooms/world_02/room_11.png",
+      "collision": "game_rooms/world_02/room_11_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 12,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_12.gif",
+      "image": "game_rooms/world_02/room_12.png",
+      "collision": "game_rooms/world_02/room_12_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 13,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_13.gif",
+      "image": "game_rooms/world_02/room_13.png",
+      "collision": "game_rooms/world_02/room_13_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 14,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_14.gif",
+      "image": "game_rooms/world_02/room_14.png",
+      "collision": "game_rooms/world_02/room_14_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 15,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_15.gif",
+      "image": "game_rooms/world_02/room_15.png",
+      "collision": "game_rooms/world_02/room_15_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 16,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_16.gif",
+      "image": "game_rooms/world_02/room_16.png",
+      "collision": "game_rooms/world_02/room_16_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 17,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_17.gif",
+      "image": "game_rooms/world_02/room_17.png",
+      "collision": "game_rooms/world_02/room_17_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 18,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_18.gif",
+      "image": "game_rooms/world_02/room_18.png",
+      "collision": "game_rooms/world_02/room_18_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 19,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_19.gif",
+      "image": "game_rooms/world_02/room_19.png",
+      "collision": "game_rooms/world_02/room_19_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 20,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_20.gif",
+      "image": "game_rooms/world_02/room_20.png",
+      "collision": "game_rooms/world_02/room_20_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 21,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_21.gif",
+      "image": "game_rooms/world_02/room_21.png",
+      "collision": "game_rooms/world_02/room_21_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 22,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_22.gif",
+      "image": "game_rooms/world_02/room_22.png",
+      "collision": "game_rooms/world_02/room_22_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 2,
+      "room": 23,
+      "source": "flob/worlds/02_Suburbian_Parkour/images/room_23.gif",
+      "image": "game_rooms/world_02/room_23.png",
+      "collision": "game_rooms/world_02/room_23_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 0,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_00.gif",
+      "image": "game_rooms/world_03/room_00.png",
+      "collision": "game_rooms/world_03/room_00_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 1,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_01.gif",
+      "image": "game_rooms/world_03/room_01.png",
+      "collision": "game_rooms/world_03/room_01_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 2,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_02.gif",
+      "image": "game_rooms/world_03/room_02.png",
+      "collision": "game_rooms/world_03/room_02_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 3,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_03.gif",
+      "image": "game_rooms/world_03/room_03.png",
+      "collision": "game_rooms/world_03/room_03_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 4,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_04.gif",
+      "image": "game_rooms/world_03/room_04.png",
+      "collision": "game_rooms/world_03/room_04_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 5,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_05.gif",
+      "image": "game_rooms/world_03/room_05.png",
+      "collision": "game_rooms/world_03/room_05_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 6,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_06.gif",
+      "image": "game_rooms/world_03/room_06.png",
+      "collision": "game_rooms/world_03/room_06_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 7,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_07.gif",
+      "image": "game_rooms/world_03/room_07.png",
+      "collision": "game_rooms/world_03/room_07_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 8,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_08.gif",
+      "image": "game_rooms/world_03/room_08.png",
+      "collision": "game_rooms/world_03/room_08_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 9,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_09.gif",
+      "image": "game_rooms/world_03/room_09.png",
+      "collision": "game_rooms/world_03/room_09_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 10,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_10.gif",
+      "image": "game_rooms/world_03/room_10.png",
+      "collision": "game_rooms/world_03/room_10_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 11,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_11.gif",
+      "image": "game_rooms/world_03/room_11.png",
+      "collision": "game_rooms/world_03/room_11_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 12,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_12.gif",
+      "image": "game_rooms/world_03/room_12.png",
+      "collision": "game_rooms/world_03/room_12_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 13,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_13.gif",
+      "image": "game_rooms/world_03/room_13.png",
+      "collision": "game_rooms/world_03/room_13_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 14,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_14.gif",
+      "image": "game_rooms/world_03/room_14.png",
+      "collision": "game_rooms/world_03/room_14_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 15,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_15.gif",
+      "image": "game_rooms/world_03/room_15.png",
+      "collision": "game_rooms/world_03/room_15_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 16,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_16.gif",
+      "image": "game_rooms/world_03/room_16.png",
+      "collision": "game_rooms/world_03/room_16_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 17,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_17.gif",
+      "image": "game_rooms/world_03/room_17.png",
+      "collision": "game_rooms/world_03/room_17_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 18,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_18.gif",
+      "image": "game_rooms/world_03/room_18.png",
+      "collision": "game_rooms/world_03/room_18_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 19,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_19.gif",
+      "image": "game_rooms/world_03/room_19.png",
+      "collision": "game_rooms/world_03/room_19_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 20,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_20.gif",
+      "image": "game_rooms/world_03/room_20.png",
+      "collision": "game_rooms/world_03/room_20_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 21,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_21.gif",
+      "image": "game_rooms/world_03/room_21.png",
+      "collision": "game_rooms/world_03/room_21_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 3,
+      "room": 22,
+      "source": "flob/worlds/03_Hazardous_Mudlands/images/room_22.gif",
+      "image": "game_rooms/world_03/room_22.png",
+      "collision": "game_rooms/world_03/room_22_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 0,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_00.gif",
+      "image": "game_rooms/world_04/room_00.png",
+      "collision": "game_rooms/world_04/room_00_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 1,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_01.gif",
+      "image": "game_rooms/world_04/room_01.png",
+      "collision": "game_rooms/world_04/room_01_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 2,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_02.gif",
+      "image": "game_rooms/world_04/room_02.png",
+      "collision": "game_rooms/world_04/room_02_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 3,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_03.gif",
+      "image": "game_rooms/world_04/room_03.png",
+      "collision": "game_rooms/world_04/room_03_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 4,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_04.gif",
+      "image": "game_rooms/world_04/room_04.png",
+      "collision": "game_rooms/world_04/room_04_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 5,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_05.gif",
+      "image": "game_rooms/world_04/room_05.png",
+      "collision": "game_rooms/world_04/room_05_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 6,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_06.gif",
+      "image": "game_rooms/world_04/room_06.png",
+      "collision": "game_rooms/world_04/room_06_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 7,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_07.gif",
+      "image": "game_rooms/world_04/room_07.png",
+      "collision": "game_rooms/world_04/room_07_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 8,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_08.gif",
+      "image": "game_rooms/world_04/room_08.png",
+      "collision": "game_rooms/world_04/room_08_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 9,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_09.gif",
+      "image": "game_rooms/world_04/room_09.png",
+      "collision": "game_rooms/world_04/room_09_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 10,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_10.gif",
+      "image": "game_rooms/world_04/room_10.png",
+      "collision": "game_rooms/world_04/room_10_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 11,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_11.gif",
+      "image": "game_rooms/world_04/room_11.png",
+      "collision": "game_rooms/world_04/room_11_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 12,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_12.gif",
+      "image": "game_rooms/world_04/room_12.png",
+      "collision": "game_rooms/world_04/room_12_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 13,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_13.gif",
+      "image": "game_rooms/world_04/room_13.png",
+      "collision": "game_rooms/world_04/room_13_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 14,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_14.gif",
+      "image": "game_rooms/world_04/room_14.png",
+      "collision": "game_rooms/world_04/room_14_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 15,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_15.gif",
+      "image": "game_rooms/world_04/room_15.png",
+      "collision": "game_rooms/world_04/room_15_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 16,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_16.gif",
+      "image": "game_rooms/world_04/room_16.png",
+      "collision": "game_rooms/world_04/room_16_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 17,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_17.gif",
+      "image": "game_rooms/world_04/room_17.png",
+      "collision": "game_rooms/world_04/room_17_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 18,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_18.gif",
+      "image": "game_rooms/world_04/room_18.png",
+      "collision": "game_rooms/world_04/room_18_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 19,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_19.gif",
+      "image": "game_rooms/world_04/room_19.png",
+      "collision": "game_rooms/world_04/room_19_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 20,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_20.gif",
+      "image": "game_rooms/world_04/room_20.png",
+      "collision": "game_rooms/world_04/room_20_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 21,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_21.gif",
+      "image": "game_rooms/world_04/room_21.png",
+      "collision": "game_rooms/world_04/room_21_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 22,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_22.gif",
+      "image": "game_rooms/world_04/room_22.png",
+      "collision": "game_rooms/world_04/room_22_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 23,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_23.gif",
+      "image": "game_rooms/world_04/room_23.png",
+      "collision": "game_rooms/world_04/room_23_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 24,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_24.gif",
+      "image": "game_rooms/world_04/room_24.png",
+      "collision": "game_rooms/world_04/room_24_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 25,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_25.gif",
+      "image": "game_rooms/world_04/room_25.png",
+      "collision": "game_rooms/world_04/room_25_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 4,
+      "room": 26,
+      "source": "flob/worlds/04_Silver_Dust_Mines/images/room_26.gif",
+      "image": "game_rooms/world_04/room_26.png",
+      "collision": "game_rooms/world_04/room_26_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 0,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_00.gif",
+      "image": "game_rooms/world_05/room_00.png",
+      "collision": "game_rooms/world_05/room_00_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 1,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_01.gif",
+      "image": "game_rooms/world_05/room_01.png",
+      "collision": "game_rooms/world_05/room_01_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 2,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_02.gif",
+      "image": "game_rooms/world_05/room_02.png",
+      "collision": "game_rooms/world_05/room_02_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 3,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_03.gif",
+      "image": "game_rooms/world_05/room_03.png",
+      "collision": "game_rooms/world_05/room_03_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 4,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_04.gif",
+      "image": "game_rooms/world_05/room_04.png",
+      "collision": "game_rooms/world_05/room_04_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 5,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_05.gif",
+      "image": "game_rooms/world_05/room_05.png",
+      "collision": "game_rooms/world_05/room_05_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 6,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_06.gif",
+      "image": "game_rooms/world_05/room_06.png",
+      "collision": "game_rooms/world_05/room_06_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 7,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_07.gif",
+      "image": "game_rooms/world_05/room_07.png",
+      "collision": "game_rooms/world_05/room_07_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 8,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_08.gif",
+      "image": "game_rooms/world_05/room_08.png",
+      "collision": "game_rooms/world_05/room_08_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 9,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_09.gif",
+      "image": "game_rooms/world_05/room_09.png",
+      "collision": "game_rooms/world_05/room_09_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 10,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_10.gif",
+      "image": "game_rooms/world_05/room_10.png",
+      "collision": "game_rooms/world_05/room_10_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 11,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_11.gif",
+      "image": "game_rooms/world_05/room_11.png",
+      "collision": "game_rooms/world_05/room_11_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 12,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_12.gif",
+      "image": "game_rooms/world_05/room_12.png",
+      "collision": "game_rooms/world_05/room_12_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 13,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_13.gif",
+      "image": "game_rooms/world_05/room_13.png",
+      "collision": "game_rooms/world_05/room_13_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 14,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_14.gif",
+      "image": "game_rooms/world_05/room_14.png",
+      "collision": "game_rooms/world_05/room_14_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 15,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_15.gif",
+      "image": "game_rooms/world_05/room_15.png",
+      "collision": "game_rooms/world_05/room_15_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 16,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_16.gif",
+      "image": "game_rooms/world_05/room_16.png",
+      "collision": "game_rooms/world_05/room_16_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 17,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_17.gif",
+      "image": "game_rooms/world_05/room_17.png",
+      "collision": "game_rooms/world_05/room_17_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 18,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_18.gif",
+      "image": "game_rooms/world_05/room_18.png",
+      "collision": "game_rooms/world_05/room_18_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 19,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_19.gif",
+      "image": "game_rooms/world_05/room_19.png",
+      "collision": "game_rooms/world_05/room_19_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 20,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_20.gif",
+      "image": "game_rooms/world_05/room_20.png",
+      "collision": "game_rooms/world_05/room_20_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 21,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_21.gif",
+      "image": "game_rooms/world_05/room_21.png",
+      "collision": "game_rooms/world_05/room_21_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 22,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_22.gif",
+      "image": "game_rooms/world_05/room_22.png",
+      "collision": "game_rooms/world_05/room_22_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "world": 5,
+      "room": 23,
+      "source": "flob/worlds/05_Return_To_The_Lab/images/room_23.gif",
+      "image": "game_rooms/world_05/room_23.png",
+      "collision": "game_rooms/world_05/room_23_collision.png",
+      "size": [
+        320,
+        160
+      ],
+      "collision_size": [
+        160,
+        80
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ]
+    }
+  ]
+}

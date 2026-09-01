@@ -1,28 +1,24 @@
 #!/usr/bin/env python3
-"""
-Generate STE-native tile include files from source world_XX.asm files.
+"""Generate STE-native masked tiles from canonical indexed PNG files.
 
-The Atari 8-bit build stores gameplay overlays as:
-  tile_label:
-      dta <width_bytes>, <height_rows>
-      ins 'tile_name.gfx'
-
-This script parses the source ASM, computes the original 6502 source
-addresses for tile labels, decodes the 2bpp Atari .gfx payload into palette
-indices 0..3, scales tiles x2, and emits Pascal include files with native
-ST masked planar data (two preshifts: 0 and 8 pixels) for the runtime
-renderer.
+The one-time create_game_tiles.py importer owns extraction from the original
+Atari 8-bit sources. Normal builds read only game_tiles/manifest.json and the
+artist-editable Scale2x PNG files, then pack one unshifted mask + 4bpp payload.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
+
+from PIL import Image
 
 FLOB_SRC = Path("/Users/kriss/GCC.ELF/flob")
 FLOB_STE = Path("/Users/kriss/GCC.ELF/flob-ste")
 WORLDS_SRC = FLOB_SRC / "worlds"
 OUT_DIR = FLOB_STE / "worlds"
+GAME_TILES = FLOB_STE / "game_tiles"
 
 WORLD_DIRS = [
     "00_Escape_From_The_Lab",
@@ -232,9 +228,8 @@ def words_to_pascal_array(name: str, data: list[int]) -> str:
     return f"const {name} : array[0..{len(data)-1}] of word=(\n{body}\n);\n"
 
 
-def pack_st_masked_words(src_pixels: list[int], width_px: int, height_px: int, shift_px: int) -> tuple[int, list[int], list[int]]:
-    packed_width = width_px + shift_px
-    width_words = (packed_width + 15) // 16
+def pack_st_masked_words(src_pixels: list[int], width_px: int, height_px: int) -> tuple[int, list[int], list[int]]:
+    width_words = (width_px + 15) // 16
     mask_words: list[int] = []
     gfx_words: list[int] = []
 
@@ -249,11 +244,10 @@ def pack_st_masked_words(src_pixels: list[int], width_px: int, height_px: int, s
             base_x = word_idx * 16
 
             for bit_idx in range(16):
-                shifted_x = base_x + bit_idx
-                src_x = shifted_x - shift_px
+                src_x = base_x + bit_idx
                 if src_x < 0 or src_x >= width_px:
                     continue
-                c = ATARI_TO_ST_INDEX[row[src_x]]
+                c = row[src_x]
                 if c == 0:
                     continue
                 bit = 1 << (15 - bit_idx)
@@ -326,6 +320,9 @@ def extract_tiles(asm_path: Path, labels: dict[str, int]) -> list[dict]:
                 tiles.append({
                     "label": label,
                     "source_addr": labels[label],
+                    "source_width": src_width,
+                    "source_height": height_rows,
+                    "source_pixels": src_pixels,
                     "width_px": width_px,
                     "height_px": height_px,
                     "pixels": scaled_pixels,
@@ -341,18 +338,16 @@ def write_world_tile_include(world_idx: int, tiles: list[dict]) -> None:
     records: list[str] = []
 
     for tile in tiles:
-        width_words0, mask0, gfx0 = pack_st_masked_words(tile["pixels"], tile["width_px"], tile["height_px"], 0)
-        data_offset0 = len(word_blob)
-        word_blob.extend(mask0)
-        word_blob.extend(gfx0)
-        width_words8, mask8, gfx8 = pack_st_masked_words(tile["pixels"], tile["width_px"], tile["height_px"], 8)
-        data_offset8 = len(word_blob)
-        word_blob.extend(mask8)
-        word_blob.extend(gfx8)
+        row_words, mask, gfx = pack_st_masked_words(
+            tile["pixels"], tile["width_px"], tile["height_px"]
+        )
+        data_offset = len(word_blob)
+        word_blob.extend(mask)
+        word_blob.extend(gfx)
         records.append(
             f"    (sourceAddr:${tile['source_addr']:04X}; widthPx:{tile['width_px']}; "
-            f"heightPx:{tile['height_px']}; widthWords0:{width_words0}; widthWords8:{width_words8}; "
-            f"dataOffset0:{data_offset0}; dataOffset8:{data_offset8})"
+            f"heightPx:{tile['height_px']}; rowWords:{row_words}; "
+            f"dataOffset:{data_offset})"
         )
 
     world_name = f"W{world_idx:02d}"
@@ -366,7 +361,7 @@ def write_world_tile_include(world_idx: int, tiles: list[dict]) -> None:
             f.write(words_to_pascal_array(f"{world_name}_TILE_WORDS", word_blob))
         else:
             f.write(f"const {world_name}_TILES : array[0..0] of TSteTile = (\n")
-            f.write("    (sourceAddr:0; widthPx:0; heightPx:0; widthWords0:0; widthWords8:0; dataOffset0:0; dataOffset8:0)\n")
+            f.write("    (sourceAddr:0; widthPx:0; heightPx:0; rowWords:0; dataOffset:0)\n")
             f.write(");\n\n")
             f.write(f"const {world_name}_TILE_WORDS : array[0..0] of word=(\n  $0000\n);\n")
 
@@ -374,7 +369,7 @@ def write_world_tile_include(world_idx: int, tiles: list[dict]) -> None:
 def write_master_include() -> None:
     out_path = OUT_DIR / "world_tiles.inc"
     with out_path.open("w") as f:
-        f.write("// Generated from flob/worlds/world_XX.asm tile definitions.\n")
+        f.write("// Generated from canonical game_tiles indexed PNG files.\n")
         for idx in range(len(WORLD_DIRS)):
             f.write(f"{{$i worlds/world_{idx:02d}_tiles.inc}}\n")
 
@@ -382,12 +377,49 @@ def write_master_include() -> None:
 def main() -> None:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    for idx, world_dir in enumerate(WORLD_DIRS):
-        asm_path = WORLDS_SRC / world_dir / f"world_{idx:02d}.asm"
-        labels = compute_label_addresses(asm_path)
-        tiles = extract_tiles(asm_path, labels)
+    manifest_path = GAME_TILES / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    if not manifest.get("canonical_build_source"):
+        raise ValueError(f"{manifest_path}: not marked as a canonical build source")
+
+    by_world: dict[int, list[dict]] = {idx: [] for idx in range(len(WORLD_DIRS))}
+    seen_addresses: set[tuple[int, int]] = set()
+    for entry in manifest["tiles"]:
+        world_idx = int(entry["world"])
+        source_addr = int(entry["source_addr"])
+        address_key = (world_idx, source_addr)
+        if address_key in seen_addresses:
+            continue
+        seen_addresses.add(address_key)
+        image_path = FLOB_STE / entry["image"]
+        image = Image.open(image_path)
+        if image.mode != "P":
+            raise ValueError(f"{image_path}: tile must be an indexed PNG")
+        expected_size = tuple(int(value) for value in entry["size"])
+        if image.size != expected_size:
+            raise ValueError(
+                f"{image_path}: expected {expected_size}, got {image.size}"
+            )
+        pixels = [int(value) for value in image.getdata()]
+        used_indices = set(pixels)
+        if not used_indices.issubset({0, 1, 2, 3}):
+            raise ValueError(
+                f"{image_path}: palette indices outside 0..3: "
+                f"{sorted(used_indices)}"
+            )
+        by_world[world_idx].append({
+            "index": int(entry["index"]),
+            "label": entry["label"],
+            "source_addr": source_addr,
+            "width_px": image.width,
+            "height_px": image.height,
+            "pixels": pixels,
+        })
+
+    for idx in range(len(WORLD_DIRS)):
+        tiles = sorted(by_world[idx], key=lambda tile: tile["index"])
         write_world_tile_include(idx, tiles)
-        print(f"world_{idx:02d}: {len(tiles)} tiles")
+        print(f"world_{idx:02d}: {len(tiles)} canonical tiles")
 
     write_master_include()
 

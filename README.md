@@ -27,6 +27,10 @@ Gra kompiluje sie do `flob.prg` i ma juz dzialajacy glowny przeplyw:
 
 Najwazniejsze braki sa w `TODO.md`. Na dzis glowne otwarte obszary to audio, dalsza optymalizacja restore tła pod sprite'ami oraz pelna weryfikacja wszystkich swiatow i nowych ekranow STE.
 
+Aktualny build po migracji kanonicznych assetow oraz kompresji danych ma
+`980256 B` (okolo 957 KiB). Wygładzony title screen, ladowanie skompresowanych
+danych swiatow i dekompresja kolizji per pokoj zostaly potwierdzone w grze.
+
 ## Build
 
 Wymagane narzedzia:
@@ -76,11 +80,19 @@ Najwazniejsze pliki:
 
 Wazne generatory:
 
-- `generate_world_tiles.py` - konwersja kafli/tile'i do formatu STE.
+- `create_game_tiles.py` - jednorazowy import i Scale2x kafli do kanonicznych PNG.
+- `generate_world_tiles.py` - pakowanie kanonicznych PNG jako maska + planar STE bez preshiftow.
 - `export_flob_sheet.py` - eksport Floba z oryginalnych dwoch warstw PMG do edytowalnego PNG.
 - `export_lsy_sheets.py` - eksport LSY/PMG sprite sheets.
 - `build_full_sprite_atlas.py` - atlas wszystkich wyciagnietych sprite'ow.
-- `build_used_sprite_atlas.py` - atlas tylko sprite'ow uzywanych przez port STE.
+- `build_used_sprite_atlas.py` - referencyjny eksport sprite'ow uzywanych przez port STE z oryginalnych danych.
+- `create_game_sprite_sheet.py` - jednorazowa migracja eksportu do produkcyjnego arkusza na siatce 16 px oraz generator podpisanego guide'a.
+- `create_game_rooms.py` - jednorazowy Scale2x oryginalnych pokojow do kanonicznych PNG 320x160.
+- `create_game_world_icons.py` - jednorazowy Scale2x ikon selektora do kanonicznych PNG 192x80.
+- `create_game_cutscenes.py` - jednorazowy Scale2x slajdow intro/outro do kanonicznych PNG 320x160.
+- `create_game_title.py` - jednorazowy Scale2x zwyklego i ukoronowanego title screenu do kanonicznych PNG 320x184.
+- `generate_world_data.py` - kompresja Apultra danych poziomow per swiat i kolizji per pokoj.
+- `convert_images.py` - konwersja kanonicznych pokojow i cutscenek bez skalowania do planarnych danych STE oraz kompresja Apultra.
 - `generate_sprite_assets_from_atlas.py` - konwersja atlasu PNG do blitterowych masek/danych `.inc`.
 - `generate_world_sprite_atlas_map.py` - mapowanie oryginalnych adresow sprite'ow ze swiata na atlasowe dane STE.
 - `generate_achievements.py`, `generate_endworld_icons.py`, `generate_world_icons.py` - konwersja UI assets.
@@ -122,19 +134,32 @@ Gameplay przechowuje osobna liste narysowanych sprite'ow dla obu stron ekranu. P
 Glowne edytowalne zrodlo sprite'ow dla gry to:
 
 ```text
-images/sprite_atlas/used_sprites.png
-images/sprite_atlas/used_sprites.json
+images/sprite_atlas/game_sprites.png
+images/sprite_atlas/game_sprites.json
 ```
 
-`used_sprites.png` zawiera:
+`game_sprites.png` jest indeksowanym arkuszem na siatce 16 px. Jego szerokosc
+jest automatycznie dobierana do najdluzszego pasa i zaokraglana do 16 px:
 
-- `flob`,
-- `slime`,
-- wszystkie world sprite'y faktycznie referencjonowane przez `PUT_SPRITES` w portowanych swiatach.
+- zwykla klatka zajmuje slot 16 px szerokosci,
+- szeroka klatka zajmuje slot 32 px, ale JSON zachowuje jej rzeczywiste 20-32 px,
+- kazdy sprite zaczyna sie na granicy 16 px w pionie,
+- pas sprite'a ma 16, 32 albo 48 px, zalezne od rzeczywistej wysokosci,
+- przezroczysty padding nie jest czescia klatki, bo rzeczywisty prostokat zapisuje JSON,
+- arkusz zawiera Floba, slime i wszystkie world sprite'y uzywane przez port.
 
-Pelny atlas `all_sprites.png/json` zostaje jako referencja, ale gra domyslnie generuje assety z `used_sprites`.
+Prawdziwe warstwy kolorow PMG sa juz na siebie nalozone jako finalne
+`*_merged`. Obiekty rozstawione przez `gap` sa polaczone na szerokosc jako
+`*_compound`, np. telefon ma rzeczywiste 20 px w slocie 32 px. Tylko pary
+bedace niezaleznymi obiektami `SPRITE_DOUBLE` pozostaja jako osobne `_p0/_p1`.
 
-Po recznej zmianie grafiki lub palety w `used_sprites.png`:
+Pomocniczy `game_sprites_guide.png` pokazuje nazwy, numery klatek i siatke. Nie jest
+uzywany przez build i mozna go odswiezyc przez `make game-sprite-guide`.
+
+`used_sprites.png/json` oraz `all_sprites.png/json` sa tylko eksportami
+referencyjnymi z oryginalnych danych. Build nie czyta ich automatycznie.
+
+Po recznej zmianie grafiki lub palety w `game_sprites.png`:
 
 ```sh
 make sprite-atlas-assets-only
@@ -142,16 +167,16 @@ make clean
 make
 ```
 
-Jesli trzeba wygenerowac atlas od zera z oryginalnych zrodel:
+Pierwsze utworzenie kanonicznego arkusza z eksportu referencyjnego:
 
 ```sh
 make used-sprite-atlas
-make sprite-atlas-assets-only
-make clean
-make
+make game-sprite-sheet-init
 ```
 
-Uwaga: `make used-sprite-atlas` nadpisze reczne zmiany w `used_sprites.png`.
+`game-sprite-sheet-init` celowo odmawia nadpisania istniejacego
+`game_sprites.png`. Opcji `create_game_sprite_sheet.py --force` nalezy uzywac
+tylko swiadomie, poniewaz usuwa prace grafika i odtwarza arkusz z eksportu.
 
 ### Paleta Sprite'ow
 
@@ -163,6 +188,171 @@ Sprite atlas jest 4bpp, ale praktycznie:
 - indeks `15` jest uzywany m.in. pod message/text special color.
 
 Generator czyta palete bezposrednio z aktualnego PNG, nie z JSON-a. Jesli PNG uzyje indeksu `>15`, generator przerwie z bledem, bo STE sprite'y sa pakowane jako 4 bitplanes.
+
+## Room Artwork
+
+Kanonicznym zrodlem grafiki pokojow jest:
+
+```text
+game_rooms/world_00/room_00.png
+game_rooms/world_00/room_00_collision.png
+...
+game_rooms/world_05/room_23.png
+game_rooms/world_05/room_23_collision.png
+```
+
+Sa to indeksowane PNG `320x160`, uzywajace indeksow `0..3`. Poczatkowy zestaw
+zostal utworzony jednorazowo algorytmem Scale2x z oryginalnych GIF-ow `160x80`.
+Scale2x wybiera tylko istniejace kolory, wiec wygladza schodki bez antyaliasingu,
+ditheringu i rozszerzania palety.
+
+Kazdy pokoj ma tez kanoniczna mape kolizji `room_XX_collision.png` o rozmiarze
+`160x80`. Jej indeksy `0..3` oznaczaja odpowiednio powietrze, dekoracje,
+podloze i zagrozenie. Dzieki oddzieleniu mapy zmiana wygladu tla nie zmienia
+fizyki gry.
+
+Podczas builda kazda mapa kolizji jest pakowana osobnym strumieniem Apultra.
+`LoadImage` rozpakowuje tylko mape aktualnego pokoju do wspolnego bufora
+`3200 B`, z ktorego korzysta `GetPix`. Dane poziomow `world_XX.bin` sa pakowane
+per swiat i rozpakowywane przez `LoadWorld` do wspolnego bufora `8192 B`.
+Pozwala to zachowac losowy dostep logiki bez trzymania wszystkich surowych
+kolizji i szesciu blokow danych w pamieci programu.
+
+Migracja zostala sprawdzona w dzialajacej grze: przejscia miedzy pokojami,
+kolizje i ladowanie swiatow zachowuja dotychczasowe zachowanie.
+
+Zwykly build czyta pokoje i ich kolizje wylacznie z `game_rooms` i nigdy ich
+nie nadpisuje. Oryginalne GIF-y sa tylko referencja oraz wejsciem do jawnego,
+jednorazowego importu `make game-rooms-init`.
+
+Po edycji jednego lub kilku pokojow wystarczy:
+
+```sh
+make room-assets
+make
+```
+
+Konwerter porownuje daty plikow i regeneruje tylko zmienione pokoje. Pierwsze
+utworzenie zestawu w nowym checkoutcie:
+
+```sh
+make game-rooms-init
+make room-assets
+```
+
+`create_game_rooms.py --force` odtwarza wszystkie obrazy i mapy kolizji z
+oryginalu oraz usuwa prace grafika, dlatego nie jest czescia normalnego builda.
+
+## Tile Artwork
+
+Kanonicznym zrodlem przezroczystych kafli `PUT_TILE` jest:
+
+```text
+game_tiles/world_00/00_tile_smokeleft.png
+...
+game_tiles/world_05/10_tile_desk_close.png
+game_tiles/manifest.json
+```
+
+Sa to indeksowane PNG po jednorazowym Scale2x. Uzywaja indeksow `0..3`, a
+indeks `0` jest przezroczysty. Manifest zachowuje oryginalne adresy kafli,
+ktorych komendy poziomu uzywaja do wyszukania assetu.
+
+Zwykly build czyta kafle wylacznie z `game_tiles`. Generator nie skaluje PNG i
+zapisuje tylko jedna maske oraz cztery plaszczyzny bez preshiftu `+8`.
+Pozycjonowanie co 8 pikseli obsluguje `SKEW` Blittera.
+
+Po edycji PNG wystarczy zwykle `make`. Jawny rebuild kafli:
+
+```sh
+make worlds/world_tiles.inc
+make
+```
+
+Pierwszy import w nowym checkoutcie wykonuje `make game-tiles-init`.
+`create_game_tiles.py --force` odtwarza PNG z oryginalnych `.gfx/.asm` i
+nadpisuje prace grafika, dlatego nie jest czescia normalnego builda.
+
+## World Selector Icons
+
+Kanonicznym zrodlem ikon selektora sa indeksowane PNG `192x80`:
+
+```text
+game_world_icons/world_00.png
+...
+game_world_icons/world_05.png
+game_world_icons/manifest.json
+```
+
+Poczatkowy zestaw powstal przez jednorazowy Scale2x oryginalnych `icon.gif`
+`96x40`. Normalny build pakuje PNG bez skalowania jako surowe cztery
+plaszczyzny STE dla `BlitterCopyBitmap4`. Ikony nadal uzywaja indeksow `0..3`
+i zachowuja osobna palete kazdego swiata.
+
+Po edycji PNG wystarczy `make`. Pierwszy import wykonuje:
+
+```sh
+make game-world-icons-init
+make
+```
+
+`create_game_world_icons.py --force` odtwarza ikony z oryginalnych GIF-ow i
+nadpisuje prace grafika, dlatego nie jest czescia normalnego builda.
+
+## Title Artwork
+
+Kanonicznym zrodlem title screenu sa indeksowane PNG `320x184`:
+
+```text
+game_title/title.png
+game_title/title_crown.png
+game_title/manifest.json
+```
+
+Oba warianty powstaly przez jednorazowy Scale2x oryginalnego obrazu `160x92`.
+Korona jest nakladana przed skalowaniem, a normalny build tylko centruje gotowe
+PNG w ekranie `320x200`, dodajac po 8 czarnych linii u gory i na dole.
+
+Po edycji PNG wystarczy `make`. Pierwszy import wykonuje:
+
+```sh
+make game-title-init
+make
+```
+
+`create_game_title.py --force` odtwarza oba warianty z oryginalnych GIF-ow i
+nadpisuje prace grafika, dlatego nie jest czescia normalnego builda.
+
+## Cutscene Artwork
+
+Kanonicznym zrodlem szesciu slajdow intro i trzech slajdow outro sa indeksowane
+PNG `320x160`:
+
+```text
+game_cutscenes/intro_00.png
+...
+game_cutscenes/intro_05.png
+game_cutscenes/outro_00.png
+...
+game_cutscenes/outro_02.png
+game_cutscenes/manifest.json
+```
+
+Poczatkowy zestaw powstal przez jednorazowy Scale2x oryginalnych GIF-ow
+`160x80`. Obrazy zachowuja indeksy palety `0..3`, a normalny build pakuje je
+bez dalszego skalowania. `scene_00.gif` nie jest osobnym globalnym assetem:
+ta sama grafika jest scena pokoju `world_05/room_23`, ktora juz korzysta z
+kanonicznego, wygladzonego tla w `game_rooms`.
+
+Po edycji PNG wystarczy `make`. Pierwszy import wykonuje:
+
+```sh
+make game-cutscenes-init
+make
+```
+
+`create_game_cutscenes.py --force` odtwarza slajdy z oryginalnych GIF-ow i
+nadpisuje prace grafika, dlatego nie jest czescia normalnego builda.
 
 ### Flob i PMG Overlap
 
@@ -178,7 +368,9 @@ Mruganie oczu nie jest osobnym sprite'em. To ramka `FRAME_BLINK = 2`, wybierana 
 
 ### SPRITE_COMBINED i warstwy P0/P1
 
-W `used_sprites.png/json` nazwy zakonczone `_p0` i `_p1` oznaczaja osobne dane dwoch playerow PMG z oryginalu. Nie nalezy jednak zakladac, ze kazda taka para jest tylko sposobem A8 na uzyskanie dodatkowego koloru.
+W `game_sprites.png/json` pozostale nazwy zakonczone `_p0` i `_p1` oznaczaja
+niezalezne obiekty `SPRITE_DOUBLE`. Warstwy jednego obrazu zostaly juz
+zastapione finalnymi rzedami `*_merged` albo `*_compound`.
 
 Port zachowuje dla obu czesci osobne:
 
@@ -188,12 +380,6 @@ Port zachowuje dla obu czesci osobne:
 - maski kolizji i warunki widocznosci.
 
 Dlatego `SPRITE_COMBINED` pozostaje elementem logiki gry. Bezpieczna optymalizacja polega na scalaniu offline tylko prawdziwych nakladek PMG: zgodna pozycja, rozmiar, przebieg animacji i zerowy gap. Obiekty z przesunieciem lub niezaleznymi klatkami sa obiektami zlozonymi i nadal wymagaja osobnych czesci albo specjalnie wygenerowanych kombinacji.
-
-Aktualny atlas zawiera:
-
-- `flob` i `slime` jako pojedyncze sprite'y,
-- 73 pary `_p0` + `_p1`,
-- 16 sprite'ow majacych tylko `_p0`.
 
 Faktyczne uzycia `SPRITE_COMBINED` sa generowane jako pojedyncze assety STE:
 
@@ -339,7 +525,7 @@ make clean
 make
 ```
 
-Zmiana palety/grafiki w `used_sprites.png`:
+Zmiana palety/grafiki w `game_sprites.png`:
 
 ```sh
 make sprite-atlas-assets-only
@@ -347,19 +533,49 @@ make clean
 make
 ```
 
-Regeneracja uzywanego atlasu z oryginalnych zrodel:
+Regeneracja referencyjnego eksportu z oryginalnych zrodel:
 
 ```sh
 make used-sprite-atlas
-make sprite-atlas-assets-only
-make clean
-make
 ```
 
-Regeneracja tile'i:
+Ta komenda nie zmienia produkcyjnego `game_sprites.png`.
+
+Regeneracja kafli z kanonicznych `game_tiles`:
 
 ```sh
 make worlds/world_tiles.inc
+```
+
+Jednorazowy import kafli z oryginalu:
+
+```sh
+make game-tiles-init
+```
+
+Jednorazowy import ikon selektora z oryginalu:
+
+```sh
+make game-world-icons-init
+```
+
+Jednorazowy import slajdow intro/outro z oryginalu:
+
+```sh
+make game-cutscenes-init
+```
+
+Jednorazowy import title screenu z oryginalu:
+
+```sh
+make game-title-init
+```
+
+Zmiana grafiki pokoju w `game_rooms`:
+
+```sh
+make room-assets
+make
 ```
 
 Regeneracja ikon/achievements zwykle dzieje sie przez zaleznosci Makefile, ale mozna odpalac odpowiednie `generate_*.py` recznie.

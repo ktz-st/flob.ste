@@ -1,0 +1,963 @@
+{
+  "canonical_build_source": true,
+  "scale_algorithm": "Scale2x",
+  "transparent_index": 0,
+  "tile_count": 53,
+  "tiles": [
+    {
+      "world": 0,
+      "index": 0,
+      "label": "tile_smokeleft",
+      "source_addr": 42268,
+      "image": "game_tiles/world_00/00_tile_smokeleft.png",
+      "size": [
+        40,
+        74
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 0,
+      "index": 1,
+      "label": "tile_smokeright",
+      "source_addr": 42455,
+      "image": "game_tiles/world_00/01_tile_smokeright.png",
+      "size": [
+        32,
+        74
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 0,
+      "index": 2,
+      "label": "tile_smokemid",
+      "source_addr": 42605,
+      "image": "game_tiles/world_00/02_tile_smokemid.png",
+      "size": [
+        64,
+        26
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 0,
+      "index": 3,
+      "label": "tile_cables",
+      "source_addr": 42711,
+      "image": "game_tiles/world_00/03_tile_cables.png",
+      "size": [
+        40,
+        50
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 0,
+      "index": 4,
+      "label": "tile_cables_off",
+      "source_addr": 42838,
+      "image": "game_tiles/world_00/04_tile_cables_off.png",
+      "size": [
+        40,
+        46
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 0,
+      "index": 5,
+      "label": "tile_radioactive",
+      "source_addr": 42955,
+      "image": "game_tiles/world_00/05_tile_radioactive.png",
+      "size": [
+        64,
+        46
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 0,
+      "index": 6,
+      "label": "tile_trapdoor1",
+      "source_addr": 43141,
+      "image": "game_tiles/world_00/06_tile_trapdoor1.png",
+      "size": [
+        24,
+        24
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 0,
+      "index": 7,
+      "label": "tile_hatch1",
+      "source_addr": 43179,
+      "image": "game_tiles/world_00/07_tile_hatch1.png",
+      "size": [
+        24,
+        44
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 0,
+      "index": 8,
+      "label": "tile_mouse",
+      "source_addr": 43247,
+      "image": "game_tiles/world_00/08_tile_mouse.png",
+      "size": [
+        32,
+        12
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 0,
+      "index": 9,
+      "label": "tile_mouse2",
+      "source_addr": 43273,
+      "image": "game_tiles/world_00/09_tile_mouse2.png",
+      "size": [
+        24,
+        18
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 1,
+      "index": 0,
+      "label": "tile_waterfall",
+      "source_addr": 40960,
+      "image": "game_tiles/world_01/00_tile_waterfall.png",
+      "size": [
+        40,
+        76
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 1,
+      "index": 1,
+      "label": "tile_vhatch",
+      "source_addr": 41152,
+      "image": "game_tiles/world_01/01_tile_vhatch.png",
+      "size": [
+        16,
+        30
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 1,
+      "index": 2,
+      "label": "tile_pool",
+      "source_addr": 41184,
+      "image": "game_tiles/world_01/02_tile_pool.png",
+      "size": [
+        152,
+        58
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 1,
+      "index": 3,
+      "label": "tile_socket",
+      "source_addr": 41737,
+      "image": "game_tiles/world_01/03_tile_socket.png",
+      "size": [
+        24,
+        14
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 1,
+      "index": 4,
+      "label": "tile_cableson",
+      "source_addr": 41760,
+      "image": "game_tiles/world_01/04_tile_cableson.png",
+      "size": [
+        224,
+        18
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 1,
+      "index": 5,
+      "label": "tile_cablesoff1",
+      "source_addr": 42014,
+      "image": "game_tiles/world_01/05_tile_cablesoff1.png",
+      "size": [
+        80,
+        94
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 1,
+      "index": 6,
+      "label": "tile_cablesoff2",
+      "source_addr": 42486,
+      "image": "game_tiles/world_01/06_tile_cablesoff2.png",
+      "size": [
+        32,
+        96
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 0,
+      "label": "tile_trapdoor",
+      "source_addr": 42174,
+      "image": "game_tiles/world_02/00_tile_trapdoor.png",
+      "size": [
+        32,
+        6
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 1,
+      "label": "tile_bulb",
+      "source_addr": 42188,
+      "image": "game_tiles/world_02/01_tile_bulb.png",
+      "size": [
+        16,
+        4
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 2,
+      "label": "tile_spotlight",
+      "source_addr": 42194,
+      "image": "game_tiles/world_02/02_tile_spotlight.png",
+      "size": [
+        8,
+        8
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 3,
+      "label": "tile_nightlamp",
+      "source_addr": 42200,
+      "image": "game_tiles/world_02/03_tile_nightlamp.png",
+      "size": [
+        16,
+        10
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 4,
+      "label": "tile_roofhatch",
+      "source_addr": 42212,
+      "image": "game_tiles/world_02/04_tile_roofhatch.png",
+      "size": [
+        32,
+        10
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 5,
+      "label": "tile_edoor_open",
+      "source_addr": 42234,
+      "image": "game_tiles/world_02/05_tile_edoor_open.png",
+      "size": [
+        48,
+        36
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 6,
+      "label": "tile_edoor_close",
+      "source_addr": 42344,
+      "image": "game_tiles/world_02/06_tile_edoor_close.png",
+      "size": [
+        48,
+        36
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 7,
+      "label": "tile_lift0",
+      "source_addr": 42454,
+      "image": "game_tiles/world_02/07_tile_lift0.png",
+      "size": [
+        48,
+        150
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 8,
+      "label": "tile_doorfloor4",
+      "source_addr": 42906,
+      "image": "game_tiles/world_02/08_tile_doorfloor4.png",
+      "size": [
+        8,
+        44
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 9,
+      "label": "tile_linesfloor4",
+      "source_addr": 42930,
+      "image": "game_tiles/world_02/09_tile_linesfloor4.png",
+      "size": [
+        16,
+        160
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 10,
+      "label": "tile_liftfloor4",
+      "source_addr": 43092,
+      "image": "game_tiles/world_02/10_tile_liftfloor4.png",
+      "size": [
+        48,
+        150
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 11,
+      "label": "tile_liftdoor4",
+      "source_addr": 43544,
+      "image": "game_tiles/world_02/11_tile_liftdoor4.png",
+      "size": [
+        16,
+        22
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 12,
+      "label": "tile_loadleft",
+      "source_addr": 43568,
+      "image": "game_tiles/world_02/12_tile_loadleft.png",
+      "size": [
+        56,
+        96
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 2,
+      "index": 13,
+      "label": "tile_loadright",
+      "source_addr": 43906,
+      "image": "game_tiles/world_02/13_tile_loadright.png",
+      "size": [
+        56,
+        90
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 3,
+      "index": 0,
+      "label": "tile_block10",
+      "source_addr": 40960,
+      "image": "game_tiles/world_03/00_tile_block10.png",
+      "size": [
+        16,
+        18
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 3,
+      "index": 1,
+      "label": "tile_lake",
+      "source_addr": 40980,
+      "image": "game_tiles/world_03/01_tile_lake.png",
+      "size": [
+        112,
+        18
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 3,
+      "index": 2,
+      "label": "tile_hatch",
+      "source_addr": 41108,
+      "image": "game_tiles/world_03/02_tile_hatch.png",
+      "size": [
+        48,
+        62
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 3,
+      "index": 3,
+      "label": "tile_trapdoor",
+      "source_addr": 41296,
+      "image": "game_tiles/world_03/03_tile_trapdoor.png",
+      "size": [
+        72,
+        24
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 4,
+      "index": 0,
+      "label": "tile_doors",
+      "source_addr": 42080,
+      "image": "game_tiles/world_04/00_tile_doors.png",
+      "size": [
+        32,
+        26
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 4,
+      "index": 1,
+      "label": "tile_hatch",
+      "source_addr": 42134,
+      "image": "game_tiles/world_04/01_tile_hatch.png",
+      "size": [
+        32,
+        14
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 4,
+      "index": 2,
+      "label": "tile_krata",
+      "source_addr": 42164,
+      "image": "game_tiles/world_04/02_tile_krata.png",
+      "size": [
+        48,
+        70
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 4,
+      "index": 3,
+      "label": "tile_bridge_up",
+      "source_addr": 42376,
+      "image": "game_tiles/world_04/03_tile_bridge_up.png",
+      "size": [
+        16,
+        28
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 4,
+      "index": 4,
+      "label": "tile_bridge_down",
+      "source_addr": 42406,
+      "image": "game_tiles/world_04/04_tile_bridge_down.png",
+      "size": [
+        32,
+        8
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 4,
+      "index": 5,
+      "label": "tile_cable",
+      "source_addr": 42424,
+      "image": "game_tiles/world_04/05_tile_cable.png",
+      "size": [
+        24,
+        70
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 4,
+      "index": 6,
+      "label": "tile_water",
+      "source_addr": 42531,
+      "image": "game_tiles/world_04/06_tile_water.png",
+      "size": [
+        16,
+        56
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 0,
+      "label": "tile_door1",
+      "source_addr": 42122,
+      "image": "game_tiles/world_05/00_tile_door1.png",
+      "size": [
+        8,
+        40
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 1,
+      "label": "tile_door5",
+      "source_addr": 42122,
+      "image": "game_tiles/world_05/00_tile_door1.png",
+      "size": [
+        8,
+        40
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0,
+      "alias_of": "tile_door1"
+    },
+    {
+      "world": 5,
+      "index": 2,
+      "label": "tile_door2",
+      "source_addr": 42144,
+      "image": "game_tiles/world_05/02_tile_door2.png",
+      "size": [
+        16,
+        40
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 3,
+      "label": "tile_door3",
+      "source_addr": 42186,
+      "image": "game_tiles/world_05/03_tile_door3.png",
+      "size": [
+        8,
+        40
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 4,
+      "label": "tile_door4",
+      "source_addr": 42208,
+      "image": "game_tiles/world_05/04_tile_door4.png",
+      "size": [
+        8,
+        40
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 5,
+      "label": "tile_dr_desk_on",
+      "source_addr": 42230,
+      "image": "game_tiles/world_05/05_tile_dr_desk_on.png",
+      "size": [
+        32,
+        42
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 6,
+      "label": "tile_dr_desk_off",
+      "source_addr": 42316,
+      "image": "game_tiles/world_05/06_tile_dr_desk_off.png",
+      "size": [
+        32,
+        42
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 7,
+      "label": "tile_dr_up_bridge",
+      "source_addr": 42402,
+      "image": "game_tiles/world_05/07_tile_dr_up_bridge.png",
+      "size": [
+        32,
+        50
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 8,
+      "label": "tile_dr_down_bridge",
+      "source_addr": 42504,
+      "image": "game_tiles/world_05/08_tile_dr_down_bridge.png",
+      "size": [
+        32,
+        50
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 9,
+      "label": "tile_desk_open",
+      "source_addr": 42606,
+      "image": "game_tiles/world_05/09_tile_desk_open.png",
+      "size": [
+        32,
+        22
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    },
+    {
+      "world": 5,
+      "index": 10,
+      "label": "tile_desk_close",
+      "source_addr": 42652,
+      "image": "game_tiles/world_05/10_tile_desk_close.png",
+      "size": [
+        24,
+        22
+      ],
+      "palette_indices": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "transparent_index": 0
+    }
+  ]
+}
