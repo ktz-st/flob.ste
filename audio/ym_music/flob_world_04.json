@@ -15,5 +15,11 @@
   "noise_period_scale": 1.25,
   "volume_attenuation": 2,
   "deduplicate_stereo": true,
-  "distortion_c_noise": false
+  "distortion_c_noise": false,
+  "loop_frame": 0,
+  "playback_loop_seconds": 0.0,
+  "loop_duration_frames": 8960,
+  "playback_loop_duration_seconds": 179.2,
+  "rmt_song_start_row": 2,
+  "rmt_loop_row": 2
 }

@@ -168,6 +168,8 @@ Nie stosujemy automatycznego Scale2x do produkcyjnego atlasu. Testowy podglad
 pokazal, ze algorytm dobrze wygladza czesc duzych ksztaltow, ale znieksztalca
 drobne sprite'y i szczegoly animacji. Finalne wygladzanie `game_sprites.png`
 pozostaje praca grafika wykonywana selektywnie, przy zachowaniu siatki i palety.
+Flob jest wygladzony tylko na zewnetrznym konturze; oczy, wewnetrzne kolory i
+klatki rozpadu zachowuja oryginalne piksele powiekszone 2x.
 
 Po recznej zmianie grafiki lub palety w `game_sprites.png`:
 
@@ -285,6 +287,17 @@ nadpisuje prace grafika, dlatego nie jest czescia normalnego builda.
 
 ## World Selector Icons
 
+Achievements: siatka 12x7 pucharkow 24x20 (krok 24x22), importowanych
+przez Scale2x z ach_off/ach_on/ach_new w oryginalnym sprites.asm.
+`generate_achievement_ui.py` generuje `assets/achievement_ui.inc` dla blittera.
+Palety DLI sa rozdzielone indeksami: 1..3 zwykle pucharki, 4..6 globalne,
+7..9 naglowek, 10..11 opisy 8x8, 12 separatory, 15 pulsujaca ramka kursora.
+Naglowek korzysta z fontu 16x16 selektora. Ramka jest uproszczeniem animacji
+PMG A8 (bez jej pieciu klatek). Stan nowych pucharkow zostaje widoczny
+przez cala sesje ekranu, a zapisany stan 2 przechodzi na 1 jak w oryginale.
+`images/achievements_ste_preview.png` to podglad hosta z przykladowym
+stanem 0/84, nie zrzut emulatora ani zrodlo builda.
+
 Kanonicznym zrodlem ikon selektora sa indeksowane PNG `192x80`:
 
 ```text
@@ -299,6 +312,22 @@ Poczatkowy zestaw powstal przez jednorazowy Scale2x oryginalnych `icon.gif`
 plaszczyzny STE dla `BlitterCopyBitmap4`. Ikony nadal uzywaja indeksow `0..3`
 i zachowuja osobna palete kazdego swiata.
 
+Selektor STE odtwarza uklad A8 w wycentrowanym obszarze 320x184:
+naglowek y=8, miniatura (64,34), nazwa y=128, statystyka y=168.
+`generate_selector_assets.py` generuje osobny font 16x16 przez Scale2x
+oryginalnego 8x8 oraz wygladzone sprite'y Floba i strzalek z PMG.
+Font jest rysowany maskowanym blitterem, bez zmiany fontu rozgrywki.
+`assets/selector_ui.inc` jest wynikiem generowania; `font/selector_16x16.png`
+i `images/selector_ste_preview/` to podglady, nie zrodla builda.
+
+Paleta: 0 to wspolna czern; 1..3 to miniatura; 4..5 naglowek;
+6..7 kolory nazwy z world.goalcolor1/2; 8..10 statystyki/blokada;
+12..14 Flob; 15 strzalki. Bez DLI. Indeksy kanonicznych ikon
+sa mapowane na selektory A8 przez SELECTOR_ICON_MAP (0,3,1,2),
+poniewaz import GIF porzadkuje kolory wedlug jasnosci.
+Swiaty zablokowane maja szara miniature i Floba, jak w oryginale.
+Sterowanie i zmiana statystyk pozostaja dynamiczne.
+
 Po edycji PNG wystarczy `make`. Pierwszy import wykonuje:
 
 ```sh
@@ -310,6 +339,18 @@ make
 nadpisuje prace grafika, dlatego nie jest czescia normalnego builda.
 
 ## End-world Icons
+
+Ekran wygranej/przegranej ma uklad A8: naglowek 16x16 z cieniem y=8,
+ikona 64x80 w (128,32), czas y=128, wynik y=150 i slime y=170.
+Uzywa fontu selektora i maskowanego blittera. Zgony/sekrety nadal sa
+liczone i zapisywane, ale nie sa dodatkowymi wierszami tego ekranu.
+FIRE/Return oraz fade-in/out pozostaja aktywne.
+Paleta DLI jest splaszczona: 1..3 ikona (PNG -> A8: 0,3,1,2),
+4..5 naglowek, 6 czas (world.goalcolor2), 7..8 wynik/slime.
+Wygrana: ikona $82, goalcolor1, goalcolor2; mapa swiata 0 ma $82,$BA,$26.
+Przegrana: czaszka $38,$3F,$34. Kolory sa przepuszczane przez STE_PAL.
+`preview_endworld.py` tworzy podglady hosta z przykladowymi wynikami
+w `images/endworld_ste_preview/`; nie sa to zrzuty emulatora.
 
 Kanonicznym zrodlem czterech ikon ekranu podsumowania swiata sa indeksowane
 PNG `64x80`:
@@ -339,6 +380,28 @@ Importer zachowuje istniejace PNG. Opcja `create_game_endworld_icons.py
 
 ## Title Artwork
 
+Sprite palette reimport: `recolor_game_atlas.py` is an explicit, destructive
+artwork reimport (not part of make). It first backs up PNG/JSON/guide and the
+generated palette under `images/sprite_atlas/backups/`. The pre-reimport atlas
+is in `20260908-213318-735136`. It restores A8 PAL colours and PMG colour-OR
+overlays for world sprites, reconstructs missile slime, and preserves Flob's
+edited silhouette/eyes. Frame rectangles and reserved RGB slots 0..3/15 stay
+unchanged. The 11 sprite slots pin three pinks, three extinguisher shades,
+white and opaque black; remaining colours are reduced to three representatives.
+This is an approximation of 86 source STE colours, not lossless A8 fidelity.
+`generate_sprite_assets_from_atlas.py` now writes full STE 4-bit/channel words.
+After PNG edits use `make sprite-atlas-assets-only` and `make`, not reimport.
+
+Approved room-colour sprite bindings live in `sprite_room_bindings.py`:
+16 explicit row/source-colour/frame assignments to indices 1..3, based on
+`reports/sprite_room_colors.md`. These indices follow the current room palette;
+their RGB entries are not changed. Index 0 remains transparency, and 15 is
+not used. The room-dependent `sprite_drop` case is deliberately excluded.
+The assignments have been applied to the canonical PNG and are also applied
+by the explicit A8 reimport. Normal asset builds only consume PNG indices and
+do not override artist edits. `python3 sprite_room_bindings.py` reapplies the
+approved source masks with a PNG/JSON/guide backup; it is not a routine build step.
+
 Kanonicznym zrodlem title screenu sa indeksowane PNG `320x184`:
 
 ```text
@@ -348,8 +411,14 @@ game_title/manifest.json
 ```
 
 Oba warianty powstaly przez jednorazowy Scale2x oryginalnego obrazu `160x92`.
+Kolory uwzgledniaja PAL DLI: logo i dolne napisy maja osobne indeksy w jednej
+palecie PNG (stan po 150 klatkach). Napisy to PRESS FIRE TO START,
+A FOR ACHIEVEMENTS i C FOR CREDITS. W title A otwiera achievements,
+C lub fizyczny klawisz HELP otwiera credits; FIRE/Return rozpoczyna gre.
 Korona jest nakladana przed skalowaniem, a normalny build tylko centruje gotowe
 PNG w ekranie `320x200`, dodajac po 8 czarnych linii u gory i na dole.
+Konwerter zachowuje indeksy PNG, zapisuje palete z precyzja STE i pakuje
+bitplany apultra. Fade-in title uzywa tej palety bez mapowania kolorow pokoju.
 
 Po edycji PNG wystarczy `make`. Pierwszy import wykonuje:
 
@@ -358,10 +427,30 @@ make game-title-init
 make
 ```
 
-`create_game_title.py --force` odtwarza oba warianty z oryginalnych GIF-ow i
+`create_game_title.py --force` odtwarza oba warianty z oryginalnych GFX i DLI i
 nadpisuje prace grafika, dlatego nie jest czescia normalnego builda.
 
 ## Cutscene Artwork
+
+Scenki pokojowe (`ShowScene`) maja osobny przebieg, bez animacji tekstu.
+Audyt szesciu `world_??.asm`: jedna definicja SET_SCENE, W5 R10,
+trigger 12 ONCE, obraz 23, tekst `msg_scene0` (adres A8 $AA97 w banku
+assetow), kolory $28,$0D,$34. To scenka upadku Dr Sven Torffa.
+STE rozpakowuje obraz do BKG, kopiuje 320x160 z y=20 na y=8 LOG,
+rysuje cztery pelne wiersze ANTIC->ASCII na y=168/176/184/192,
+potem robi swap i fade-in do palety scenki. Tekst ma jasnosc A8 $0A.
+FIRE/Return zamyka ekran przez fade-out i BackToLevel, ktore odtwarza
+pokoj, palete, sprite'y i orientacje. Wskaznik tekstu jest sprawdzany
+dla pelnych 160 bajtow. Kod nie nadpisuje kolorow/collision data pokoju
+przy prezentacji scenki. Dzialanie przejsc wymaga testu w Hatari.
+
+Napisy cutscenek rozswietlaja sie liniami jak w A8 `dliintro2`:
+indeks 15 przechodzi od koloru tla do bieli przez 15 klatek, potem linia
+jest utrwalana indeksem 14 w obu buforach. Indeksy 14 i 15 sa zarezerwowane
+dla tekstu cutscenek. Efekt dziala wewnatrz dotychczasowego czasu linii,
+bez dodatkowych pauz zmieniajacych synchronizacje intro/outro z muzyka.
+Stale: `CUTSCENE_TEXT_COLOR`, `CUTSCENE_FADE_COLOR`,
+`CUTSCENE_TEXT_FADE_FRAMES` i `CUTSCENE_TEXT_WHITE` w `flob.pas`.
 
 Kanonicznym zrodlem szesciu slajdow intro i trzech slajdow outro sa indeksowane
 PNG `320x160`:
@@ -493,11 +582,15 @@ Port STE:
 
 ## Palety
 
-Kolory pokoju pochodza z danych oryginalu i ida przez `STE_PAL`.
+Kolory pokoju pochodza z danych oryginalu i ida przez `STE_PAL`. Tablica jest
+generowana do `palette.inc` przez `generate_palette.py` ze zweryfikowanej
+referencji PAL `assets/a8_pal_rgb.hex`, a nastepnie kwantyzowana do natywnego
+ukladu bitow skladowych Atari STE. Tablicy nie nalezy ponownie wpisywac recznie
+w `flob.pas`.
 
 `RebuildRoomPalette` sklada palete pokoju:
 
-- sloty tła/kolizji z level colors,
+- wszystkie cztery sloty tla/kolizji z `level.colors` danego pokoju,
 - sloty sprite'ow z `SPRITE_ATLAS_PAL`,
 - slot message moze migac przez bezposrednia zmiane palety.
 
@@ -519,20 +612,22 @@ Zaimplementowane / funkcjonalne:
 Do dopracowania:
 
 - stats screen ma szesc stron swiata i jedna strone globalna,
-- layout world selector docelowo bedzie wiekszy/pelnoekranowy,
+- world selector ma uklad A8 z osobnym wygladzonym fontem 16x16,
 - finalny font i finalny wyglad UI sa jeszcze otwarte.
 
 ## Audio
 
-Efekty zostaly wyciagniete z oryginalnego RMT/POKEY do kompaktowych rekordow
-`run, AUDF, AUDC` odswiezanych z czestotliwoscia 50 Hz. `Sfx` i `FSfx` wybieraja
-dane z `assets/sfx_synth.inc`.
+Efekty zostaly wyciagniete z oryginalnego RMT/POKEY do dwoch kompaktowych
+strumieni 50 Hz. `run, AUDF, AUDC` pozostaje dla zapasowego syntezatora DMA,
+a domyslny PSG dostaje gotowe rekordy `run, periodLo, periodHi, noise, mixer,
+volume`. Oba warianty generuje `generate_sfx_synth.py` do
+`assets/sfx_synth.inc`.
 
 Domyslny backend PSG:
 
 - `asm/psgsound.s` instaluje callback w kolejce VBL TOS,
 - uzywa jednego kanalu YM2149 i zachowuje jego poprzedni stan,
-- mapuje czestotliwosc, distortion/noise oraz glosnosc POKEY na PSG,
+- zapisuje do PSG okres, noise, mixer i glosnosc przeliczone podczas buildu,
 - nie zatrzymuje petli gry i nie wykonuje kosztownej syntezy probek co klatke.
 
 Alternatywny backend DMA pozostaje do porownan. `asm/sfxsynth.s` renderuje
@@ -540,7 +635,16 @@ przebieg POKEY do buforow 8-bit signed mono, a DMA STE odtwarza je w tle.
 Wariant PSG zostal wybrany jako domyslny, bo daje dobra responsywnosc i czytelne
 efekty. Wszystkie obecnie podpiete SFX korzystaja z jednego kanalu.
 
-Do zrobienia pozostaje muzyka oraz koncowy balans i test wszystkich efektow.
+Muzyka FYM jest podpieta dla title, wszystkich swiatow, intro, outro i ekranu
+konca swiata. `retarget_music_loops.py` zachowuje zestrojone dane rejestrowe,
+ale ustawia punkty petli zgodne z komendami `GOTO` w oryginalnych RMT:
+
+- world 00 i 05: ramka 896 (17.92 s),
+- world 02: ramka 448 (8.96 s),
+- pozostale utwory zapetlone: ramka 0,
+- intro pozostaje jednorazowym strumieniem bez petli.
+
+Do zrobienia pozostaje koncowy balans i pelny test muzyki oraz efektow.
 
 ## Debug / Cheat
 
@@ -586,6 +690,13 @@ make used-sprite-atlas
 ```
 
 Ta komenda nie zmienia produkcyjnego `game_sprites.png`.
+
+Regeneracja strumieni PSG/DMA SFX oraz ponowne ustawienie petli FYM:
+
+```sh
+make sfx-psg
+make music-loops
+```
 
 Regeneracja kafli z kanonicznych `game_tiles`:
 

@@ -1,0 +1,963 @@
+[
+  {
+    "world": 0,
+    "room": 0,
+    "label": "sprite_cagedoor",
+    "plane": 0,
+    "color": 230,
+    "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "room_colors": [
+      230,
+      186,
+      34,
+      0
+    ],
+    "ste_slots": [
+      2
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/00_Escape_From_The_Lab/sprite_cagedoor.a65",
+    "key": "9958241972ce9a438c080f6c250c35b14205ab721a9ff5030729dc82270635b4:0:230",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      2
+    ]
+  },
+  {
+    "world": 0,
+    "room": 1,
+    "label": "sprite_bench_portal",
+    "plane": 0,
+    "color": 134,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      134,
+      190,
+      146,
+      0
+    ],
+    "ste_slots": [
+      2
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/00_Escape_From_The_Lab/sprite_bench_portal.a65",
+    "key": "fa32011290eae33baceffb42e04de12b6cd7ca88830ae7742ed309d160e09f0d:0:134",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      2
+    ]
+  },
+  {
+    "world": 0,
+    "room": 1,
+    "label": "sprite_bench_portal",
+    "plane": 1,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      134,
+      190,
+      146,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/00_Escape_From_The_Lab/sprite_bench_portal.a65",
+    "key": "fa32011290eae33baceffb42e04de12b6cd7ca88830ae7742ed309d160e09f0d:1:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 0,
+    "room": 2,
+    "label": "sprite_drop_eyes",
+    "plane": 1,
+    "color": 18,
+    "frames": [
+      1,
+      2
+    ],
+    "room_colors": [
+      136,
+      30,
+      18,
+      0
+    ],
+    "ste_slots": [
+      3
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/00_Escape_From_The_Lab/sprite_drop_eyes.a65",
+    "key": "6b3d3a89d688f5ed918c2402fe26ddb8d9c5900a2980723015e5eff2cd022abf:1:18",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      3
+    ]
+  },
+  {
+    "world": 0,
+    "room": 10,
+    "label": "sprite_fireext",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      4
+    ],
+    "room_colors": [
+      22,
+      28,
+      2,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/00_Escape_From_The_Lab/sprite_fireext.a65",
+    "key": "ec5c992b9bb9452d804096f443d2bc30c689794ff363316c5b018eed340aceea:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 0,
+    "room": 11,
+    "label": "sprite_sprays",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      136,
+      28,
+      34,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/00_Escape_From_The_Lab/sprite_sprays.a65",
+    "key": "63a6c2d517ce338f2219867c40369ca424a25288a28ff753bf14c462d69f20db:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 0,
+    "room": 11,
+    "label": "sprite_sprays",
+    "plane": 1,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      136,
+      28,
+      34,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/00_Escape_From_The_Lab/sprite_sprays.a65",
+    "key": "63a6c2d517ce338f2219867c40369ca424a25288a28ff753bf14c462d69f20db:1:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 0,
+    "room": 22,
+    "label": "sprite_stats_portal",
+    "plane": 1,
+    "color": 0,
+    "frames": [
+      3
+    ],
+    "room_colors": [
+      22,
+      138,
+      146,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/00_Escape_From_The_Lab/sprite_stats_portal.a65",
+    "key": "ada5ceb9a7f5efab88530c178042fee3db0a6f48b22f4d889ef676248dd21928:1:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 1,
+    "room": 1,
+    "label": "sprite_valve_thunder",
+    "plane": 1,
+    "color": 114,
+    "frames": [
+      5
+    ],
+    "room_colors": [
+      152,
+      142,
+      114,
+      0
+    ],
+    "ste_slots": [
+      3
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/01_Abominable_Sewers/sprite_valve.a65",
+    "key": "f7be51216627c5204e90509fc3e7abb4a8b028c888418a1d5ec7371ed8bbc6f9:1:114",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      3
+    ]
+  },
+  {
+    "world": 1,
+    "room": 3,
+    "label": "sprite_vent_fly",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      166,
+      46,
+      18,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/01_Abominable_Sewers/sprite_vent_fly.a65",
+    "key": "a91871f2ada09daf6c81aa525127bb6fd689af84759ccbc38f8eab81d3143744:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 1,
+    "room": 4,
+    "label": "sprite_bubbles",
+    "plane": 1,
+    "color": 205,
+    "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "room_colors": [
+      150,
+      205,
+      114,
+      0
+    ],
+    "ste_slots": [
+      1
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/01_Abominable_Sewers/sprite_bubbles.a65",
+    "key": "9cd5a287529dbc1a531251257772a2b6df2d533f4a543f8feb2e9651191e2279:1:205",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      1
+    ]
+  },
+  {
+    "world": 1,
+    "room": 10,
+    "label": "sprite_stone_drops",
+    "plane": 0,
+    "color": 220,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      40,
+      220,
+      34,
+      0
+    ],
+    "ste_slots": [
+      1
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/01_Abominable_Sewers/sprite_stone_drops.a65",
+    "key": "0b7a6f34c63928d15e2c8b8086408b5f9019d5c0b01865aeafae9ef9e0cc6abf:0:220",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      1
+    ]
+  },
+  {
+    "world": 1,
+    "room": 18,
+    "label": "sprite_vent_fly",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      22,
+      30,
+      130,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/01_Abominable_Sewers/sprite_vent_fly.a65",
+    "key": "a91871f2ada09daf6c81aa525127bb6fd689af84759ccbc38f8eab81d3143744:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 1,
+    "room": 19,
+    "label": "sprite_eyes_tail",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      1,
+      2
+    ],
+    "room_colors": [
+      152,
+      206,
+      0,
+      18
+    ],
+    "ste_slots": [
+      3
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/01_Abominable_Sewers/sprite_eyes_tail.a65",
+    "key": "44354e1550d2c42a3a38c7d1ec1fa031d473f8623899d4b450bff83428cf3b22:0:0",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      3
+    ]
+  },
+  {
+    "world": 1,
+    "room": 19,
+    "label": "sprite_eyes_tail",
+    "plane": 1,
+    "color": 0,
+    "frames": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "room_colors": [
+      152,
+      206,
+      0,
+      18
+    ],
+    "ste_slots": [
+      3
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/01_Abominable_Sewers/sprite_eyes_tail.a65",
+    "key": "44354e1550d2c42a3a38c7d1ec1fa031d473f8623899d4b450bff83428cf3b22:1:0",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      3
+    ]
+  },
+  {
+    "world": 2,
+    "room": 0,
+    "label": "sprite_hole1",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      20,
+      136,
+      2,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/02_Suburbian_Parkour/sprite_hole1.a65",
+    "key": "7429d2a55e0a3f04df0792ed6f0b7b663e10fa458e68560c4c51b84d2a30c910:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 2,
+    "room": 0,
+    "label": "sprite_hole1",
+    "plane": 0,
+    "color": 2,
+    "frames": [
+      1,
+      3
+    ],
+    "room_colors": [
+      20,
+      136,
+      2,
+      0
+    ],
+    "ste_slots": [
+      3
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/02_Suburbian_Parkour/sprite_hole1.a65",
+    "key": "7429d2a55e0a3f04df0792ed6f0b7b663e10fa458e68560c4c51b84d2a30c910:0:2",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      3
+    ]
+  },
+  {
+    "world": 2,
+    "room": 2,
+    "label": "sprite_hole2",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      36,
+      122,
+      130,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/02_Suburbian_Parkour/sprite_hole2.a65",
+    "key": "8780a7827beb9bf75f32ffa76d05428c6b566fc1605a5b51a8897990122a6948:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 2,
+    "room": 3,
+    "label": "sprite_cross_eyes",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      198,
+      238,
+      18,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/02_Suburbian_Parkour/sprite_cross_eyes.a65",
+    "key": "c6f1447f28076d2e7b3ff87aee56df5993ac6e47e9119a87315498dd35527000:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 2,
+    "room": 6,
+    "label": "sprite_window_star",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      1
+    ],
+    "room_colors": [
+      22,
+      234,
+      210,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/02_Suburbian_Parkour/sprite_window_star.a65",
+    "key": "2e7d3c5b651aafadc17868738f3130cec4bb55bfe66c50db52ce5bd5a5572e6c:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 2,
+    "room": 14,
+    "label": "sprite_fire_lamp",
+    "plane": 1,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      200,
+      142,
+      162,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/02_Suburbian_Parkour/sprite_fire_lamp.a65",
+    "key": "0bec275681284e4012be68427acccab3dbf36330cebaf7d86ab5404e02b7e1ed:1:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 2,
+    "room": 19,
+    "label": "sprite_cranectl",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      0,
+      1
+    ],
+    "room_colors": [
+      134,
+      110,
+      98,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/02_Suburbian_Parkour/sprite_cranectl.a65",
+    "key": "c2463f4535a6867cb09ab720ee97de674dcbf63b01244653033c953222ead37f:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 2,
+    "room": 23,
+    "label": "sprite_craneconsole",
+    "plane": 1,
+    "color": 178,
+    "frames": [
+      1,
+      2
+    ],
+    "room_colors": [
+      166,
+      234,
+      178,
+      0
+    ],
+    "ste_slots": [
+      3
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/02_Suburbian_Parkour/sprite_craneconsole.a65",
+    "key": "e8fb9de4914be0151b2f52423876e2a9e850fedc95a1ae0c8d21fd715b0d1bd3:1:178",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      3
+    ]
+  },
+  {
+    "world": 3,
+    "room": 1,
+    "label": "sprite_drop",
+    "plane": 0,
+    "color": 116,
+    "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "room_colors": [
+      212,
+      29,
+      146,
+      0
+    ],
+    "ste_slots": [],
+    "conditional_slots": [],
+    "source": "flob/worlds/03_Hazardous_Mudlands/sprite_drop.a65",
+    "key": "10dd0d72a9feae3af2dfd11a8ec17faee96d32eea92fc2ccde403f053f899567:0:116",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 3,
+    "room": 6,
+    "label": "sprite_drop",
+    "plane": 0,
+    "color": 116,
+    "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "room_colors": [
+      210,
+      234,
+      18,
+      0
+    ],
+    "ste_slots": [],
+    "conditional_slots": [],
+    "source": "flob/worlds/03_Hazardous_Mudlands/sprite_drop.a65",
+    "key": "10dd0d72a9feae3af2dfd11a8ec17faee96d32eea92fc2ccde403f053f899567:0:116",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 3,
+    "room": 13,
+    "label": "sprite_exit_eyes",
+    "plane": 1,
+    "color": 0,
+    "frames": [
+      1,
+      2
+    ],
+    "room_colors": [
+      212,
+      226,
+      0,
+      98
+    ],
+    "ste_slots": [
+      3
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/03_Hazardous_Mudlands/sprite_exit_eyes.a65",
+    "key": "9c81fd04afedf313f32ac77252b4ee4fe2505fba082632215ecca9acea2caa10:1:0",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      3
+    ]
+  },
+  {
+    "world": 3,
+    "room": 15,
+    "label": "sprite_hole",
+    "plane": 0,
+    "color": 228,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      228,
+      10,
+      98,
+      100
+    ],
+    "ste_slots": [
+      2
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/03_Hazardous_Mudlands/sprite_hole.a65",
+    "key": "79b76b0e4ec9943bd24adffed2cad8e3df0df17d02242a74b2bd634f5f4af7d0:0:228",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      2
+    ]
+  },
+  {
+    "world": 3,
+    "room": 21,
+    "label": "sprite_hole_fly",
+    "plane": 0,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      22,
+      186,
+      146,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/03_Hazardous_Mudlands/sprite_hole_fly.a65",
+    "key": "49ec0ca2ffb957c5d574a1dfcf00ead175c968979edfa56ec2e1570be3e9da34:0:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 4,
+    "room": 6,
+    "label": "sprite_fire_console",
+    "plane": 0,
+    "color": 22,
+    "frames": [
+      2
+    ],
+    "room_colors": [
+      22,
+      42,
+      146,
+      0
+    ],
+    "ste_slots": [
+      2
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/04_Silver_Dust_Mines/sprite_fire_console.a65",
+    "key": "6ac13885402946128fd92a13b7029c2e145eaf89ea4fb1d141d6d72cad6bb990:0:22",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      2
+    ]
+  },
+  {
+    "world": 4,
+    "room": 22,
+    "label": "sprite_button_eyes",
+    "plane": 1,
+    "color": 202,
+    "frames": [
+      1
+    ],
+    "room_colors": [
+      118,
+      202,
+      2,
+      0
+    ],
+    "ste_slots": [
+      1
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/04_Silver_Dust_Mines/sprite_button_eyes.a65",
+    "key": "efde6f9ea8e72c47eb973e7ca12a8a07c9db1b1ec007b4b3224457467029b292:1:202",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      1
+    ]
+  },
+  {
+    "world": 4,
+    "room": 26,
+    "label": "sprite_eyes_eyes",
+    "plane": 0,
+    "color": 2,
+    "frames": [
+      1,
+      2
+    ],
+    "room_colors": [
+      0,
+      186,
+      2,
+      0
+    ],
+    "ste_slots": [
+      3
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/04_Silver_Dust_Mines/sprite_eyes_eyes.a65",
+    "key": "6ba02480299858465e23fc04852501fd7e370a7b22913b914dbaa69759903bf3:0:2",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      3
+    ]
+  },
+  {
+    "world": 5,
+    "room": 7,
+    "label": "sprite_card_spray",
+    "plane": 1,
+    "color": 0,
+    "frames": [
+      0
+    ],
+    "room_colors": [
+      136,
+      28,
+      34,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/05_Return_To_The_Lab/sprite_card_spray.a65",
+    "key": "1881937665ed028baa75052a2c31ad4f55a30ce8dc2566d94d40bb049bc7007a:1:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 5,
+    "room": 9,
+    "label": "sprite_console_dot",
+    "plane": 1,
+    "color": 0,
+    "frames": [
+      1
+    ],
+    "room_colors": [
+      22,
+      190,
+      34,
+      0
+    ],
+    "ste_slots": [
+      0
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/05_Return_To_The_Lab/sprite_console_dot.a65",
+    "key": "072531517c129ee0bb31f6e8f8c1ba08b1da22d74b0de9a200af362d66ccb909:1:0",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 5,
+    "room": 12,
+    "label": "sprite_drop",
+    "plane": 0,
+    "color": 116,
+    "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "room_colors": [
+      116,
+      106,
+      178,
+      0
+    ],
+    "ste_slots": [
+      2
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/05_Return_To_The_Lab/sprite_drop.a65",
+    "key": "10dd0d72a9feae3af2dfd11a8ec17faee96d32eea92fc2ccde403f053f899567:0:116",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 5,
+    "room": 13,
+    "label": "sprite_drop",
+    "plane": 0,
+    "color": 116,
+    "frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "room_colors": [
+      22,
+      187,
+      162,
+      0
+    ],
+    "ste_slots": [],
+    "conditional_slots": [],
+    "source": "flob/worlds/05_Return_To_The_Lab/sprite_drop.a65",
+    "key": "10dd0d72a9feae3af2dfd11a8ec17faee96d32eea92fc2ccde403f053f899567:0:116",
+    "classification": "room/state dependent",
+    "common_slots": []
+  },
+  {
+    "world": 5,
+    "room": 14,
+    "label": "sprite_key_lamp",
+    "plane": 1,
+    "color": 206,
+    "frames": [
+      1
+    ],
+    "room_colors": [
+      166,
+      206,
+      0,
+      178
+    ],
+    "ste_slots": [
+      1
+    ],
+    "conditional_slots": [],
+    "source": "flob/worlds/05_Return_To_The_Lab/sprite_key_lamp.a65",
+    "key": "d9c7b4188da8c0e4f3accdec0f95ba024c75f68b26a571d77649eaab976ad0c3:1:206",
+    "classification": "stable source-colour binding",
+    "common_slots": [
+      1
+    ]
+  }
+]

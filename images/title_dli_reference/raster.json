@@ -1,0 +1,30 @@
+{
+  "source": "flob/assets/flob_title.gfx",
+  "mode": "ANTIC D",
+  "region": "PAL",
+  "bitmap_first_scanline": 40,
+  "color_change_scanline": 180,
+  "color_change_image_y": 140,
+  "initial_pf_colors": [
+    56,
+    63,
+    52
+  ],
+  "lower_pf_colors": [
+    152,
+    50,
+    148
+  ],
+  "pmg": "disabled by DisplayOn",
+  "overlays": [
+    "mono",
+    "source version"
+  ],
+  "verification": "source-derived; precise DLI boundary not verified in an A8 emulator",
+  "scaling": "nearest-neighbour 160x92 to 320x184",
+  "ste_labels": [
+    "PRESS FIRE TO START",
+    "A FOR ACHIEVEMENTS"
+  ],
+  "ste_label_art": "glyphs recovered from source bitmap; suffix _ste"
+}

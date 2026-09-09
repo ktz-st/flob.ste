@@ -24,7 +24,8 @@ DEFAULT_INPUT = ROOT.parent / "flob" / "assets" / "_flob_theme.rmt"
 DEFAULT_OUTPUT = ROOT / "audio" / "ym_music" / "flob_theme"
 PAL_FRAME_RATE = 49.860759
 WAV_RATE = 22050
-YM_CLOCK = 2_000_000
+YM_CLOCK = 8_010_613.0 / 4.0
+POKEY_PAL_CLOCK = 1_773_447.0
 REGISTER_COUNT = 11
 NOISE_VOLUME_ATTENUATION = 3
 NOISE_PERIOD_NUMERATOR = 5
@@ -35,6 +36,11 @@ DUMP_RE = re.compile(
     r"^\s*(\d+\.\d+):\s+"
     r"((?:[0-9A-F]{2}\s+){8}[0-9A-F]{2})\s+\|\s+"
     r"((?:[0-9A-F]{2}\s+){8}[0-9A-F]{2})",
+    re.IGNORECASE,
+)
+MONO_DUMP_RE = re.compile(
+    r"^\s*(\d+\.\d+):\s+"
+    r"((?:[0-9A-F]{2}\s+){8}[0-9A-F]{2})\s*$",
     re.IGNORECASE,
 )
 
@@ -87,12 +93,19 @@ def dump_left_pokey(path: Path, song: int, loop_seconds: float) -> list[PokeyFra
     try:
         for line in process.stdout:
             match = DUMP_RE.match(line)
-            if not match:
+            mono_match = None if match else MONO_DUMP_RE.match(line)
+            if match:
+                timestamp = float(match.group(1))
+                left = [int(token, 16) for token in match.group(2).split()]
+                right = [int(token, 16) for token in match.group(3).split()]
+            elif mono_match:
+                timestamp = float(mono_match.group(1))
+                left = [int(token, 16) for token in mono_match.group(2).split()]
+                right = [0] * 9
+            else:
                 continue
-            if float(match.group(1)) >= loop_seconds:
+            if timestamp >= loop_seconds:
                 break
-            left = [int(token, 16) for token in match.group(2).split()]
-            right = [int(token, 16) for token in match.group(3).split()]
             frames.append(
                 PokeyFrame(
                     audf=(
@@ -147,25 +160,29 @@ def pokey_period(frame: PokeyFrame, channel: int) -> int:
     side_base = channel & 4
     local_channel = channel & 3
     audctl = frame.audctl[channel >> 2]
-    if audctl & ~0x7E:
+    if audctl & ~0x7F:
         raise RuntimeError(
             f"converter does not support AUDCTL ${audctl:02X} on channel {channel + 1}"
         )
 
     if local_channel == 1 and (audctl & 0x10):
-        # Joined channels 1+2 form a 16-bit counter clocked at 1.79 MHz.
+        # Joined channels 1+2 form a 16-bit counter clocked at PAL colour clock.
         divider = frame.audf[side_base] | (frame.audf[side_base + 1] << 8)
-        frequency = 1_789_790.0 / (2.0 * (divider + 7))
+        frequency = POKEY_PAL_CLOCK / (2.0 * (divider + 7))
     elif local_channel == 3 and (audctl & 0x08):
         divider = frame.audf[side_base + 2] | (frame.audf[side_base + 3] << 8)
-        frequency = 1_789_790.0 / (2.0 * (divider + 7))
+        frequency = POKEY_PAL_CLOCK / (2.0 * (divider + 7))
     elif (local_channel == 0 and (audctl & 0x40)) or (
         local_channel == 2 and (audctl & 0x20)
     ):
-        frequency = 1_789_790.0 / (2.0 * (audf + 4))
+        frequency = POKEY_PAL_CLOCK / (2.0 * (audf + 4))
+    elif audctl & 0x01:
+        # AUDCTL bit 0 selects PAL master/114 instead of master/28. Account for
+        # POKEY's output toggle, just as for the default 64 kHz clock below.
+        frequency = POKEY_PAL_CLOCK / (2.0 * 114.0 * (audf + 1))
     else:
-        # Default POKEY clock is approximately 31.96 kHz after output toggle.
-        frequency = 31_960.0 / (audf + 1)
+        # Default PAL POKEY clock is approximately 31.67 kHz after output toggle.
+        frequency = POKEY_PAL_CLOCK / (2.0 * 28.0 * (audf + 1))
     return max(1, min(4095, round(YM_CLOCK / (16.0 * frequency))))
 
 
@@ -221,9 +238,12 @@ def convert_frame(
         )
         if mode == "noise":
             volume = max(0, volume - NOISE_VOLUME_ATTENUATION)
-        if (audc & 0xF0) == 0xC0:
+        if (audc & 0xF0) == 0xC0 and not (frame.audctl[pokey_channel >> 2] & 0x01):
             period = c_bass_period(audf)
         else:
+            # With AUDCTL's 15 kHz clock, distortion C is already in the bass
+            # range and follows the regular channel divider. The special RMT
+            # C-bass note table applies only to the standard 64 kHz clock.
             period = pokey_period(frame, pokey_channel)
         registers[ym_channel * 2] = period & 0xFF
         registers[ym_channel * 2 + 1] = (period >> 8) & 0x0F
@@ -259,7 +279,11 @@ def encode_stream(
 ) -> bytes:
     body = bytearray()
     previous = (-1,) * REGISTER_COUNT
-    for frame in frames:
+    for frame_index, frame in enumerate(frames):
+        if frame_index == loop_frame:
+            # The loop target must be independently decodable after jumping
+            # back from the final frame.
+            previous = (-1,) * REGISTER_COUNT
         mask = 0
         changed: list[int] = []
         for register, value in enumerate(frame):
@@ -390,6 +414,11 @@ def parse_args() -> argparse.Namespace:
         help="FYM playback rate; use 100 for modules played twice per PAL VBL",
     )
     parser.add_argument(
+        "--loop-frame",
+        type=int,
+        help="FYM frame to loop to (default: 0 for a looping source)",
+    )
+    parser.add_argument(
         "--dynamic-channels",
         action="store_true",
         help="dynamically fit the selected POKEY voices into three YM channels",
@@ -465,9 +494,18 @@ def main() -> None:
             for frame in pokey_frames
         ]
         channel_description = [channel + 1 for channel in selected]
-    stream = encode_stream(
-        ym_frames, selected, args.frame_rate, 0 if looping else 0xFFFF
-    )
+    if args.loop_frame is not None:
+        if not looping:
+            raise ValueError("--loop-frame requires a looping source song")
+        if not 0 <= args.loop_frame < len(ym_frames):
+            raise ValueError(
+                f"loop frame must be in range 0..{len(ym_frames) - 1}"
+            )
+        loop_frame = args.loop_frame
+    else:
+        loop_frame = 0 if looping else 0xFFFF
+
+    stream = encode_stream(ym_frames, selected, args.frame_rate, loop_frame)
 
     bin_path = output_base.with_suffix(".fym")
     wav_path = output_base.with_suffix(".wav")
@@ -483,12 +521,18 @@ def main() -> None:
         "looping": looping,
         "frame_rate": args.frame_rate,
         "frame_count": len(ym_frames),
+        "loop_frame": loop_frame,
+        "playback_loop_seconds": (
+            None if loop_frame == 0xFFFF else loop_frame / args.frame_rate
+        ),
         "left_pokey_channels": channel_description,
         "pokey_side": args.pokey_side,
         "format": "FYM1 register delta stream",
         "register_count": REGISTER_COUNT,
         "stream_bytes": len(stream),
         "wav_rate": WAV_RATE,
+        "pokey_clock_hz": POKEY_PAL_CLOCK,
+        "ym_clock_hz": YM_CLOCK,
         "noise_volume_attenuation": NOISE_VOLUME_ATTENUATION,
         "noise_period_scale": NOISE_PERIOD_NUMERATOR / NOISE_PERIOD_DENOMINATOR,
         "volume_attenuation": args.volume_attenuation,
@@ -497,7 +541,14 @@ def main() -> None:
     }
     json_path.write_text(json.dumps(metadata, indent=2) + "\n")
     print(f"selected left POKEY channels: {metadata['left_pokey_channels']}")
-    print(f"frames: {len(ym_frames)}, loop: {playback_seconds:.2f} s")
+    if loop_frame == 0xFFFF:
+        loop_description = "none"
+    else:
+        loop_description = f"frame {loop_frame} ({loop_frame / args.frame_rate:.2f} s)"
+    print(
+        f"frames: {len(ym_frames)}, duration: {playback_seconds:.2f} s, "
+        f"loop target: {loop_description}"
+    )
     print(f"wrote {bin_path} ({len(stream)} bytes)")
     print(f"wrote {wav_path}")
     print(f"wrote {json_path}")

@@ -4,6 +4,10 @@ HATARI = hatari
 
 TARGET = flob.prg
 MAIN   = flob.pas
+PALETTE_GEN = generate_palette.py
+PALETTE_INC = palette.inc
+PALETTE_SOURCE = assets/a8_pal_rgb.hex
+PALETTE_RGB = generated/a8-pal-rgb.pal
 TILE_GEN = generate_world_tiles.py
 GAME_TILE_GEN = create_game_tiles.py
 LSY_SHEET_GEN = export_lsy_sheets.py
@@ -35,6 +39,7 @@ SFX_INC = assets/sfx_raw.inc
 SFX_SYNTH_GEN = generate_sfx_synth.py
 SFX_SYNTH_INC = assets/sfx_synth.inc
 MUSIC_INC_GEN = generate_music_include.py
+MUSIC_LOOP_GEN = retarget_music_loops.py
 MUSIC_THEME_INC = assets/music_theme.inc
 MUSIC_FYM = \
 	audio/ym_music/flob_theme.fym audio/ym_music/flob_world_00.fym \
@@ -64,6 +69,7 @@ PFLAGS = -Tatari -O2 -Si -Xs -dSTE -vw -vm -vi
 
 SOURCES = \
 	$(MAIN) \
+	$(PALETTE_INC) \
 	const.inc \
 	vnumber.inc \
 	types.inc \
@@ -74,6 +80,9 @@ SOURCES = \
 	assets/achievements.inc \
 	assets/endworld_icons.inc \
 	assets/world_icons.inc \
+	assets/selector_ui.inc \
+	assets/achievement_ui.inc \
+	assets/stats_header.inc \
 	worlds/worlds.inc \
 	worlds/world_00.inc worlds/world_01.inc worlds/world_02.inc \
 	worlds/world_03.inc worlds/world_04.inc worlds/world_05.inc \
@@ -93,9 +102,12 @@ SOURCES = \
 	images/images.inc \
 	images/global/IMG_TITLE_CROWN.inc
 
-.PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas game-sprite-sheet-init game-sprite-guide sprite-atlas-assets sprite-atlas-assets-only game-rooms-init room-assets game-tiles-init game-world-icons-init game-endworld-icons-init game-cutscenes-init game-title-init sfx-wav
+.PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas game-sprite-sheet-init game-sprite-guide sprite-atlas-assets sprite-atlas-assets-only game-rooms-init room-assets game-tiles-init game-world-icons-init game-endworld-icons-init game-cutscenes-init game-title-init sfx-wav sfx-psg music-loops
 
 all: unapl.o $(TARGET)
+
+$(PALETTE_INC) $(PALETTE_RGB): $(PALETTE_GEN) $(PALETTE_SOURCE)
+	python3 $(PALETTE_GEN)
 
 $(SFX_INC): $(SFX_INC_GEN) $(SFX_RAW)
 	python3 $(SFX_INC_GEN)
@@ -120,6 +132,15 @@ assets/endworld_icons.inc: $(ENDWORLD_ICON_GEN) game_endworld_icons/manifest.jso
 
 assets/world_icons.inc: $(WORLD_ICON_GEN) game_world_icons/manifest.json $(GAME_WORLD_ICON_IMAGES)
 	python3 $(WORLD_ICON_GEN)
+
+assets/stats_header.inc: generate_stats_header.py generate_selector_assets.py generate_world_icons.py ../flob/assets/stats_header.gfx assets/a8_pal_rgb.hex
+	python3 generate_stats_header.py
+
+assets/achievement_ui.inc: generate_achievement_ui.py generate_selector_assets.py generate_world_icons.py generate_achievements.py render_title_dli.py ../flob/assets/sprites.asm ../flob/assets/achievements.asm ../flob/assets/flob.fnt assets/a8_pal_rgb.hex
+	python3 generate_achievement_ui.py
+
+assets/selector_ui.inc: generate_selector_assets.py export_flob_sheet.py create_game_world_icons.py generate_world_icons.py render_title_dli.py ../flob/assets/flob.fnt ../flob/assets/sprites.asm ../flob/const.inc $(GAME_WORLD_ICON_IMAGES) $(wildcard ../flob/worlds/*/world_??.asm) $(wildcard ../flob/worlds/*/icon.gfx)
+	python3 generate_selector_assets.py
 
 images/images.inc: convert_images.py $(GAME_ROOM_IMAGES) game_cutscenes/manifest.json $(GAME_CUTSCENE_IMAGES) game_title/manifest.json $(GAME_TITLE_IMAGES)
 	python3 convert_images.py
@@ -194,6 +215,13 @@ game-title-init: $(GAME_TITLE_GEN)
 
 sfx-wav: $(SFX_WAV_GEN)
 	python3 $(SFX_WAV_GEN)
+
+sfx-psg: $(SFX_SYNTH_GEN) $(SFX_WAV_GEN)
+	python3 $(SFX_SYNTH_GEN)
+
+music-loops: $(MUSIC_LOOP_GEN) $(MUSIC_INC_GEN)
+	python3 $(MUSIC_LOOP_GEN)
+	python3 $(MUSIC_INC_GEN)
 
 sprite-atlas-assets: $(ATLAS_SPRITE_ASSET_GEN) $(WORLD_SPRITE_ATLAS_MAP_GEN) $(SPRITE_COMBINED_CONFIG)
 	python3 $(ATLAS_SPRITE_ASSET_GEN)

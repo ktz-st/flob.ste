@@ -16,6 +16,7 @@ PSG_DATA	equ	$ffff8802
 SYS_NVBL	equ	$00000454
 SYS_VBLQUEUE	equ	$00000456
 MUSIC_REG_COUNT	equ	11
+RECORD_SIZE	equ	6
 
 	section	text
 
@@ -105,7 +106,7 @@ _PsgSoundPlay:
 	move.l	a0,d1
 	tst.l	d1
 	beq.s	.playStop
-	cmpi.l	#3,d0
+	cmpi.l	#RECORD_SIZE,d0
 	blo.s	.playStop
 	move.l	a0,PsgData
 	adda.l	d0,a0
@@ -126,30 +127,51 @@ _PsgMusicPlay:
 	move.w	sr,-(sp)
 	ori.w	#$0700,sr
 	movea.l	6(sp),a0
+	move.l	d2,-(sp)
 	move.l	a0,d0
-	beq.s	.musicPlayStop
+	beq.w	.musicPlayStop
 	cmpi.b	#$46,(a0)		; "FYM1"
-	bne.s	.musicPlayStop
+	bne.w	.musicPlayStop
 	cmpi.b	#$59,1(a0)
-	bne.s	.musicPlayStop
+	bne.w	.musicPlayStop
 	cmpi.b	#$4d,2(a0)
-	bne.s	.musicPlayStop
+	bne.w	.musicPlayStop
 	cmpi.b	#$31,3(a0)
-	bne.s	.musicPlayStop
+	bne.w	.musicPlayStop
 	moveq	#0,d0
 	move.b	4(a0),d0
 	lsl.w	#8,d0
 	move.b	5(a0),d0
 	move.w	d0,MusicFrameCount
-	beq.s	.musicPlayStop
+	beq.w	.musicPlayStop
 	moveq	#0,d0
 	move.b	6(a0),d0
 	lsl.w	#8,d0
 	move.b	7(a0),d0
 	move.w	d0,MusicLoopFrame
 	lea	16(a0),a0
-	move.l	a0,MusicBody
 	move.l	a0,MusicData
+	move.l	a0,MusicLoopData
+	move.w	MusicLoopFrame,d0
+	beq.s	.musicLoopReady
+	cmpi.w	#$ffff,d0
+	beq.s	.musicLoopReady
+.musicFindLoop:
+	moveq	#0,d1
+	move.b	(a0)+,d1
+	lsl.w	#8,d1
+	move.b	(a0)+,d1
+	moveq	#MUSIC_REG_COUNT-1,d2
+.musicSkipValues:
+	lsr.w	#1,d1
+	bcc.s	.musicSkipNext
+	addq.l	#1,a0
+.musicSkipNext:
+	dbra	d2,.musicSkipValues
+	subq.w	#1,d0
+	bne.s	.musicFindLoop
+	move.l	a0,MusicLoopData
+.musicLoopReady:
 	clr.w	MusicFrame
 	clr.b	PsgActive
 	clr.b	PsgRunFrames
@@ -158,6 +180,7 @@ _PsgMusicPlay:
 .musicPlayStop:
 	clr.b	MusicActive
 .musicPlayDone:
+	move.l	(sp)+,d2
 	move.w	(sp)+,sr
 	rts
 
@@ -191,10 +214,8 @@ MusicVblUpdate:
 	blo.s	.musicHaveFrame
 	cmpi.w	#$ffff,MusicLoopFrame
 	beq.s	.musicEnd
-	tst.w	MusicLoopFrame
-	bne.s	.musicEnd		; FYM1 currently indexes only loop frame zero
-	clr.w	MusicFrame
-	move.l	MusicBody,MusicData
+	move.w	MusicLoopFrame,MusicFrame
+	move.l	MusicLoopData,MusicData
 .musicHaveFrame:
 	movea.l	MusicData,a0
 	moveq	#0,d0
@@ -276,71 +297,37 @@ PsgVblHandler:
 .loadRecord:
 	movea.l	PsgData,a0
 	move.l	a0,d0
-	addq.l	#3,d0
+	addq.l	#RECORD_SIZE,d0
 	cmp.l	PsgEnd,d0
 	bhi.w	.endEffect
 	move.b	(a0)+,d0
 	beq.w	.endEffect
 	subq.b	#1,d0
 	move.b	d0,PsgRunFrames
-	moveq	#0,d1
-	move.b	(a0)+,d1		; AUDF
-	moveq	#0,d2
-	move.b	(a0)+,d2		; AUDC
-	move.l	a0,PsgData
-
-; POKEY pure-tone frequency maps closely to YM period 4*(AUDF+1).
-	addq.w	#1,d1
-	lsl.w	#2,d1
 	move.b	#4,PSG_SELECT.w
-	move.b	d1,PSG_DATA.w
-	move.w	d1,d0
-	lsr.w	#8,d0
-	andi.b	#$0f,d0
+	move.b	(a0)+,PSG_DATA.w
 	move.b	#5,PSG_SELECT.w
-	move.b	d0,PSG_DATA.w
-
-; PSG noise has only 31 periods.  Spread the full AUDF range over them.
-	move.w	d1,d0
-	lsr.w	#5,d0			; (4*(AUDF+1))/32
-	bne.s	.noiseNonZero
-	moveq	#1,d0
-.noiseNonZero:
-	cmpi.w	#31,d0
-	bls.s	.noiseReady
-	moveq	#31,d0
-.noiseReady:
+	move.b	(a0)+,PSG_DATA.w
 	move.b	#6,PSG_SELECT.w
-	move.b	d0,PSG_DATA.w
+	move.b	(a0)+,PSG_DATA.w
 
 ; Preserve music A/B mixer state while the effect owns channel C.
+	moveq	#0,d1
+	move.b	(a0)+,d1
 	tst.b	MusicActive
 	beq.s	.useOldMixer
-	move.b	MusicRegs+7,d0
+	move.b	MusicRegs+7,d2
 	bra.s	.haveMixer
 .useOldMixer:
-	move.b	PsgOldRegs+7,d0
+	move.b	PsgOldRegs+7,d2
 .haveMixer:
-	andi.b	#$db,d0
-	move.b	d2,d1
-	andi.b	#$e0,d1
-	cmpi.b	#$a0,d1
-	beq.s	.toneOnly
-	cmpi.b	#$20,d1
-	beq.s	.toneAndNoise
-	ori.b	#$04,d0			; poly/noise modes: noise only
-	bra.s	.writeMixer
-.toneOnly:
-	ori.b	#$20,d0
-.toneAndNoise:
-.writeMixer:
+	andi.b	#$db,d2
+	or.b	d1,d2
 	move.b	#7,PSG_SELECT.w
-	move.b	d0,PSG_DATA.w
-	andi.b	#$0f,d2
-	lea	PsgVolumeMap,a0
-	move.b	0(a0,d2.w),d2
-	move.b	#10,PSG_SELECT.w
 	move.b	d2,PSG_DATA.w
+	move.b	#10,PSG_SELECT.w
+	move.b	(a0)+,PSG_DATA.w
+	move.l	a0,PsgData
 	bra.s	.vblDone
 
 .endEffect:
@@ -350,19 +337,12 @@ PsgVblHandler:
 	movem.l	(sp)+,d0-d2/a0-a1
 	rts
 
-	section	data
-; POKEY's volume nibble is much closer to linear amplitude than the logarithmic
-; YM2149 levels.  This keeps quiet envelopes audible without flattening peaks.
-PsgVolumeMap:
-	dc.b	0,7,9,10,11,12,12,13,13,14,14,14,15,15,15,15
-	even
-
 	section	bss
 PsgData:	ds.l	1
 PsgEnd:	ds.l	1
 PsgQueueSlot:	ds.l	1
-MusicBody:	ds.l	1
 MusicData:	ds.l	1
+MusicLoopData:	ds.l	1
 MusicFrameCount:	ds.w	1
 MusicLoopFrame:	ds.w	1
 MusicFrame:	ds.w	1

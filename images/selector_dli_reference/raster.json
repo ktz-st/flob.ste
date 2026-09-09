@@ -1,0 +1,27 @@
+{
+  "source": "ShowWorldSelector, PutIcon, PutCString, dliselect/dliselect1",
+  "state": "world 0, unlocked, initial stats, 0 collected slimes",
+  "region": "PAL",
+  "bitmap_first_scanline": 40,
+  "dli_irq_scanlines": [
+    39,
+    153
+  ],
+  "palette_changes_scanlines": [
+    61,
+    149,
+    161,
+    179
+  ],
+  "icon_colors": [
+    136,
+    30,
+    18
+  ],
+  "goal_colors": [
+    12,
+    8
+  ],
+  "pmg": "Flob frame 1, right arrow; normal-width double-line players",
+  "verification": "source-derived; exact WSYNC/raster boundaries and PMG priority not emulator-verified"
+}

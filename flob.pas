@@ -4,6 +4,8 @@
 program FloB;
 uses xbios, gemdos, bios;
 
+{$i palette.inc}
+
 const
 {$i const.inc}
 {$i vnumber.inc}
@@ -23,6 +25,10 @@ const
     FLOB_FALL_STEP = 2;
     HUD_HEIGHT = 8;
     MESSAGE_TEXT_COLOR = 15;
+    CUTSCENE_TEXT_COLOR = 14;
+    CUTSCENE_FADE_COLOR = 15;
+    CUTSCENE_TEXT_FADE_FRAMES = 15;
+    CUTSCENE_TEXT_WHITE = $FFF;
     DYNAMIC_DANGER_BYTES = 160 * 80 div 8;
     PSG_SFX_DEFAULT = true;
     SFX_SAMPLES_PER_FRAME = 250;
@@ -34,41 +40,6 @@ const
     SLIME_RENDER_OFFSET_X = -50 * LEVEL_SCALE_X;
     SLIME_RENDER_OFFSET_Y = 16;
     FLIP_H: array[0..FLIP_STEPS] of word = (160, 80, 32, 8, 0);
-    STE_PAL: array[0..255] of word =
-    (
-    { $00-$07 } $111, $999, $222, $AAA, $333, $BBB, $444, $444,
-    { $08-$0F } $CCC, $555, $DDD, $666, $EEE, $777, $FFF, $FFF,
-    { $10-$17 } $A10, $390, $B90, $420, $CA8, $531, $DB9, $D42,
-    { $18-$1F } $6CA, $E5A, $753, $FDB, $F64, $FEC, $F75, $FFD,
-    { $20-$27 } $380, $B18, $491, $C99, $522, $5A2, $D3A, $6B3,
-    { $28-$2F } $E4B, $7C4, $F5C, $F55, $FDD, $F6D, $FE6, $F7E,
-    { $30-$37 } $309, $B82, $41A, $C93, $52B, $DAB, $6A4, $63C,
-    { $38-$3F } $EB5, $74D, $FC6, $F5E, $FD7, $F67, $F6F, $FEF,
-    { $40-$47 } $303, $B8B, $414, $414, $C9C, $525, $DAD, $636,
-    { $48-$4F } $EBE, $747, $FCF, $FCF, $F5F, $FDF, $F6F, $FEF,
-    { $50-$57 } $A04, $38C, $315, $B9D, $496, $C26, $5AE, $D37,
-    { $58-$5F } $6BF, $E4F, $ECF, $75F, $F5F, $FDF, $F6F, $FEF,
-    { $60-$67 } $98C, $285, $A1D, $396, $B2E, $4A7, $43F, $CBF,
-    { $68-$6F } $54F, $D4F, $6CF, $E5F, $7DF, $F6F, $FEF, $F7F,
-    { $70-$77 } $88C, $115, $99D, $226, $AAE, $337, $BBF, $44F,
-    { $78-$7F } $44F, $CCF, $55F, $DDF, $66F, $EEF, $77F, $FFF,
-    { $80-$87 } $014, $89C, $125, $9AD, $936, $2B6, $A4E, $3C7,
-    { $88-$8F } $BCF, $45F, $CDF, $56F, $5EF, $D7F, $6FF, $EFF,
-    { $90-$97 } $093, $02B, $8A4, $834, $1BC, $945, $2CD, $A56,
-    { $98-$9F } $35E, $BD7, $46F, $4EF, $C7F, $5FF, $DFF, $6FF,
-    { $A0-$A7 } $029, $0A2, $03A, $8B3, $14B, $9CB, $2C4, $25C,
-    { $A8-$AF } $AD5, $36D, $BE6, $47E, $CF7, $5F7, $DFF, $DFF,
-    { $B0-$B7 } $0A0, $038, $031, $8B9, $142, $9C2, $25A, $AD3,
-    { $B8-$BF } $36B, $3E4, $BEC, $475, $CFD, $5FD, $DF6, $6FE,
-    { $C0-$C7 } $0A0, $030, $830, $1B0, $948, $2C1, $A59, $AD2,
-    { $C8-$CF } $36A, $BEA, $4E3, $C7B, $5F4, $DFC, $6F5, $6FD,
-    { $D0-$D7 } $820, $1A0, $130, $9B0, $240, $AC0, $358, $BD1,
-    { $D8-$DF } $4D9, $C62, $CEA, $57A, $DF3, $6FB, $EF4, $7FC,
-    { $E0-$E7 } $120, $9A0, $2A0, $A30, $3B0, $B40, $4C0, $458,
-    { $E8-$EF } $CD1, $569, $D62, $6EA, $E73, $7FB, $FFB, $FF4,
-    { $F0-$F7 } $290, $A20, $320, $BA0, $B30, $4B0, $C48, $5C1,
-    { $F8-$FF } $D59, $6D2, $EDA, $76A, $7E3, $F7B, $FF4, $FFC
-    );
     MAIN_TITLE_COLORS: array[0..6] of byte = ($00,$3F,$34,$38,$98,$32,$94);
     SELECTOR_COLORS: array[0..9] of byte = ($00,$38,$3C,$34,$84,$78,$0F,$98,$1A,$26);
 
@@ -138,7 +109,10 @@ const
 {$i types.inc}        // starts with: type
 {$i assets/achievements.inc} // generated achievement definitions
 {$i assets/endworld_icons.inc} // generated 32x40 bitmap4 end-world icons
-{$i assets/world_icons.inc} // generated 96x40 bitmap4 world selector icons
+{$i assets/world_icons.inc} // canonical 192x80 world selector icons
+{$i assets/selector_ui.inc} // Scale2x font masks and palette-isolated sprites
+{$i assets/achievement_ui.inc}
+{$i assets/stats_header.inc}
 {$i bank_0_files.inc} // starts with: type ... var
 {$i assets/sprites.inc} // starts with: var
 {$i worlds/worlds.inc} // all world + asset const byte arrays
@@ -445,6 +419,8 @@ procedure LoadLevel(lvl: byte); forward;
 procedure CheckAchievements; forward;
 procedure EndWorld; forward;
 procedure ShowAchievements; forward;
+procedure DrawSelectorShadow(const text: string; y: word; color, shade: byte); forward;
+procedure DrawSelectorText(const text: string; y: word; color: byte); forward;
 procedure PutTile(x, y: byte; src: word; flip: byte); forward;
 procedure BackToLevel; forward;
 procedure ShowCutScene(csbank, cscount: byte); forward;
@@ -1297,6 +1273,7 @@ begin
     else
         FillChar(roomPalette[0], SizeOf(roomPalette), 0);
 
+    roomPalette[1] := STE_PAL[levelRawColors[1]];
     roomPalette[2] := STE_PAL[levelRawColors[0]];
     roomPalette[3] := STE_PAL[levelRawColors[2]];
     roomPalette[0] := STE_PAL[levelRawColors[3]];
@@ -1321,17 +1298,12 @@ begin
     currentPal := @roomPalette[0];
 end;
 
-procedure RebuildTitlePalette(const colors: array of byte);
-var i: integer;
+procedure RebuildTitlePalette;
 begin
     if currentBasePal <> nil then
         Move(currentBasePal^, titlePalette[0], 32)
     else
         FillChar(titlePalette[0], SizeOf(titlePalette), 0);
-
-    for i := 0 to High(colors) do
-        if i <= 15 then
-            titlePalette[i] := STE_PAL[colors[i]];
 
     roomSpritePaletteActive := false;
     currentPal := @titlePalette[0];
@@ -2166,34 +2138,89 @@ procedure FSfx(patch: byte);
 var
     synthData: PByte;
     synthDataSize: word;
+    psgData: PByte;
+    psgDataSize: word;
 begin
     synthData := nil;
     synthDataSize := 0;
+    psgData := nil;
+    psgDataSize := 0;
     case patch of
-        SFX_FLIP:      begin synthData := @SFX_FLIP_SYNTH_DATA[0];       synthDataSize := SizeOf(SFX_FLIP_SYNTH_DATA); end;
-        SFX_SLIMEPICK: begin synthData := @SFX_SLIME_PICK_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_SLIME_PICK_SYNTH_DATA); end;
-        SFX_DEAD:      begin synthData := @SFX_DEAD_SYNTH_DATA[0];       synthDataSize := SizeOf(SFX_DEAD_SYNTH_DATA); end;
-        SFX_PICKALL:   begin synthData := @SFX_PICK_ALL_SYNTH_DATA[0];   synthDataSize := SizeOf(SFX_PICK_ALL_SYNTH_DATA); end;
-        SFX_PICKGOAL:  begin synthData := @SFX_PICK_GOAL_SYNTH_DATA[0];  synthDataSize := SizeOf(SFX_PICK_GOAL_SYNTH_DATA); end;
-        SFX_REVEAL:    begin synthData := @SFX_REVEAL_SYNTH_DATA[0];     synthDataSize := SizeOf(SFX_REVEAL_SYNTH_DATA); end;
-        SFX_BIGSLIME:  begin synthData := @SFX_BIG_SLIME_SYNTH_DATA[0];  synthDataSize := SizeOf(SFX_BIG_SLIME_SYNTH_DATA); end;
-        SFX_CONSOLE:   begin synthData := @SFX_CONSOLE_SYNTH_DATA[0];    synthDataSize := SizeOf(SFX_CONSOLE_SYNTH_DATA); end;
-        SFX_WATERDROP: begin synthData := @SFX_WATER_DROP_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_WATER_DROP_SYNTH_DATA); end;
-        SFX_LEVER:     begin synthData := @SFX_LEVER_SYNTH_DATA[0];      synthDataSize := SizeOf(SFX_LEVER_SYNTH_DATA); end;
-        SFX_SIREN:     begin synthData := @SFX_SIREN_SYNTH_DATA[0];      synthDataSize := SizeOf(SFX_SIREN_SYNTH_DATA); end;
-        SFX_CIRCUIT:   begin synthData := @SFX_CIRCUIT_SYNTH_DATA[0];    synthDataSize := SizeOf(SFX_CIRCUIT_SYNTH_DATA); end;
-        SFX_GEAR:      begin synthData := @SFX_GEAR_SYNTH_DATA[0];       synthDataSize := SizeOf(SFX_GEAR_SYNTH_DATA); end;
-        SFX_VALVE:     begin synthData := @SFX_VALVE_SYNTH_DATA[0];      synthDataSize := SizeOf(SFX_VALVE_SYNTH_DATA); end;
-        SFX_BELL:      begin synthData := @SFX_BELL_SYNTH_DATA[0];       synthDataSize := SizeOf(SFX_BELL_SYNTH_DATA); end;
-        SFX_GAS:       begin synthData := @SFX_GAS_SYNTH_DATA[0];        synthDataSize := SizeOf(SFX_GAS_SYNTH_DATA); end;
-        SFX_INSECT:    begin synthData := @SFX_INSECT_SYNTH_DATA[0];     synthDataSize := SizeOf(SFX_INSECT_SYNTH_DATA); end;
+        SFX_FLIP: begin
+            synthData := @SFX_FLIP_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_FLIP_SYNTH_DATA);
+            psgData := @SFX_FLIP_PSG_DATA[0]; psgDataSize := SizeOf(SFX_FLIP_PSG_DATA);
+        end;
+        SFX_SLIMEPICK: begin
+            synthData := @SFX_SLIME_PICK_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_SLIME_PICK_SYNTH_DATA);
+            psgData := @SFX_SLIME_PICK_PSG_DATA[0]; psgDataSize := SizeOf(SFX_SLIME_PICK_PSG_DATA);
+        end;
+        SFX_DEAD: begin
+            synthData := @SFX_DEAD_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_DEAD_SYNTH_DATA);
+            psgData := @SFX_DEAD_PSG_DATA[0]; psgDataSize := SizeOf(SFX_DEAD_PSG_DATA);
+        end;
+        SFX_PICKALL: begin
+            synthData := @SFX_PICK_ALL_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_PICK_ALL_SYNTH_DATA);
+            psgData := @SFX_PICK_ALL_PSG_DATA[0]; psgDataSize := SizeOf(SFX_PICK_ALL_PSG_DATA);
+        end;
+        SFX_PICKGOAL: begin
+            synthData := @SFX_PICK_GOAL_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_PICK_GOAL_SYNTH_DATA);
+            psgData := @SFX_PICK_GOAL_PSG_DATA[0]; psgDataSize := SizeOf(SFX_PICK_GOAL_PSG_DATA);
+        end;
+        SFX_REVEAL: begin
+            synthData := @SFX_REVEAL_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_REVEAL_SYNTH_DATA);
+            psgData := @SFX_REVEAL_PSG_DATA[0]; psgDataSize := SizeOf(SFX_REVEAL_PSG_DATA);
+        end;
+        SFX_BIGSLIME: begin
+            synthData := @SFX_BIG_SLIME_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_BIG_SLIME_SYNTH_DATA);
+            psgData := @SFX_BIG_SLIME_PSG_DATA[0]; psgDataSize := SizeOf(SFX_BIG_SLIME_PSG_DATA);
+        end;
+        SFX_CONSOLE: begin
+            synthData := @SFX_CONSOLE_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_CONSOLE_SYNTH_DATA);
+            psgData := @SFX_CONSOLE_PSG_DATA[0]; psgDataSize := SizeOf(SFX_CONSOLE_PSG_DATA);
+        end;
+        SFX_WATERDROP: begin
+            synthData := @SFX_WATER_DROP_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_WATER_DROP_SYNTH_DATA);
+            psgData := @SFX_WATER_DROP_PSG_DATA[0]; psgDataSize := SizeOf(SFX_WATER_DROP_PSG_DATA);
+        end;
+        SFX_LEVER: begin
+            synthData := @SFX_LEVER_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_LEVER_SYNTH_DATA);
+            psgData := @SFX_LEVER_PSG_DATA[0]; psgDataSize := SizeOf(SFX_LEVER_PSG_DATA);
+        end;
+        SFX_SIREN: begin
+            synthData := @SFX_SIREN_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_SIREN_SYNTH_DATA);
+            psgData := @SFX_SIREN_PSG_DATA[0]; psgDataSize := SizeOf(SFX_SIREN_PSG_DATA);
+        end;
+        SFX_CIRCUIT: begin
+            synthData := @SFX_CIRCUIT_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_CIRCUIT_SYNTH_DATA);
+            psgData := @SFX_CIRCUIT_PSG_DATA[0]; psgDataSize := SizeOf(SFX_CIRCUIT_PSG_DATA);
+        end;
+        SFX_GEAR: begin
+            synthData := @SFX_GEAR_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_GEAR_SYNTH_DATA);
+            psgData := @SFX_GEAR_PSG_DATA[0]; psgDataSize := SizeOf(SFX_GEAR_PSG_DATA);
+        end;
+        SFX_VALVE: begin
+            synthData := @SFX_VALVE_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_VALVE_SYNTH_DATA);
+            psgData := @SFX_VALVE_PSG_DATA[0]; psgDataSize := SizeOf(SFX_VALVE_PSG_DATA);
+        end;
+        SFX_BELL: begin
+            synthData := @SFX_BELL_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_BELL_SYNTH_DATA);
+            psgData := @SFX_BELL_PSG_DATA[0]; psgDataSize := SizeOf(SFX_BELL_PSG_DATA);
+        end;
+        SFX_GAS: begin
+            synthData := @SFX_GAS_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_GAS_SYNTH_DATA);
+            psgData := @SFX_GAS_PSG_DATA[0]; psgDataSize := SizeOf(SFX_GAS_PSG_DATA);
+        end;
+        SFX_INSECT: begin
+            synthData := @SFX_INSECT_SYNTH_DATA[0]; synthDataSize := SizeOf(SFX_INSECT_SYNTH_DATA);
+            psgData := @SFX_INSECT_PSG_DATA[0]; psgDataSize := SizeOf(SFX_INSECT_PSG_DATA);
+        end;
     end;
 
     if soundReady and (synthData <> nil) then begin
         if usePsgSfx then begin
             DmaSoundStop;
             sfxSynthActive := false;
-            PsgSoundPlay(synthData, synthDataSize);
+            PsgSoundPlay(psgData, psgDataSize);
         end else begin
             PsgSoundStop;
             StartSynthSfx(synthData, synthDataSize);
@@ -2341,14 +2368,27 @@ begin
     BlitterClearBitmap4(scr, 320, 32, 0, 168, 320);
 end;
 
+procedure DrawCutsceneLine(scr: pword; const l0, l1, l2, l3: string;
+    line, color: byte);
+begin
+    case line of
+        1: DrawTextCenteredTo(scr, 168, color, 0, l0);
+        2: DrawTextCenteredTo(scr, 176, color, 0, l1);
+        3: DrawTextCenteredTo(scr, 184, color, 0, l2);
+        4: DrawTextCenteredTo(scr, 192, color, 0, l3);
+    end;
+end;
+
 procedure RenderCutsceneText(scr: pword; const l0, l1, l2, l3: string;
     visibleLines: byte);
+var line, color: byte;
 begin
     DrawCutsceneTextBlock(scr, 0);
-    if visibleLines > 0 then DrawTextCenteredTo(scr, 168, 15, 0, l0);
-    if visibleLines > 1 then DrawTextCenteredTo(scr, 176, 15, 0, l1);
-    if visibleLines > 2 then DrawTextCenteredTo(scr, 184, 15, 0, l2);
-    if visibleLines > 3 then DrawTextCenteredTo(scr, 192, 15, 0, l3);
+    for line := 1 to visibleLines do begin
+        color := CUTSCENE_TEXT_COLOR;
+        if line = visibleLines then color := CUTSCENE_FADE_COLOR;
+        DrawCutsceneLine(scr, l0, l1, l2, l3, line, color);
+    end;
 end;
 
 {$i saving_routines.inc}
@@ -2466,7 +2506,7 @@ procedure DrawEndWorldIcon(iconData: pointer);
 // Icon is END_ICON_WIDTH x END_ICON_HEIGHT (64x80 at 2x scale).
 // Centre horizontally: (320 - 64) / 2 = 128, which is a multiple of 16. ✓
 const ICON_DST_X = 128;
-      ICON_DST_Y = 20;
+      ICON_DST_Y = 32;
 begin
     if iconData = nil then exit;
     BlitterCopyBitmap4(
@@ -2487,27 +2527,48 @@ procedure ShowEndWorldScreen(sec, score: word);
 var iconData: pointer;
     timeStr, scoreStr, pickedStr, totalStr: string[20];
     line: string[40];
+    iconC0, iconC1, iconC2: byte;
 begin
+    BlackAll;
     ClearScreen(SCREEN_LOG);
+    FillChar(titlePalette, SizeOf(titlePalette), 0);
 
-    // Title  (y=4, one text row above the 64x80 icon that starts at y=20)
+    // Flatten dliselect's separate title, icon and statistics colour bands.
     if mainGoalReached then begin
-        DrawStrCentered(4, 3, 'Congratulations!');
-        if worldCurrent = 0 then
-            iconData := @END_ICON_BIGMAP[0]
-        else if worldCurrent = 5 then
+        DrawSelectorShadow('Congratulations!', 8, 4, 5);
+        iconC0 := $82;
+        iconC1 := world.goalcolor1;
+        iconC2 := world.goalcolor2;
+        titlePalette[4] := STE_PAL[$18];
+        titlePalette[5] := STE_PAL[$14];
+        if worldCurrent = 0 then begin
+            iconData := @END_ICON_BIGMAP[0];
+            iconC1 := $BA;
+            iconC2 := $26;
+        end else if worldCurrent = 5 then
             iconData := @END_ICON_BIGFORMULA[0]
         else
             iconData := @END_ICON_BIGVIAL[0];
     end else begin
-        DrawStrCentered(4, 3, 'Game Over');
+        DrawSelectorShadow('Game Over', 8, 4, 5);
         iconData := @END_ICON_SKULL[0];
+        iconC0 := $38;
+        iconC1 := $3F;
+        iconC2 := $34;
+        titlePalette[4] := STE_PAL[$98];
+        titlePalette[5] := STE_PAL[$94];
     end;
+    // Canonical GIF/PNG indices 0,1,2,3 encode A8 selectors 0,3,1,2.
+    titlePalette[1] := STE_PAL[iconC2];
+    titlePalette[2] := STE_PAL[iconC0];
+    titlePalette[3] := STE_PAL[iconC1];
+    titlePalette[6] := STE_PAL[world.goalcolor2];
+    titlePalette[7] := STE_PAL[$9A];
+    titlePalette[8] := STE_PAL[$94];
 
-    // Icon  (64x80, centred at x=128, y=20..99)
     DrawEndWorldIcon(iconData);
 
-    // Stats  (y=108..156, 12px spacing — icon ends at y=99, 8px gap)
+    // A8 source rows 60,71,81 doubled, plus the centred 8-line margin.
     Sec2TimeInS1(sec);
     timeStr := s1;
     Str(score, scoreStr);
@@ -2515,26 +2576,13 @@ begin
     Str(world.totalSlimeCount, totalStr);
 
     line := 'Game Time ' + timeStr;
-    DrawStrCentered(108, 2, line);
+    DrawSelectorText(line, 128, 6);
     line := 'Score ' + scoreStr;
-    DrawStrCentered(120, 3, line);
+    DrawSelectorShadow(line, 150, 7, 8);
     line := 'Slimes ' + pickedStr + ' of ' + totalStr;
-    DrawStrCentered(132, 3, line);
-    Str(deadCount, line);
-    line := 'Deaths ' + line;
-    DrawStrCentered(144, 2, line);
+    DrawSelectorShadow(line, 170, 7, 8);
 
-    if mainGoalReached then begin
-        Str(secretsFound, pickedStr);
-        Str(world.secretsCount, totalStr);
-        line := 'Secrets ' + pickedStr + ' of ' + totalStr;
-        DrawStrCentered(156, 2, line);
-    end;
-
-    // Prompt  (y=176 — safe margin from bottom edge at y=200)
-    DrawStrCentered(176, 3, 'FIRE / ENTER to continue');
-
-    currentPal := @END_ICON_PAL[0];
+    currentPal := @titlePalette[0];
     roomSpritePaletteActive := false;
     SwapScreen;
     FadeIn;
@@ -3723,12 +3771,14 @@ begin
                 Inc(lvlptr, 4);
             end;
             SET_SCENE: begin
+                if sceneCount <= High(sceneImg) then begin
                 sceneImg[sceneCount]  := leveldata[lvlptr + 1];
                 sceneMsg[sceneCount]  := leveldata[lvlptr + 2] + (word(leveldata[lvlptr + 3]) shl 8);
                 sceneCol0[sceneCount] := leveldata[lvlptr + 4];
                 sceneCol1[sceneCount] := leveldata[lvlptr + 5];
                 sceneCol2[sceneCount] := leveldata[lvlptr + 6];
                 Inc(sceneCount);
+                end;
                 Inc(lvlptr, 7);
             end;
             SET_COLORS: begin
@@ -4022,12 +4072,9 @@ end;
 
 procedure ShowStats;
 const
-    STATS_PAL: array[0..15] of word = (
-        $000, $067, $345, $777, $023, $650, $222, $444,
-        $000, $000, $000, $000, $000, $000, $000, $000
-    );
-    ENTRY_TOP = 40;
-    ENTRY_STEP = 16;
+    STATS_TEXT_COLOR = 4;
+    ENTRY_TOP = 74;
+    ENTRY_STEP = 12;
     LEFT_X = 8;
     RIGHT_X = 168;
     VALUE_OFFSET = 72;
@@ -4072,8 +4119,8 @@ var page, key, delay: byte;
     var y: word;
     begin
         y := ENTRY_TOP + row * ENTRY_STEP;
-        DrawTextTo(SCREEN_LOG, x, y, 2, 0, labelText);
-        DrawTextTo(SCREEN_LOG, x + VALUE_OFFSET, y, 3, 0, valueText);
+        DrawTextTo(SCREEN_LOG, x, y, STATS_TEXT_COLOR, 0, labelText);
+        DrawTextTo(SCREEN_LOG, x + VALUE_OFFSET, y, STATS_TEXT_COLOR, 0, valueText);
     end;
 
     procedure DrawWorldStats;
@@ -4125,24 +4172,26 @@ var page, key, delay: byte;
     procedure RenderStatsPage;
     begin
         ClearScreen(SCREEN_LOG);
+        BlitterCopyBitmap4(@STATS_HEADER_WORDS[0], SCREEN_LOG,
+            320, 42, 0, 0, 0, 0, 320, 320);
         if page < WORLD_COUNT then begin
             statBestsBack := STAT_ON + 4;
             statGlobalBack := STAT_OFF;
             LoadWorld(page);
             GetWorldStats(page);
-            DrawTextCenteredTo(SCREEN_LOG, 4, 1, 0, Antic2Ascii(world.name));
+            DrawTextCenteredTo(SCREEN_LOG, 46, STATS_TEXT_COLOR, 0, Antic2Ascii(world.name));
             DrawWorldStats;
         end else begin
             statBestsBack := STAT_OFF;
             statGlobalBack := STAT_ON + 4;
-            DrawTextCenteredTo(SCREEN_LOG, 4, 5, 0, 'Total Game Stats');
+            DrawTextCenteredTo(SCREEN_LOG, 46, STATS_TEXT_COLOR, 0, 'Total Game Stats');
             DrawGlobalStats;
         end;
-        DrawTextCenteredTo(SCREEN_LOG, 18, 7, 0,
+        DrawTextCenteredTo(SCREEN_LOG, 58, STATS_TEXT_COLOR, 0,
             '<  Page ' + NumberText(page + 1) + ' / ' + NumberText(WORLD_COUNT + 1) + '  >');
-        FillRect16(SCREEN_LOG, 0, 31, 320, 2, 4);
-        FillRect16(SCREEN_LOG, 0, 184, 320, 2, 4);
-        DrawTextCenteredTo(SCREEN_LOG, 190, 7, 0, 'LEFT/RIGHT   FIRE: BACK');
+        FillRect16(SCREEN_LOG, 0, 68, 320, 2, 5);
+        FillRect16(SCREEN_LOG, 0, 184, 320, 2, 5);
+        DrawTextCenteredTo(SCREEN_LOG, 190, STATS_TEXT_COLOR, 0, 'LEFT/RIGHT   FIRE: BACK');
         SwapScreen;
     end;
 begin
@@ -4153,7 +4202,14 @@ begin
     exitRequested := false;
     delay := 0;
     CountGlobalStats;
-    currentPal := @STATS_PAL[0];
+    FillChar(titlePalette, SizeOf(titlePalette), 0);
+    titlePalette[1] := STE_PAL[$38];
+    titlePalette[2] := STE_PAL[$3C];
+    titlePalette[3] := STE_PAL[$34];
+    titlePalette[STATS_TEXT_COLOR] := $FFF;
+    titlePalette[5] := STE_PAL[$04];
+    roomSpritePaletteActive := false;
+    currentPal := @titlePalette[0];
     BlackAll;
 
     repeat
@@ -4367,6 +4423,8 @@ procedure ShowCutScene(csbank, cscount: byte);
 var slide: byte;
     slideDelay: word;
     visibleLines: byte;
+    textFadeStep: byte;
+    textFadeStart: word;
     cutsceneHold: boolean;
     syncMusicTiming: boolean;
     c0, c1, c2, bg: byte;
@@ -4388,8 +4446,12 @@ begin
         PresentCutsceneSlide;
         GetCutsceneText(csbank, slide, c0, c1, c2, bg, l0, l1, l2, l3);
         RebuildCutscenePalette(c0, c1, c2, bg);
+        roomPalette[CUTSCENE_TEXT_COLOR] := CUTSCENE_TEXT_WHITE;
+        textFadeStart := roomPalette[0];
+        roomPalette[CUTSCENE_FADE_COLOR] := textFadeStart;
         FadeIn;
         visibleLines := 0;
+        textFadeStep := CUTSCENE_TEXT_FADE_FRAMES;
         if syncMusicTiming then slideDelay := 18
         else slideDelay := 18;
         cutsceneHold := false;
@@ -4397,6 +4459,9 @@ begin
             if slideDelay = 0 then begin
                 if visibleLines < 4 then begin
                     Inc(visibleLines);
+                    textFadeStep := 0;
+                    roomPalette[CUTSCENE_FADE_COLOR] := textFadeStart;
+                    SetPaletteRegister(CUTSCENE_FADE_COLOR, textFadeStart);
                     RenderCutsceneText(SCREEN_LOG, l0, l1, l2, l3, visibleLines);
                     SwapScreen;
                     if syncMusicTiming then begin
@@ -4417,6 +4482,26 @@ begin
             if slideDelay > 0 then
                 Dec(slideDelay);
             WaitFrame;
+            // Fade within the existing line delay, without adding music time.
+            if textFadeStep < CUTSCENE_TEXT_FADE_FRAMES then begin
+                Inc(textFadeStep);
+                roomPalette[CUTSCENE_FADE_COLOR] :=
+                    (FadeNibble(textFadeStart shr 8, CUTSCENE_TEXT_WHITE shr 8,
+                        textFadeStep, CUTSCENE_TEXT_FADE_FRAMES) shl 8) or
+                    (FadeNibble(textFadeStart shr 4, CUTSCENE_TEXT_WHITE shr 4,
+                        textFadeStep, CUTSCENE_TEXT_FADE_FRAMES) shl 4) or
+                    FadeNibble(textFadeStart, CUTSCENE_TEXT_WHITE,
+                        textFadeStep, CUTSCENE_TEXT_FADE_FRAMES);
+                SetPaletteRegister(CUTSCENE_FADE_COLOR, roomPalette[CUTSCENE_FADE_COLOR]);
+                if textFadeStep = CUTSCENE_TEXT_FADE_FRAMES then begin
+                    // Both indices now have the same RGB value. Retain the line
+                    // on both pages before reusing index 15 for the next one.
+                    DrawCutsceneLine(SCREEN_LOG, l0, l1, l2, l3,
+                        visibleLines, CUTSCENE_TEXT_COLOR);
+                    DrawCutsceneLine(SCREEN_PHY, l0, l1, l2, l3,
+                        visibleLines, CUTSCENE_TEXT_COLOR);
+                end;
+            end;
         until (cutsceneHold and (slideDelay = 0)) or IsStartingButtonDown;
         FadeOut;
         if IsStartingButtonDown then break;
@@ -4432,17 +4517,39 @@ begin
 end;
 
 procedure ShowScene(scene: byte);
+var img: byte;
+    offset: longword;
+    textPtr: PByte;
+    raw: AnsiString;
+    line, col: integer;
 begin
+    if (scene > High(sceneImg)) or (scene >= sceneCount) then exit;
+    img := sceneImg[scene];
+    if (currentWorldImgPtrs = nil) or (currentWorldPalPtrs = nil) or
+        (img >= currentWorldImgCount) then exit;
+    // Scene strings are four ANTIC rows in the original world asset bank.
+    if (sceneMsg[scene] < $A000) or (currentWorldAssets = nil) then exit;
+    offset := longword(sceneMsg[scene]) - $A000;
+    if offset + 160 > currentWorldAssetsSize then exit;
+    textPtr := currentWorldAssets + offset;
     WaitFrame;
     FadeOut;
-    FillChar(messageTypes, SizeOf(messageTypes), $0a);
-    level.colors[0] := sceneCol0[scene];
-    level.colors[1] := sceneCol1[scene];
-    level.colors[2] := sceneCol2[scene];
-    Move(level.colors[0], levelRawColors[0], 3);
-    FillChar(levelColors, 3, 0);
-    RebuildRoomPalette;
-    LoadImage(sceneImg[scene]);
+    BlackAll;
+    // Reuse the canonical room-image container, but present as a cutscene.
+    // Do not call LoadImage: it swaps early and changes collision state.
+    UnApl(PPointer(currentWorldImgPtrs)[img], SCREEN_BKG);
+    ClearScreen(SCREEN_LOG);
+    BlitterCopyBitmap4(SCREEN_BKG, SCREEN_LOG, 320, PLAYFIELD_HEIGHT,
+        0, BG_IMAGE_OFFSET_Y, 0, 8, 320, 320);
+    currentBasePal := PPointer(currentWorldPalPtrs)[img];
+    RebuildCutscenePalette(sceneCol0[scene], sceneCol1[scene], sceneCol2[scene], 0);
+    roomPalette[15] := STE_PAL[$0A]; // dliintro2 uses constant luminance 10
+    SetLength(raw, 40);
+    for line := 0 to 3 do begin
+        for col := 0 to 39 do raw[col + 1] := Chr(textPtr[line * 40 + col] and $7F);
+        DrawTextTo(SCREEN_LOG, 0, 168 + word(line) * 8, 15, 0, Antic2Ascii(raw));
+    end;
+    SwapScreen;
     WaitFrame;
     FadeIn;
     repeat
@@ -4460,26 +4567,14 @@ end;
 
 procedure ShowAchievements;
 const
-    ACH_PAL: array[0..15] of word = (
-        $000,  //  0 – black background
-        $55F,  //  1 – blue/cyan (title text, separators)
-        $550,  //  2 – gold  (earned world achievement)
-        $222,  //  3 – dark  (locked)
-        $770,  //  4 – bright gold (newly earned flash)
-        $530,  //  5 – orange/copper (global row)
-        $333,  //  6 – dim separator
-        $444,  //  7 – grey info text
-        $777,  //  8 – white (selected / bright info text)
-        $000, $000, $000, $000, $000, $000, $000
-    );
-    // Grid: 12 cells × 16px = 192px, centered in 320px → left margin = 64px
-    GRID_LEFT  = 64;
-    GRID_TOP   = 30;
-    CELL_W     = 16;
-    CELL_H     = 16;
-    ROW_STRIDE = 18;   // CELL_H + 2px gap
-    SEP_Y      = 30 + 7 * 18 + 2;   // separator below grid
-    INFO_Y     = SEP_Y + 6;
+    ACH_COLORS: array[0..15] of byte =
+        (0,$08,$0C,$02,$16,$1A,$12,$94,$98,$9A,$04,$0C,$84,0,0,$0C);
+    GRID_LEFT  = 16;
+    GRID_TOP   = 26;
+    CELL_W     = 24;
+    ROW_STRIDE = 22;
+    SEP_Y      = 180;
+    INFO_Y     = 184;
     WORLD_NAMES: array[0..6] of string[22] = (
         'Escape from the Lab',
         'Abominable Sewers',
@@ -4498,6 +4593,7 @@ var
     firstDraw: boolean;
     key:       byte;
     delay:     byte;
+    displayedState: array[0..ACHIEVEMENTS_COUNT-1] of byte;
 begin
     FadeOut;
 
@@ -4507,7 +4603,13 @@ begin
     firstDraw := true;
     delay  := 0;
 
-    currentPal := @ACH_PAL[0];
+    for a := 0 to 15 do titlePalette[a] := STE_PAL[ACH_COLORS[a]];
+    roomSpritePaletteActive := false;
+    currentPal := @titlePalette[0];
+    for aid := 0 to ACHIEVEMENTS_COUNT-1 do begin
+        displayedState[aid] := achievements[aid];
+        if achievements[aid] = 2 then achievements[aid] := 1;
+    end;
     BlackAll;
 
     repeat
@@ -4543,10 +4645,10 @@ begin
             Str(achivementsCount, s1);
             Str(ACHIEVEMENTS_COUNT, s);
             s := 'Achievements ' + s1 + ' / ' + s;
-            DrawStrCentered(4, 1, s);
+            DrawSelectorShadow(s, 0, 8, 7);
 
             // Blue separator under title
-            FillRect16(SCREEN_LOG, 0, 20, 320, 2, 1);
+            FillRect16(SCREEN_LOG, 0, 20, 320, 2, 12);
 
             // Achievement grid — no row labels, trophies fill full width
             aid := 0;
@@ -4554,24 +4656,22 @@ begin
                 cy := GRID_TOP + word(w) * ROW_STRIDE;
                 for a := 0 to 11 do begin
                     cx := GRID_LEFT + word(a) * CELL_W;
-                    // pick colour
-                    if achievements[aid] = 2 then begin
-                        achievements[aid] := 1;
-                        col := 4;           // bright gold flash
-                    end else if achievements[aid] = 1 then begin
-                        if w = WORLD_COUNT then col := 5   // orange for global
-                        else col := 2;                      // gold for world
-                    end else begin
-                        col := 3;           // dark locked
-                    end;
-                    if (w = curW) and (a = curA) then col := 8;  // white cursor
-                    FillRect16(SCREEN_LOG, cx, cy, CELL_W, CELL_H, col);
+                    col := displayedState[aid];
+                    if col > 2 then col := 1;
+                    if w = WORLD_COUNT then Inc(col, 3);
+                    DrawGeneratedSpriteFrameBlitter(SCREEN_LOG, cx, cy,
+                        @ACH_UI_FRAMES[col], @ACH_UI_WORDS[0]);
                     Inc(aid);
                 end;
             end;
 
             // Blue separator above info panel
-            FillRect16(SCREEN_LOG, 0, SEP_Y, 320, 2, 1);
+            FillRect16(SCREEN_LOG, 0, SEP_Y, 320, 2, 12);
+            // Keep the selected trophy's state visible inside a pulsing frame.
+            cx := GRID_LEFT + word(curA) * CELL_W;
+            cy := GRID_TOP + word(curW) * ROW_STRIDE;
+            DrawGeneratedSpriteFrameBlitter(SCREEN_LOG, cx, cy,
+                @ACH_UI_FRAMES[6], @ACH_UI_WORDS[0]);
 
             // Info panel
             aid := curW * 12 + curA;
@@ -4583,7 +4683,7 @@ begin
 
                 // Line 1 (dim): "WorldName Achievement"
                 s := WORLD_NAMES[curW] + ' Achievement';
-                DrawStrCentered(INFO_Y, 7, s);
+                DrawStrCentered(INFO_Y, 10, Copy(s, 1, 40));
 
                 // Line 2 (bright): "Name : Desc"  (strip trailing spaces from name)
                 s := achievement.name;
@@ -4593,7 +4693,7 @@ begin
                 while (Length(s1) > 0) and (s1[Length(s1)] = ' ') do
                     SetLength(s1, Length(s1) - 1);
                 s := s + ': ' + s1;
-                DrawStrCentered(INFO_Y + 12, 8, s);
+                DrawStrCentered(INFO_Y + 8, 11, Copy(s, 1, 40));
             end;
 
             SwapScreen;
@@ -4603,8 +4703,9 @@ begin
             end;
             update := false;
         end;
+        SetPaletteRegister(15, STE_PAL[8 + ((sysframe shr 2) and 3)]);
 
-    until IsStartingButtonDown or CRT_SelectPressed;
+    until IsStartingButtonDown or CRT_SelectPressed or (kbcode = KEY_ESC_CODE) or (kbcode = KEY_A_CODE);
     repeat WaitFrame; until not IsStartingButtonDown and not CRT_SelectPressed;
 
     FadeOut;
@@ -4643,7 +4744,43 @@ begin
     if statPage = 4 then statPage := 0;
 end;
 
-procedure DrawWorldSelectorIcon(locked: boolean);
+procedure DrawSelectorText(const text: string; y: word; color: byte);
+var glyph: TSteSpriteFrame;
+    data: array[0..79] of word;
+    x, i, row, plane, code, bits, count: word;
+begin
+    count := Length(text);
+    if count > 20 then count := 20;
+    x := (320 - count * 16) div 2;
+    FillChar(glyph, SizeOf(glyph), 0);
+    glyph.widthPx := 16;
+    glyph.heightPx := 16;
+    glyph.rowWords := 1;
+    glyph.dataOffset := 16;
+    for i := 1 to count do begin
+        code := Ord(text[i]);
+        if (code < 32) or (code > 127) then code := 32;
+        for row := 0 to 15 do begin
+            bits := SELECTOR_FONT_MASKS[(code - 32) * 16 + row];
+            data[row] := not bits;
+            for plane := 0 to 3 do
+                if (color and (1 shl plane)) <> 0 then
+                    data[16 + row * 4 + plane] := bits
+                else data[16 + row * 4 + plane] := 0;
+        end;
+        DrawGeneratedSpriteFrameBlitter(SCREEN_LOG, x, y, @glyph, @data[0]);
+        BlitterWait; // the next glyph reuses this temporary source
+        Inc(x, 16);
+    end;
+end;
+
+procedure DrawSelectorShadow(const text: string; y: word; color, shade: byte);
+begin
+    DrawSelectorText(text, y + 2, shade);
+    DrawSelectorText(text, y, color);
+end;
+
+procedure DrawWorldSelectorIcon;
 begin
     if worldCurrent > High(WORLD_ICON_PTRS) then exit;
 
@@ -4655,69 +4792,78 @@ begin
         0,
         0,
         64,
-        48,
+        34,
         WORLD_ICON_WIDTH,
         320
     );
-
-    if locked then
-        DrawStrCentered(84, 3, 'LOCKED');
 end;
 
 procedure RenderWorldSelector(locked: boolean);
-var i: byte;
-    iconPal: PWord;
+var i, selector: byte;
     iconColOfs: word;
     colPtr: PByte;
+    px, py: integer;
 begin
     ClearScreen(SCREEN_LOG);
     FillChar(titlePalette[0], SizeOf(titlePalette), 0);
 
-    // Load this world's greyscale icon palette as base (entries 0..3)
-    if worldCurrent <= High(WORLD_ICON_PAL_PTRS) then
-        iconPal := PWord(WORLD_ICON_PAL_PTRS[worldCurrent])
-    else
-        iconPal := @WORLD_ICON_PAL_00[0];
-    for i := 0 to 3 do
-        titlePalette[i] := iconPal[i];
-
-    if locked then begin
-        // Locked: keep greyscale palette as-is ($000,$111,$444,$777)
-    end else begin
-        // Active: read 3 CTIA colour bytes embedded at world.iconPtr in world data
-        // (same bytes the original reads via MoveColors(pointer(icon), titleColors, 3))
+    colPtr := nil;
+    if world.iconPtr >= $A000 then begin
         iconColOfs := world.iconPtr - $A000;
-        if (currentWorldData <> nil) and (iconColOfs + 2 < WORLD_DATA_BYTES) then begin
-            colPtr := PByte(longword(currentWorldData) + iconColOfs);
-            titlePalette[1] := STE_PAL[colPtr[0]];
-            titlePalette[2] := STE_PAL[colPtr[1]];
-            titlePalette[3] := STE_PAL[colPtr[2]];
-        end;
+        if (currentWorldData <> nil) and (iconColOfs + 2 < WORLD_DATA_BYTES) then
+            colPtr := PByte(currentWorldData) + iconColOfs;
     end;
-
-    // UI text colours (indices 4+ — outside icon palette range)
-    titlePalette[4] := $222;   // dim text / arrows
+    // Canonical PNG luminance order differs from A8's pixel selectors.
+    for i := 1 to 3 do begin
+        selector := SELECTOR_ICON_MAP[worldCurrent, i];
+        if locked or (colPtr = nil) then begin
+            case selector of
+                1: titlePalette[i] := STE_PAL[6];
+                2: titlePalette[i] := STE_PAL[10];
+                3: titlePalette[i] := STE_PAL[2];
+            end;
+        end else titlePalette[i] := STE_PAL[colPtr[selector - 1]];
+    end;
+    titlePalette[4] := STE_PAL[$84]; // heading shadow and rules
+    titlePalette[5] := STE_PAL[$0F]; // heading
+    titlePalette[6] := STE_PAL[world.goalcolor1];
+    titlePalette[7] := STE_PAL[world.goalcolor2];
+    titlePalette[8] := STE_PAL[$1A]; // stats
+    titlePalette[9] := STE_PAL[$26]; // locked label
+    titlePalette[10] := STE_PAL[$98];
+    titlePalette[12] := STE_PAL[FLOB_COL0];
+    titlePalette[13] := STE_PAL[FLOB_COL1];
+    titlePalette[14] := STE_PAL[FLOB_COL0 or FLOB_COL1];
+    if locked then begin
+        titlePalette[12] := STE_PAL[4];
+        titlePalette[13] := STE_PAL[8];
+        titlePalette[14] := STE_PAL[12];
+    end;
+    titlePalette[15] := STE_PAL[$24];
+    roomSpritePaletteActive := false;
     currentPal := @titlePalette[0];
     // NOTE: palette is applied by the caller (FadeIn on first render, xbios_setpalette otherwise)
 
-    FillRect16(SCREEN_LOG, 0, 0, 320, 200, 0);
-    FillRect16(SCREEN_LOG, 0, 34, 320, 2, 2);
-    FillRect16(SCREEN_LOG, 0, 134, 320, 2, 2);
-
-    DrawStrCentered(10, 1, 'SELECT WORLD');
-    DrawWorldSelectorIcon(locked);
-    DrawStrCentered(140, 1, Antic2Ascii(world.name));
-
-    if worldCurrent > 0 then DrawStr(24, 84, 1, '<');
-    if worldCurrent < WORLD_COUNT - 1 then DrawStr(288, 84, 1, '>');
-
-    if locked then
-        DrawStrCentered(156, 2, 'LOCKED')
-    else
-        DrawStrCentered(156, 1, s);
-
-    DrawStrCentered(168, 1, 'FIRE/ENTER START');
-    DrawStrCentered(184, 2, 'LEFT/RIGHT CHANGE  ESC BACK');
+    FillRect16(SCREEN_LOG, 0, 28, 320, 2, 4);
+    FillRect16(SCREEN_LOG, 0, 118, 320, 2, 4);
+    DrawSelectorShadow('Select World:', 8, 5, 4);
+    DrawWorldSelectorIcon;
+    DrawSelectorShadow(Antic2Ascii(world.name), 128, 6, 7);
+    if worldCurrent > 0 then
+        DrawGeneratedSpriteFrameBlitter(SCREEN_LOG, 0, 44,
+            @SELECTOR_SPRITE_FRAMES[16], @SELECTOR_SPRITE_WORDS[0]);
+    if worldCurrent < WORLD_COUNT - 1 then
+        DrawGeneratedSpriteFrameBlitter(SCREEN_LOG, 304, 44,
+            @SELECTOR_SPRITE_FRAMES[17], @SELECTOR_SPRITE_WORDS[0]);
+    if world.iconFlobFrame < 16 then begin
+        px := (integer(world.iconFlobX) - 1) * 2;
+        py := integer(world.iconFlobY) * 2;
+        if (px >= 0) and (px <= 304) and (py >= 0) and (py <= 184) then
+            DrawGeneratedSpriteFrameBlitter(SCREEN_LOG, px, py,
+                @SELECTOR_SPRITE_FRAMES[world.iconFlobFrame], @SELECTOR_SPRITE_WORDS[0]);
+    end;
+    if locked then DrawSelectorShadow('LOCKED', 160, 9, 8)
+    else DrawSelectorText(s, 168, 8);
     SwapScreen;
 end;
 
@@ -4810,8 +4956,9 @@ end;
 
 procedure InitTitle;
 begin
+    BlackAll;
     LoadTitleTo(SCREEN_LOG);
-    RebuildTitlePalette(MAIN_TITLE_COLORS);
+    RebuildTitlePalette;
     SwapScreen;
     FadeIn;
 end;
@@ -4820,15 +4967,14 @@ procedure ShowTitleScreen;
 begin
 
     // Show title image
-    LoadTitleTo(SCREEN_LOG);
-    RebuildTitlePalette(MAIN_TITLE_COLORS);
-    xbios_setpalette(pword(currentPal));
-    SwapScreen;
     PlaySong(MUSIC_THEME);
+    InitTitle;
     repeat
         WaitFrame;
-        if CRT_SelectPressed then begin ShowAchievements; InitTitle; end;
-        if CRT_HelpPressed then begin ShowCredits; InitTitle; end;
+        if kbcode = KEY_A_CODE then begin ShowAchievements; InitTitle; end;
+        if (kbcode = KEY_C_CODE) or (kbcode = KEY_HELP_CODE) then begin
+            ShowCredits; InitTitle;
+        end;
     until IsStartingButtonDown;
     WaitForStartKeyUp;
     FadeOut;

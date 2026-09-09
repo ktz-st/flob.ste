@@ -1,0 +1,34 @@
+{
+  "source": [
+    "ShowStats",
+    "dlist_stats.asm",
+    "dlistats/dlistats2",
+    "stats_header.gfx",
+    "STATS.ASC",
+    "flob.fnt"
+  ],
+  "region": "PAL",
+  "output_scanlines": [
+    8,
+    231
+  ],
+  "bitmap_scanlines": [
+    24,
+    65
+  ],
+  "page_name_scanlines": [
+    70,
+    77
+  ],
+  "table_scanlines": [
+    82,
+    225
+  ],
+  "palette_bands": [
+    104,
+    136,
+    192
+  ],
+  "values": "illustrative fresh state; not loaded from a save",
+  "verification": "source-derived, exact DLI write timing not verified in an A8 emulator"
+}

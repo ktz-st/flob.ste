@@ -13,5 +13,11 @@
   "wav_rate": 22050,
   "noise_volume_attenuation": 3,
   "noise_period_scale": 1.25,
-  "volume_attenuation": 2
+  "volume_attenuation": 2,
+  "loop_frame": 0,
+  "playback_loop_seconds": 0.0,
+  "loop_duration_frames": 3072,
+  "playback_loop_duration_seconds": 61.44,
+  "rmt_song_start_row": 2,
+  "rmt_loop_row": 2
 }

@@ -101,13 +101,13 @@
 
 - Core SFX are implemented from original POKEY register streams.
   - Default playback uses one PSG channel and a lightweight TOS VBL callback.
+  - PSG period/noise/mixer/volume conversion is done during asset generation, not in VBL.
   - An alternate STE DMA software-synth backend remains available for comparison.
   - Verify final volume, pitch and distortion for every effect during full playthroughs.
-- Implement music playback on STE.
-  - Title/menu music.
-  - In-game world music.
-  - Cutscene music.
-  - End/game-over music if present in original assets.
+- Music playback is implemented for title/menu, all worlds, cutscenes and end screens.
+  - World 00/05 loops from frame 896 after its intro.
+  - World 02 loops from frame 448 after its intro.
+  - Other looping tracks restart at frame 0; intro remains non-looping in the STE flow.
 - Verify gameplay sound effects already connected through `Sfx` / `FSfx`:
   - `SFX_FLIP`
   - `SFX_SLIMEPICK`

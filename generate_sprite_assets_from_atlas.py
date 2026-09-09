@@ -44,9 +44,10 @@ def to_ident(name: str) -> str:
 
 
 def rgb_to_st_word(rgb: tuple[int, int, int]) -> int:
-    r = (rgb[0] * 7 + 127) // 255
-    g = (rgb[1] * 7 + 127) // 255
-    b = (rgb[2] * 7 + 127) // 255
+    def channel(value: int) -> int:
+        value = (value * 15 + 127) // 255
+        return (value >> 1) | ((value & 1) << 3)
+    r, g, b = (channel(c) for c in rgb)
     return (r << 8) | (g << 4) | b
 
 
