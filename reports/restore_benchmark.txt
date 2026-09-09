@@ -1,0 +1,2 @@
+32000 rectangles: Pascal 17665 ms, ASM 5355 ms; 69.7% less time.
+Hatari STE 8 MHz, HZ200 timing; isolated restore, not gameplay FPS.

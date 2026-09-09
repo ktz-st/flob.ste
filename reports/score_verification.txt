@@ -1,0 +1,1 @@
+PASS 12 score changes, all three buffers and message state

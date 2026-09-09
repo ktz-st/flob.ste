@@ -92,6 +92,10 @@ begin
         joyStatus := RawIkbdJoyStatus;
 
     rawJoy := joyStatus and $8F; // keep only directions and fire, ignore any packet noise
+    // Shared held state: pressing the other source while held creates no edge.
+    if gameplayInputInstalled and
+       (PByte(@RawIkbdKeyStates)[KEY_SPACE_CODE] <> 0) then
+        rawJoy := rawJoy or $80;
 
     // Joystick: IKBD byte active-high → invert to get 8-bit active-low stick0
     // IKBD bit layout: 0=up 1=down 2=left 3=right 7=fire
@@ -139,7 +143,7 @@ end;
 
 function IsStartingButtonDown: boolean;
 begin
-    Result := (strig0 = 0) or (kbcode = KEY_ENTER_CODE);
+    Result := (strig0 = 0) or (kbcode = KEY_ENTER_CODE) or (kbcode = KEY_SPACE_CODE);
 end;
 
 procedure WaitForStartKeyUp;
@@ -148,7 +152,7 @@ begin
 end;
 
 function CRT_StartPressed:  boolean;
-begin Result := (strig0 = 0) or (kbcode = KEY_ENTER_CODE); end;
+begin Result := IsStartingButtonDown; end;
 
 function CRT_FirePressedEdge: boolean;
 begin Result := firePressedEdge; end;
@@ -159,7 +163,7 @@ begin
 end;
 
 function CRT_SelectPressed: boolean;
-begin Result := (kbcode = KEY_SPACE_CODE); end;
+begin Result := false; end; // Space is FIRE, no longer the legacy SELECT alias.
 
 function CRT_HelpPressed: boolean;
 begin Result := (kbcode = KEY_H_CODE); end;

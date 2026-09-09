@@ -24,6 +24,8 @@ const
     FLOB_MOVE_STEP = 2;
     FLOB_FALL_STEP = 2;
     HUD_HEIGHT = 8;
+    HUD_SCORE_X = 272;
+    HUD_SCORE_COPY_WIDTH = 48; // five 8px digits plus the right 8px margin
     MESSAGE_TEXT_COLOR = 15;
     CUTSCENE_TEXT_COLOR = 14;
     CUTSCENE_FADE_COLOR = 15;
@@ -125,13 +127,20 @@ const
 
 {$L unapl.o}
 {$L font.o}
+{$L ems.o}
+{$L ims.o}
+{$L restore.o}
 {$L ikbd.o}
 {$L dmasound.o}
 {$L sfxsynth.o}
 {$L psgsound.o}
 procedure UnApl(src, dst: pointer); external;
 procedure DrawChar(screen, font: pointer; x, y, ch, fg, bg: longword); cdecl; external;
+procedure DrawSpriteEMS(gfx, dst, masks: pointer; height, dstWords, skew: longword); cdecl; external;
+procedure DrawSpriteIMS(mask, gfx, dst: pointer; height, countX, skew,
+    endmask1, endmask2, endmask3: longword); cdecl; external;
 procedure RawIkbdHandler; external;
+procedure RestoreRectsASM(src, dst, rects: pointer; count: longword); cdecl; external;
 procedure DmaSoundInit; external;
 procedure DmaSoundDone; external;
 procedure DmaSoundStop; external;
@@ -199,10 +208,12 @@ type
         wordsBase: PWord;
         palBase: PWord;
         palSlot: byte;
+        stableId: byte;
     end;
     PQueuedSprite = ^TQueuedSprite;
 
-    TDirtyRect = record
+    // ASM restore ABI: four consecutive words, eight bytes per rectangle.
+    TDirtyRect = packed record
         x: word;
         y: word;
         widthPx: word;
@@ -294,6 +305,23 @@ var
 
     slimeX: array[0..19] of byte;
     slimeGoal: array[0..19] of byte;
+    slimeDrawFrame: byte;
+{$ifdef VERIFY_GAMEPLAY}
+    verifyRestoreCount: byte;
+{$endif}
+{$ifdef VERIFY_EMS}
+    emsReference: boolean;
+{$endif}
+{$ifdef VERIFY_IMS}
+    imsReference: boolean;
+    imsDrawCounter: longword;
+{$endif}
+{$if defined(VERIFY_EMS) or defined(BENCH_SLIME)}
+    emsDrawCounter: longword;
+{$endif}
+{$ifdef BENCH_SLIME}
+    benchBlits, benchRestoreRects, benchRestorePixels: longword;
+{$endif}
     dxslime0, dxslime1, dlrow: byte;
     scoreadd: word;
     mySlime: cardinal;
@@ -307,6 +335,7 @@ var
     collisionDataBuffer: array[0..COLLISION_DATA_BYTES - 1] of byte;
     dynamicTileDanger: array[0..DYNAMIC_DANGER_BYTES - 1] of byte;
     dynamicTileDangerActive: boolean;
+    dynamicTileDangerCount: word;
     currentWorldData: PByte;
     currentWorldImgPtrs: ^pointer;
     currentWorldPalPtrs: ^pointer;
@@ -391,6 +420,7 @@ var
     currentPal: pointer;  // target palette for FadeIn, set by LoadImage/LoadCutsceneSlide
     currentBasePal: pointer;
     roomSpritePaletteActive: boolean;
+    gameplayPaletteVisible: boolean;
     currentCollisionData: PByte;
     roomPalette: array[0..15] of word;
     titlePalette: array[0..15] of word;
@@ -999,11 +1029,27 @@ begin
 end;
 
 procedure ApplyRoomSpriteAtlasPalette(dst: PWord);
-var i: byte;
+var i, p, f: byte;
+    colors: array[0..1] of byte;
 begin
     if dst = nil then exit;
     for i := 4 to 14 do
         dst[i] := SPRITE_ATLAS_PAL[i];
+    dst[4] := STE_PAL[FLOB_COL0 - (invulnerability and 3)];
+    dst[5] := STE_PAL[FLOB_COL1 - (invulnerability and 3)];
+    dst[6] := STE_PAL[(FLOB_COL0 - (invulnerability and 3)) or
+                      (FLOB_COL1 - (invulnerability and 3))];
+    for p := 0 to 1 do begin
+        colors[p] := 0;
+        if (spriteColorsRaw[p] <> nil) and (spriteData.frameCount[p] > 0) then begin
+            f := spriteFrame[p];
+            if f >= spriteData.frameCount[p] then f := 0;
+            colors[p] := spriteColorsRaw[p][f];
+        end;
+    end;
+    dst[10] := STE_PAL[colors[0]];
+    dst[11] := STE_PAL[colors[1]];
+    dst[12] := STE_PAL[colors[0] or colors[1]];
 end;
 
 function FindSteTile(src: word): PSteTile;
@@ -1036,7 +1082,7 @@ begin
 end;
 
 procedure QueueGeneratedSprite(dstX, dstY: word; frame: PSteSpriteFrame;
-    wordsBase, palBase: PWord; palSlot: byte);
+    wordsBase, palBase: PWord; palSlot: byte; stableId: byte = $FF);
 var idx: byte;
 begin
     if frame = nil then exit;
@@ -1050,6 +1096,8 @@ begin
     queuedSprites[screenLogIndex, idx].wordsBase := wordsBase;
     queuedSprites[screenLogIndex, idx].palBase := palBase;
     queuedSprites[screenLogIndex, idx].palSlot := palSlot;
+    if stableId >= 32 then stableId := 32 + idx;
+    queuedSprites[screenLogIndex, idx].stableId := stableId;
     Inc(queuedSpriteCount[screenLogIndex]);
 end;
 
@@ -1066,6 +1114,7 @@ begin
     queuedSprites[screenLogIndex, idx].wordsBase := nil;
     queuedSprites[screenLogIndex, idx].palBase := nil;
     queuedSprites[screenLogIndex, idx].palSlot := 0;
+    queuedSprites[screenLogIndex, idx].stableId := 32 + idx;
     Inc(queuedSpriteCount[screenLogIndex]);
 end;
 
@@ -1124,14 +1173,19 @@ begin
             dangerOffset := dstY * 20 + (dstX shr 3);
             dangerMask := byte($80 shr (dstX and 7));
             if srcColor = DANGER_COLLISION_COLOR then begin
+                if (dynamicTileDanger[dangerOffset] and dangerMask) = 0 then
+                    Inc(dynamicTileDangerCount);
                 dynamicTileDanger[dangerOffset] :=
                     dynamicTileDanger[dangerOffset] or dangerMask;
-                dynamicTileDangerActive := true;
-            end else
+            end else begin
+                if (dynamicTileDanger[dangerOffset] and dangerMask) <> 0 then
+                    Dec(dynamicTileDangerCount);
                 dynamicTileDanger[dangerOffset] :=
                     dynamicTileDanger[dangerOffset] and not dangerMask;
+            end;
         end;
     end;
+    dynamicTileDangerActive := dynamicTileDangerCount <> 0;
 end;
 
 procedure PutTile(x, y: byte; src: word; flip: byte);
@@ -1161,6 +1215,7 @@ begin
     currentCollisionData := nil;
     FillChar(dynamicTileDanger[0], SizeOf(dynamicTileDanger), 0);
     dynamicTileDangerActive := false;
+    dynamicTileDangerCount := 0;
     if currentWorldColAplPtrs <> nil then begin
         colAplPtr := PPointer(currentWorldColAplPtrs)[imgNum];
         UnApl(colAplPtr, @collisionDataBuffer[0]);
@@ -1229,9 +1284,9 @@ begin
     SwapScreen;
 end;
 
-procedure FadeIn;   begin FadeToPalette(pword(currentPal), FADE_FRAMES); end;
-procedure FadeOut;  begin FadeToBlack(FADE_FRAMES); xbios_setpalette(@ALL_BLACK[0]); end;
-procedure BlackAll; begin xbios_setpalette(@ALL_BLACK[0]); end;
+procedure FadeIn;   begin FadeToPalette(pword(currentPal), FADE_FRAMES); gameplayPaletteVisible := true; end;
+procedure FadeOut;  begin gameplayPaletteVisible := false; FadeToBlack(FADE_FRAMES); xbios_setpalette(@ALL_BLACK[0]); end;
+procedure BlackAll; begin gameplayPaletteVisible := false; xbios_setpalette(@ALL_BLACK[0]); end;
 
 procedure SetPaletteRegister(index: byte; color: word);
 var palRegs: PWord;
@@ -1344,7 +1399,11 @@ var rowWords: word;
     dstWords: pword;
     maskBase, gfxBase: PWord;
     plane: word;
+    emsMasks: PWord;
 begin
+{$ifdef BENCH_SLIME}
+    Inc(benchBlits);
+{$endif}
     if frame = nil then exit;
     if dstX >= 320 then exit;
     if dstY >= 200 then exit;
@@ -1362,6 +1421,37 @@ begin
     if (skew <> 0) and (rowWords < lXcount) then
         skew := skew or BLITTER_SKEW_NFSR;
 
+    dstWords := scr;
+    Inc(dstWords, (longword(dstY) * SCREEN_LINE_BYTES + longword(dstX shr 4) * 8) shr 1);
+    gfxBase := wordsBase;
+    Inc(gfxBase, frame^.dataOffset);
+
+{$ifndef NO_EMS}
+    emsMasks := nil;
+{$ifdef VERIFY_EMS}
+    if not emsReference then begin
+{$endif}
+    if wordsBase = @SPR_FLOB_WORDS[0] then begin
+        emsMasks := @SPR_FLOB_EMS_MASKS[frame^.paletteOffset];
+    end else if wordsBase = @SPR_SLIME_WORDS[0] then begin
+        emsMasks := @SPR_SLIME_EMS_MASKS[frame^.paletteOffset];
+    end;
+{$ifdef VERIFY_EMS}
+    end;
+{$endif}
+    if emsMasks <> nil then begin
+{$if defined(VERIFY_EMS) or defined(BENCH_SLIME)}
+        Inc(emsDrawCounter);
+{$endif}
+        Inc(emsMasks, word(dstX and 15) * frame^.heightPx * 2);
+        DrawSpriteEMS(gfxBase, dstWords, emsMasks, frame^.heightPx, lXcount, skew);
+        exit;
+    end;
+{$endif}
+
+    // EMS supplies per-row opacity end masks, so only IMS needs this setup.
+    maskBase := wordsBase;
+    Inc(maskBase, frame^.maskOffset);
     if lXcount > 2 then begin
         endMask1 := BLITTER_START_MASKS[dstX and 15];
         endMask2 := $FFFF;
@@ -1376,13 +1466,18 @@ begin
         endMask3 := endMask1;
     end;
 
-    dstWords := scr;
-    Inc(dstWords, (longword(dstY) * SCREEN_LINE_BYTES + longword(dstX shr 4) * 8) shr 1);
-    maskBase := wordsBase;
-    Inc(maskBase, frame^.maskOffset);
-    gfxBase := wordsBase;
-    Inc(gfxBase, frame^.dataOffset);
-
+{$ifndef NO_IMS}
+{$ifdef VERIFY_IMS}
+    if not imsReference then begin
+        Inc(imsDrawCounter);
+{$endif}
+        DrawSpriteIMS(maskBase, gfxBase, dstWords, frame^.heightPx,
+            lXcount, skew, endMask1, endMask2, endMask3);
+        exit;
+{$ifdef VERIFY_IMS}
+    end;
+{$endif}
+{$endif}
     BlitterWait;
     BlitterWriteWord(BLITTER_COUNT_X, lXcount);
     BlitterWriteWord(BLITTER_DST_INC_X, 8);
@@ -1510,11 +1605,25 @@ procedure RestoreDirtyRects(const rects: TDirtyRectArray; count: byte;
     forceFullCopy: boolean);
 var i: byte;
 begin
+{$ifdef VERIFY_GAMEPLAY}
+    verifyRestoreCount := count;
+{$endif}
+{$ifdef BENCH_SLIME}
+    Inc(benchRestoreRects, count);
+    if forceFullCopy then Inc(benchRestorePixels, 64000)
+    else if count > 0 then
+        for i := 0 to count - 1 do
+            Inc(benchRestorePixels, longword(rects[i].widthPx) * rects[i].heightPx);
+{$endif}
     if forceFullCopy then begin
         BlitterCopyData16(SCREEN_BKG, SCREEN_LOG, SCREEN_BYTES);
         exit;
     end;
     if count = 0 then exit;
+{$ifndef NO_RESTORE_ASM}
+    RestoreRectsASM(SCREEN_BKG, SCREEN_LOG, @rects[0], count);
+    exit;
+{$endif}
     for i := 0 to count - 1 do
         BlitterCopyBitmap4(
             SCREEN_BKG, SCREEN_LOG,
@@ -1527,8 +1636,9 @@ end;
 
 procedure RenderQueuedSprites;
 var rects: TDirtyRectArray;
-    dirtyCount, oldCount, newCount, compareCount: byte;
-    i: byte;
+    dirtyCount, oldCount, newCount: byte;
+    i, oldIndex: byte;
+    oldById: array[0..32 + MAX_QUEUED_SPRITES - 1] of byte;
     dirtyPixels: longword;
     forceFullCopy: boolean;
     spr: PQueuedSprite;
@@ -1536,24 +1646,27 @@ begin
     dirtyCount := 0;
     oldCount := renderedSpriteCount[screenLogIndex];
     newCount := queuedSpriteCount[screenLogIndex];
-    compareCount := oldCount;
-    if newCount > compareCount then compareCount := newCount;
-
-    if compareCount > 0 then
-        for i := 0 to compareCount - 1 do begin
-            if (i < oldCount) and (i < newCount) and
-               QueuedSpritesEqual(
-                   @renderedSprites[screenLogIndex, i],
-                   @queuedSprites[screenLogIndex, i]
-               ) then
-                continue;
-            if i < oldCount then
+    // IDs 0..19: slime, 20: Flob, 21..22: world objects; 32+: effect slots.
+    FillChar(oldById, SizeOf(oldById), $FF);
+    if oldCount > 0 then
+        for i := 0 to oldCount - 1 do
+            oldById[renderedSprites[screenLogIndex, i].stableId] := i;
+    if newCount > 0 then
+        for i := 0 to newCount - 1 do begin
+            oldIndex := oldById[queuedSprites[screenLogIndex, i].stableId];
+            if oldIndex <> $FF then begin
+                oldById[queuedSprites[screenLogIndex, i].stableId] := $FF;
+                if QueuedSpritesEqual(@renderedSprites[screenLogIndex, oldIndex],
+                    @queuedSprites[screenLogIndex, i]) then continue;
                 AddDirtySpriteRect(rects, dirtyCount,
-                    @renderedSprites[screenLogIndex, i]);
-            if i < newCount then
-                AddDirtySpriteRect(rects, dirtyCount,
-                    @queuedSprites[screenLogIndex, i]);
+                    @renderedSprites[screenLogIndex, oldIndex]);
+            end;
+            AddDirtySpriteRect(rects, dirtyCount, @queuedSprites[screenLogIndex, i]);
         end;
+    if oldCount > 0 then
+        for i := 0 to oldCount - 1 do
+            if oldById[renderedSprites[screenLogIndex, i].stableId] <> $FF then
+                AddDirtySpriteRect(rects, dirtyCount, @renderedSprites[screenLogIndex, i]);
 
     dirtyPixels := 0;
     if dirtyCount > 0 then
@@ -1590,9 +1703,16 @@ begin
 end;
 
 procedure PresentQueuedSprites;
+var i: byte;
+    regs: PWord;
 begin
     FlushQueuedSprites;
     SwapScreen;
+    if roomSpritePaletteActive and gameplayPaletteVisible then begin
+        regs := PWord(pointer(longword($FFFF8240)));
+        for i := 4 to 12 do
+            if regs[i] <> roomPalette[i] then regs[i] := roomPalette[i];
+    end;
 end;
 
 procedure DrawFlob;
@@ -1609,7 +1729,7 @@ begin
         @SPR_FLOB_FRAMES[frameIdx],
         @SPR_FLOB_WORDS[0],
         nil,
-        0
+        0, 20
     );
 end;
 
@@ -1723,10 +1843,10 @@ var scoreStr, roomStr: string;
 begin
     BlitterClearBitmap4(scr, 320, 20, 0, 0, 320);
     // FillRect16(scr, 0, HUD_HEIGHT, 320, 2, 1);
-    DrawTextTo(scr, 8, 0, 1, 0, Antic2Ascii(world.name));
+    DrawTextTo(scr, 8, 0, 14, 0, Antic2Ascii(world.name));
     scoreStr := PackedBcdToScore5(mySlime);
-    scoreX := 320 - 8 - Length(scoreStr) * 8;
-    DrawTextTo(scr, scoreX, 0, 1, 0, scoreStr);
+    scoreX := HUD_SCORE_X;
+    DrawTextTo(scr, scoreX, 0, 14, 0, scoreStr);
     roomStr := 'W' + ByteToStr(worldCurrent) + ' R';
     if levelNum < 10 then roomStr := roomStr + '0';
     roomStr := roomStr + ByteToStr(levelNum);
@@ -1769,20 +1889,26 @@ begin
     end;
 end;
 
+procedure SlimeScreenPosition(index: byte; var x, y: smallint); inline;
+var rowY: smallint;
+begin
+    x := smallint(slimeX[index]) * LEVEL_SCALE_X + SLIME_RENDER_OFFSET_X + SPR_SLIME_CROP_X;
+    rowY := smallint(index shl 2);
+    if flipped then rowY := 76 - rowY;
+    y := rowY * LEVEL_SCALE_Y + SLIME_RENDER_OFFSET_Y + SPR_SLIME_CROP_Y;
+end;
+
 procedure DrawSlimes;
 var i: byte;
-    px, py, rowY: smallint;
+    px, py: smallint;
     frameIdx: byte;
 begin
     frameIdx := (sysframe shr 4) and 1;
+    slimeDrawFrame := frameIdx;
     for i := 0 to 19 do begin
         if slimeX[i] = 0 then
             continue;
-        px := smallint(slimeX[i]) * LEVEL_SCALE_X + SLIME_RENDER_OFFSET_X;
-        rowY := smallint(i shl 2);
-        if flipped then
-            rowY := 76 - rowY;
-        py := rowY * LEVEL_SCALE_Y + SLIME_RENDER_OFFSET_Y;
+        SlimeScreenPosition(i, px, py);
         if (px < 0) or (py < 0) then
             continue;
         QueueGeneratedSprite(
@@ -1791,7 +1917,7 @@ begin
             @SPR_SLIME_FRAMES[frameIdx],
             @SPR_SLIME_WORDS[0],
             nil,
-            0
+            0, i
         );
     end;
 end;
@@ -1800,6 +1926,17 @@ procedure ShowSlime;
 begin
     RefreshHudCache;
     RefreshOverlayBuffers;
+end;
+
+procedure RefreshScore;
+begin
+    if SCREEN_BKG = nil then exit;
+    // DrawChar writes foreground and background: no clear or full HUD redraw.
+    DrawTextTo(SCREEN_BKG, HUD_SCORE_X, 0, 14, 0, PackedBcdToScore5(mySlime));
+    BlitterCopyBitmap4(SCREEN_BKG, SCREEN_LOG, HUD_SCORE_COPY_WIDTH, HUD_HEIGHT,
+        HUD_SCORE_X, 0, HUD_SCORE_X, 0, 320, 320);
+    BlitterCopyBitmap4(SCREEN_BKG, SCREEN_PHY, HUD_SCORE_COPY_WIDTH, HUD_HEIGHT,
+        HUD_SCORE_X, 0, HUD_SCORE_X, 0, 320, 320);
 end;
 
 function SpriteAssetPtr(addr: word): PByte;
@@ -1878,12 +2015,13 @@ begin
     dstX := word(drawX);
     dstY := word(drawY);
 
-    QueueGeneratedSprite(dstX, dstY, frame, spriteAtlasWords[num], nil, 0);
+    QueueGeneratedSprite(dstX, dstY, frame, spriteAtlasWords[num], nil, 0, 21 + num);
     spritePtr[num] := 1;
 end;
 
 procedure ShowSprites;
 begin
+    if roomSpritePaletteActive then ApplyRoomSpriteAtlasPalette(@roomPalette[0]);
     if sprites.state = SPRITE_NONE then exit;
     if sprites.state > SPRITE_NONE then ShowSprite(0);
     if sprites.state > SPRITE_SINGLE then ShowSprite(1);
@@ -1906,10 +2044,24 @@ begin
     Result := (maskWord and (word($8000) shr (px and 15))) = 0;
 end;
 
+function OpaqueMaskWindow(row: PWord; rowWords, x: word): word; inline;
+var index, shift: word;
+    bits: longword;
+begin
+    index := x shr 4;
+    shift := x and 15;
+    bits := longword(word(not row[index])) shl 16;
+    if (shift <> 0) and (index + 1 < rowWords) then
+        bits := bits or word(not row[index + 1]);
+    Result := word((bits shl shift) shr 16);
+end;
+
 function GeneratedSpritesOverlap(frameA: PSteSpriteFrame; wordsA: PWord; ax, ay: smallint;
     frameB: PSteSpriteFrame; wordsB: PWord; bx, by: smallint): boolean;
 var left, top, right, bottom: smallint;
-    x, y: smallint;
+    x, y, span: smallint;
+    maskA, maskB: PWord;
+    bitsA, bitsB, clip: word;
 begin
     Result := false;
     if (frameA = nil) or (frameB = nil) then exit;
@@ -1925,13 +2077,43 @@ begin
     if by + smallint(frameB^.heightPx) < bottom then bottom := by + smallint(frameB^.heightPx);
     if (left >= right) or (top >= bottom) then exit;
 
-    for y := top to bottom - 1 do
-        for x := left to right - 1 do
-            if GeneratedSpriteOpaqueAt(frameA, wordsA, x - ax, y - ay) and
-               GeneratedSpriteOpaqueAt(frameB, wordsB, x - bx, y - by) then begin
+    // One mask word per row: intersect the visible pixels without pixel calls.
+    if (frameA^.rowWords = 1) and (frameB^.rowWords = 1) then begin
+        maskA := wordsA + frameA^.maskOffset + word(top - ay);
+        maskB := wordsB + frameB^.maskOffset + word(top - by);
+        clip := word(longword($FFFF) shl (16 - (right - left)));
+        for y := top to bottom - 1 do begin
+            bitsA := word(longword(word(not maskA^)) shl (left - ax));
+            bitsB := word(longword(word(not maskB^)) shl (left - bx));
+            if (bitsA and bitsB and clip) <> 0 then begin
                 Result := true;
                 exit;
             end;
+            Inc(maskA);
+            Inc(maskB);
+        end;
+        exit;
+    end;
+
+    maskA := wordsA + frameA^.maskOffset + word(top - ay) * frameA^.rowWords;
+    maskB := wordsB + frameB^.maskOffset + word(top - by) * frameB^.rowWords;
+    for y := top to bottom - 1 do begin
+        x := left;
+        while x < right do begin
+            span := right - x;
+            if span > 16 then span := 16;
+            clip := word(longword($FFFF) shl (16 - span));
+            bitsA := OpaqueMaskWindow(maskA, frameA^.rowWords, word(x - ax));
+            bitsB := OpaqueMaskWindow(maskB, frameB^.rowWords, word(x - bx));
+            if (bitsA and bitsB and clip) <> 0 then begin
+                Result := true;
+                exit;
+            end;
+            Inc(x, 16);
+        end;
+        Inc(maskA, frameA^.rowWords);
+        Inc(maskB, frameB^.rowWords);
+    end;
 end;
 
 procedure ShowLevelName;
@@ -2595,13 +2777,13 @@ end;
 procedure AddSlime(val: word); overload;
 begin
     mySlime := IntToPackedBcd(PackedBcdToInt(mySlime) + val);
-    ShowSlime;
+    RefreshScore;
 end;
 
 procedure AddSlime(val: byte); overload;
 begin
     mySlime := IntToPackedBcd(PackedBcdToInt(mySlime) + val);
-    ShowSlime;
+    RefreshScore;
 end;
 
 procedure SubSlime(val: byte);
@@ -2610,10 +2792,10 @@ begin
     current := PackedBcdToInt(mySlime);
     if val < current then begin
         mySlime := IntToPackedBcd(current - val);
-        ShowSlime;
+        RefreshScore;
     end else begin
         mySlime := 0;
-        ShowSlime;
+        RefreshScore;
         mainGoalReached := false;
         if not game_over then EndWorld;
     end;
@@ -2929,6 +3111,10 @@ begin
         if frameCount > 0 then spriteColorsRaw[p] := base
         else spriteColorsRaw[p] := nil;
         Inc(base, frameCount);
+    end;
+    for p := 0 to 1 do begin
+        frameCount := spriteData.frameCount[p];
+        h := spriteData.height[p];
         if frameCount > 0 then
             for f := 0 to frameCount - 1 do
                 spriteFramesRaw[p, f] := @base[word(f) * word(h)];
@@ -3161,29 +3347,62 @@ begin
 end;
 
 procedure CheckSlimeCollision;
-var i: byte;
-    flobScreenX, flobScreenY: integer;
-    slimeScreenX, slimeScreenY: integer;
-    rowY: integer;
+var i, flobFrameIdx, slimeFrameIdx: byte;
+    flobScreenX, flobScreenY: smallint;
+    slimeScreenX, slimeScreenY: smallint;
 begin
-    flobScreenX := integer(flobX) * LEVEL_SCALE_X + 8;
-    flobScreenY := integer(flobY) * LEVEL_SCALE_Y + FLOB_RENDER_OFFSET_Y;
+    flobFrameIdx := flobFrame + flobDir;
+    if flobFrameIdx > High(SPR_FLOB_FRAMES) then exit;
+    slimeFrameIdx := slimeDrawFrame;
+    flobScreenX := smallint(flobX) * LEVEL_SCALE_X;
+    flobScreenY := smallint(flobY) * LEVEL_SCALE_Y + FLOB_RENDER_OFFSET_Y;
     for i := 0 to 19 do begin
         if slimeX[i] = 0 then
             continue;
 
-        rowY := i shl 2;
-        if flipped then
-            rowY := 76 - rowY;
-
-        slimeScreenX := integer(slimeX[i]) * LEVEL_SCALE_X + SLIME_RENDER_OFFSET_X;
-        slimeScreenY := rowY * LEVEL_SCALE_Y + SLIME_RENDER_OFFSET_Y;
-
-        if (abs(slimeScreenX - flobScreenX) <= 8) and
-           (abs(slimeScreenY - flobScreenY) <= 10) then begin
+        SlimeScreenPosition(i, slimeScreenX, slimeScreenY);
+        if GeneratedSpritesOverlap(@SPR_FLOB_FRAMES[flobFrameIdx], @SPR_FLOB_WORDS[0],
+            flobScreenX, flobScreenY, @SPR_SLIME_FRAMES[slimeFrameIdx],
+            @SPR_SLIME_WORDS[0], slimeScreenX, slimeScreenY) then begin
             PickSlime(i);
             exit;
         end;
+    end;
+end;
+
+{$i danger_expand.inc}
+
+function NarrowFlobDynamicDanger(frame: PSteSpriteFrame): boolean;
+var cellY, topCell, bottomCell, frameTop, localY, py: smallint;
+    sourceY, offset, column, window: word;
+    bits, opaque, clip: word;
+    rows: PWord;
+begin
+    Result := false;
+    if flobX >= 160 then exit;
+    frameTop := FLOB_RENDER_OFFSET_Y + smallint(flobY) * LEVEL_SCALE_Y;
+    topCell := 0;
+    if frameTop >= BG_IMAGE_OFFSET_Y then
+        topCell := (frameTop - BG_IMAGE_OFFSET_Y) div 2;
+    if frameTop + smallint(frame^.heightPx) <= BG_IMAGE_OFFSET_Y then exit;
+    bottomCell := (frameTop + smallint(frame^.heightPx) - 1 - BG_IMAGE_OFFSET_Y) div 2;
+    if bottomCell > 79 then bottomCell := 79;
+    column := flobX shr 3;
+    rows := @SPR_FLOB_WORDS[frame^.maskOffset];
+    clip := word(longword($FFFF) shl (16 - frame^.widthPx));
+    for cellY := topCell to bottomCell do begin
+        if flipped then sourceY := 79 - cellY else sourceY := cellY;
+        offset := sourceY * 20 + column;
+        window := word(dynamicTileDanger[offset]) shl 8;
+        if column < 19 then window := window or dynamicTileDanger[offset + 1];
+        bits := DANGER_EXPAND[byte((window shl (flobX and 7)) shr 8)] and clip;
+        if bits = 0 then continue;
+        localY := BG_IMAGE_OFFSET_Y + cellY * 2 - frameTop;
+        opaque := 0;
+        for py := localY to localY + 1 do
+            if (py >= 0) and (py < frame^.heightPx) then
+                opaque := opaque or word(not rows[py]);
+        if (opaque and bits) <> 0 then exit(true);
     end;
 end;
 
@@ -3205,6 +3424,10 @@ begin
     frameIdx := flobFrame + flobDir;
     if frameIdx > High(SPR_FLOB_FRAMES) then exit;
     frame := @SPR_FLOB_FRAMES[frameIdx];
+
+    if (LEVEL_SCALE_X = 2) and (LEVEL_SCALE_Y = 2) and
+       (frame^.rowWords = 1) and (frame^.widthPx <= 16) then
+        exit(NarrowFlobDynamicDanger(frame));
 
     frameLeft := smallint(flobX) * LEVEL_SCALE_X;
     frameTop := FLOB_RENDER_OFFSET_Y + smallint(flobY) * LEVEL_SCALE_Y;
@@ -3810,6 +4033,7 @@ begin
     // this path is for normal room changes where the level should snap in.
     displayPaletteDirty := true;
     UpdateDisplayPaletteIfNeeded(true);
+    gameplayPaletteVisible := true;
 end;
 
 procedure AdjustFlobPosition;
@@ -3929,7 +4153,7 @@ begin
 end;
 
 procedure Reveal(rgoal, room: byte);
-var times: byte;
+var times, paletteIndex: byte;
     wasflipped: boolean;
     revealRaw, revealBuffer: pword;
     revealPalette, normalPalette: array[0..15] of word;
@@ -3941,7 +4165,7 @@ var times: byte;
         xbios_setpalette(palette);
     end;
 
-    procedure DrawRevealSprites(dst: pword);
+    procedure DrawRevealSprites;
     var i: byte;
         queued: PQueuedSprite;
     begin
@@ -3950,9 +4174,12 @@ var times: byte;
         if queuedSpriteCount[screenLogIndex] > 0 then
             for i := 0 to queuedSpriteCount[screenLogIndex] - 1 do begin
                 queued := @queuedSprites[screenLogIndex, i];
-                if queued^.frame <> nil then
-                    DrawGeneratedSpriteFrameBlitter(dst, queued^.x, queued^.y,
+                if queued^.frame <> nil then begin
+                    DrawGeneratedSpriteFrameBlitter(SCREEN_BKG, queued^.x, queued^.y,
                         queued^.frame, queued^.wordsBase);
+                    DrawGeneratedSpriteFrameBlitter(revealBuffer, queued^.x, queued^.y,
+                        queued^.frame, queued^.wordsBase);
+                end;
             end;
         queuedSpriteCount[screenLogIndex] := 0;
     end;
@@ -3981,8 +4208,12 @@ begin
     RebuildRoomPalette;
     BuildDisplayPalette(@normalPalette[0]);
     goals[rgoal] := 0;
-    DrawRevealSprites(SCREEN_BKG);
-    DrawRevealSprites(revealBuffer);
+    DrawRevealSprites;
+    // A8 switches only the playfield palette; its PMG layer stays unchanged.
+    for paletteIndex := 4 to 14 do begin
+        normalPalette[paletteIndex] := roomPalette[paletteIndex];
+        revealPalette[paletteIndex] := roomPalette[paletteIndex];
+    end;
     CopyPlayfieldArea(SCREEN_BKG, SCREEN_LOG);
     CopyPlayfieldArea(SCREEN_BKG, SCREEN_PHY);
     BlackAll;
@@ -5012,6 +5243,25 @@ end;
 // *** MAIN
 // ***************************************************
 
+{$ifdef BENCH_SLIME}
+{$i benchmark_slime.inc}
+{$endif}
+{$ifdef VERIFY_EMS}
+{$i verify_ems.inc}
+{$endif}
+{$ifdef VERIFY_IMS}
+{$i verify_ims.inc}
+{$endif}
+{$ifdef VERIFY_RESTORE}
+{$i verify_restore.inc}
+{$endif}
+{$ifdef VERIFY_SCORE}
+{$i verify_score.inc}
+{$endif}
+{$ifdef VERIFY_GAMEPLAY}
+{$i verify_gameplay.inc}
+{$endif}
+
 begin
     gemdos_super(pointer(0));
     ScreenInit;
@@ -5034,6 +5284,52 @@ begin
 
     worldCurrent := 0;
 
+{$ifdef VERIFY_GAMEPLAY}
+    VerifyGameplay;
+    UnInstallInput;
+    DoneSound;
+    ScreenDone;
+    Halt;
+{$endif}
+
+{$ifdef VERIFY_SCORE}
+    VerifyScore;
+    UnInstallInput;
+    DoneSound;
+    ScreenDone;
+    Halt;
+{$endif}
+
+{$ifdef VERIFY_RESTORE}
+    VerifyRestore;
+    UnInstallInput;
+    DoneSound;
+    ScreenDone;
+    Halt;
+{$endif}
+
+{$ifdef VERIFY_EMS}
+    VerifyEMS;
+    UnInstallInput;
+    DoneSound;
+    ScreenDone;
+    Halt;
+{$endif}
+{$ifdef VERIFY_IMS}
+    VerifyIMS;
+    UnInstallInput;
+    DoneSound;
+    ScreenDone;
+    Halt;
+{$endif}
+{$ifdef BENCH_SLIME}
+    RunSlimeBenchmark;
+    UnInstallGameplayInput;
+    UnInstallInput;
+    DoneSound;
+    ScreenDone;
+    Halt;
+{$endif}
     repeat
         ShowTitleScreen;
 

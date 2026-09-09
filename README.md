@@ -19,7 +19,7 @@ Gra kompiluje sie do `flob.prg` i ma juz dzialajacy glowny przeplyw:
 - Flob, slime i world sprite'y renderowane blitterem z atlasu,
 - flip screen z wizualnym efektem card-flip,
 - eksplozja Floba z rozsunieciem warstw i opadajacymi czastkami,
-- joystick w trybie gry przez raw IKBD handler,
+- joystick i spacja jako FIRE w trybie gry przez raw IKBD handler,
 - klawiatura w menu / title / ekranach pomocniczych,
 - podstawowe kolizje, teleporty, sprite keys, portals, slimes, enemies, exits,
 - dynamiczna aktualizacja kolizji po `PUT_TILE`, w tym gaz, kable i zapory,
@@ -27,12 +27,45 @@ Gra kompiluje sie do `flob.prg` i ma juz dzialajacy glowny przeplyw:
 - level colors mapowane z danych A8 przez `STE_PAL`,
 - efekty SFX odtworzone z danych POKEY przez PSG lub syntezator DMA STE.
 
-Najwazniejsze braki sa w `TODO.md`. Na dzis glowne otwarte obszary to muzyka,
-dalsza optymalizacja pamieci atlasu oraz pelna weryfikacja wszystkich swiatow.
+Najwazniejsze braki sa w `TODO.md`. Muzyka i core SFX sa juz podpiete.
+Otwarte obszary to finalna grafika, pelna weryfikacja wszystkich swiatow,
+polish audio/UI oraz osobna optymalizacja pamieci pod 1 MB.
 
-Aktualny build po migracji kanonicznych assetow oraz kompresji danych ma
-`994124 B` (okolo 971 KiB). Wygladzony title screen, ladowanie skompresowanych
+Build z 2026-09-09 ma `1106170 B` (okolo 1080 KiB). Dawne `994124 B`
+dotyczylo etapu migracji assetow, nie obecnej wersji. Rozmiar PRG nie jest
+pomiarem calego zapotrzebowania RAM (dochodzi BSS, bufory i system).
+Wygladzony title screen, ladowanie skompresowanych
 danych swiatow i dekompresja kolizji per pokoj zostaly potwierdzone w grze.
+
+### Ostatnie Optymalizacje (2026-09-09)
+
+Wszystkie piec punktow ostatniego audytu zostalo wdrozonych:
+
+- Zmiana punktow odswieza tylko cyfry 40x8; blitter kopiuje 48x8 wraz z prawym marginesem do obu stron ekranu.
+- EMS omija przygotowanie masek brzegowych i wskaznika maski potrzebnych tylko IMS.
+- Kolizje szerokich sprajtow porownuja maski oknami 16-bitowymi zamiast pojedynczych pikseli.
+- Dynamiczne zagrozenia porownuja maski wierszy Floba; licznik zagrozen wylacza dodatkowy test po usunieciu ostatniego bitu.
+- Stale ID w zwartej kolejce zapobiegaja nadmiarowemu przerysowaniu po zebraniu slime'a.
+
+Wczesniej wdrozono ASM IMS, EMS dla Floba/slime i zbiorcze odtwarzanie
+prostokatow w `asm/restore.s`. Nadal sa trzy bufory i osobna historia sprajtow
+dla kazdej strony; kopiowanie tla pozostaje bez HOG.
+
+Spacja wspoldzieli z joystickiem FIRE i detekcje zbocza. Przytrzymanie lub
+dolozenie drugiego zrodla nie powoduje kolejnego flipa. W menu spacja
+potwierdza/startuje zamiast dawnego SELECT.
+
+Testy w Hatari STE 8 MHz przeszly: 4000 porownan masek, 2000 porownan
+dynamicznych zagrozen, licznik zagrozen, 80 klatek dirty-renderera na obu
+buforach (takze nakladanie/usuwanie), stan FIRE oraz 12 zmian wyniku.
+Istniejace testy EMS/IMS obejmuja odpowiednio 2304 i 32720 porownan.
+Kontrolowany renderer W0 R06 utrzymuje 50 FPS bez opuszczonych terminow VBL;
+nie obejmuje pelnej fizyki, zbierania, animacji NPC ani wiadomosci.
+Nie mamy jeszcze pomiaru przyspieszenia calej rozgrywki po ostatnich zmianach.
+
+Teraz priorytetem jest granie i zglaszanie regresji z numerem W/R, orientacja
+i czynnoscia. Dalsze optymalizacje CPU dopiero po pomiarze konkretnego problemu;
+ukonczony audyt nie oznacza wyczerpania wszystkich mozliwych optymalizacji.
 
 ## Build
 
@@ -76,6 +109,9 @@ Najwazniejsze pliki:
 - `saving_routines.inc` - save/progress.
 - `asm/font.s` - assemblerowa procedura `DrawChar`.
 - `asm/ikbd.s` - raw IKBD joystick handler dla trybu gry.
+- `asm/ems.s`, `asm/ims.s` - sterowniki sprajtow wywolywane z FPC przez cdecl.
+- `asm/restore.s` - zbiorcze odtwarzanie listy prostokatow z BKG do LOG.
+- `danger_expand.inc` - tablica rozszerzania bitow komorek kolizji do par pikseli.
 - `unapl.s` - dekompresja Apultra.
 - `worlds/*.inc` - skonwertowane dane swiatow i pokojow.
 - `images/*.inc` - skonwertowane tla, title/cutscene/menu assets.
@@ -378,7 +414,7 @@ make
 Importer zachowuje istniejace PNG. Opcja `create_game_endworld_icons.py
 --force` swiadomie odtwarza je z oryginalnych GIF-ow i nadpisuje prace grafika.
 
-## Title Artwork
+## Gameplay Sprite Palette
 
 Sprite palette reimport: `recolor_game_atlas.py` is an explicit, destructive
 artwork reimport (not part of make). It first backs up PNG/JSON/guide and the
@@ -386,21 +422,147 @@ generated palette under `images/sprite_atlas/backups/`. The pre-reimport atlas
 is in `20260908-213318-735136`. It restores A8 PAL colours and PMG colour-OR
 overlays for world sprites, reconstructs missile slime, and preserves Flob's
 edited silhouette/eyes. Frame rectangles and reserved RGB slots 0..3/15 stay
-unchanged. The 11 sprite slots pin three pinks, three extinguisher shades,
-white and opaque black; remaining colours are reduced to three representatives.
-This is an approximation of 86 source STE colours, not lossless A8 fidelity.
+unchanged. Reimport now finishes by assigning semantic palette roles, rather
+than approximating all world-object colours with one shared palette.
 `generate_sprite_assets_from_atlas.py` now writes full STE 4-bit/channel words.
 After PNG edits use `make sprite-atlas-assets-only` and `make`, not reimport.
 
-Approved room-colour sprite bindings live in `sprite_room_bindings.py`:
-16 explicit row/source-colour/frame assignments to indices 1..3, based on
-`reports/sprite_room_colors.md`. These indices follow the current room palette;
-their RGB entries are not changed. Index 0 remains transparency, and 15 is
-not used. The room-dependent `sprite_drop` case is deliberately excluded.
-The assignments have been applied to the canonical PNG and are also applied
-by the explicit A8 reimport. Normal asset builds only consume PNG indices and
-do not override artist edits. `python3 sprite_room_bindings.py` reapplies the
-approved source masks with a PNG/JSON/guide backup; it is not a routine build step.
+`sprite_palette_roles.py` is the explicit, backed-up atlas migration. Slots:
+0..3 room, 4..6 Flob, 7..9 small slime, 10..12 world objects (P0/P1/overlap),
+13 opaque black, 14 white eyes/HUD, 15 animated message. Index 0 remains sprite
+transparency. The PNG palette is only an editing preview for slots 10..12;
+their runtime colours come from the current original A8 frame of each layer.
+The overlap is `STE_PAL[c0 or c1]`, never an OR of converted STE words.
+Bigslime is a world object and therefore uses the independent object slots.
+Flob invulnerability changes 4..6 only, leaving slime unchanged.
+
+`LoadSpritesData` reads both colour arrays before either graphics array.
+`ShowSprites` prepares palette colours with the queued animation frames;
+`PresentQueuedSprites` writes only changed registers after SwapScreen/VSync.
+BlackAll/FadeOut suppress these writes until FadeIn or SetLevelColors.
+Menus retain their independent palettes. The old 16 room-colour assignments
+are superseded: equal RGB in one frame does not imply a shared palette role.
+The legacy binding tool refuses to alter a role-based atlas.
+Normal builds still consume the canonical PNG without recolouring artist edits.
+
+Small slime stays on the editable 16x16 grid, but the asset compiler packs the
+union of visible pixels across its animation (currently 6x6, crop offset 5,5).
+Generated SPR_SLIME_CROP_X/Y feed one shared drawing/collision position helper.
+Pickup uses the actual Flob/slime masks and the queued slime animation frame,
+not a distance from their atlas corners. Single-word masks use row-wise bit
+intersection; wider objects now use 16-bit mask windows across source words.
+Run `python3 -m unittest test_sprite_palette_roles` for palette, source-data,
+crop reconstruction and mask-intersection regression checks.
+
+Renderer measurement: `python3 run_slime_benchmark.py` compiles an isolated
+`BENCH_SLIME` executable, runs three PAL 50 Hz / STE 8 MHz Hatari tests in W0 R06,
+and writes `reports/slime_r06_benchmark_ems.md` plus raw CSV/JSON. It does not modify
+the production PRG or game save. Physics, NPC animation and pickup are excluded
+to isolate renderer costs. The historical pre-EMS baseline with moving Flob
+plus six animated slime measured 45.47
+render iterations/s, versus 50 for either workload alone (51/512 frames used
+two VBLs). sysframe increments per game iteration, explaining coupled slowdowns.
+Production rendering is unchanged by the conditional benchmark instrumentation.
+
+### Batched Background Restore
+
+Gameplay collision/queue follow-up: `GeneratedSpritesOverlap` retains the
+one-word fast path and compares wider masks in aligned 16-bit windows, not
+per-pixel calls. `NarrowFlobDynamicDanger` expands eight collision-cell bits
+through `danger_expand.inc` and intersects the affected Flob rows, preserving
+the odd render Y offset and flipped map addressing. Wider/non-2x Flob formats
+retain the general fallback. `dynamicTileDangerCount` tracks bit transitions
+so clearing the last hazard disables the extra scan until another is painted.
+
+Queued sprites have stable IDs: slime 0..19, Flob 20, world objects 21..22;
+generic effect entries use 32+queue position. The list remains compact and in
+the original drawing order. Per-buffer dirty matching uses IDs, not compacted
+array indices, so collecting one slime does not invalidate every later entry.
+Explicit IDs must be unique within a frame and below 32; generic IDs are
+reserved for the renderer. Changing object draw order would require separate
+invalidation; current gameplay preserves relative layering.
+
+Space is also FIRE: gameplay reads its held state from the existing raw IKBD
+handler and ORs it with joystick fire before edge detection. No BIOS polling
+was added to gameplay. Menus accept space as start/confirm; it no longer aliases
+legacy SELECT. `python3 verify_gameplay.py` runs target-side reference collision,
+hazard bookkeeping, both-buffer dirty-render and shared-fire-state tests.
+
+Score changes use `RefreshScore`: redraw only the five digits (40x8) in BKG,
+then blit 48x8 to each display buffer, including the unchanged right 8px margin
+for planar alignment. They no longer redraw the world/room labels or refresh
+message areas. `ShowSlime` retains the full overlay refresh for room entry and
+return from stats. `python3 verify_score.py` compares 12 score transitions
+against full HUD rendering across all three buffers and checks message state.
+
+The sprite dispatcher now selects EMS before preparing IMS boundary masks and
+its mask pointer. Common span/skew/address calculations are unchanged. Validate
+both paths with `verify_ems.py` and `verify_ims.py` after modifying dispatch.
+
+`RestoreDirtyRects` sends its already clipped, 16px-aligned rectangles to
+`asm/restore.s` in one cdecl call. The adapter initializes common blitter
+registers once, then copies all four planes in one blit per rectangle from
+SCREEN_BKG to SCREEN_LOG (160-byte stride). It retains non-HOG `$80` starts
+and ordinary BUSY polling; it does not adopt AGT's BUSY restart loop.
+Dirty-region merging, per-buffer tracking and the full-copy fallback are
+unchanged. `TDirtyRect` is an eight-byte packed record (x/y/width/height words).
+`NO_RESTORE_ASM` selects the previous Pascal copy path for comparisons.
+
+`python3 verify_restore.py` compares complete framebuffers for 400 rectangle
+lists, including empty lists, overlaps and screen edges. The isolated 32,000
+small-rectangle benchmark measured 17,665 ms in Pascal versus 5,355 ms in ASM
+(69.7% less time) on Hatari STE 8 MHz using emulated HZ200 ticks. This is not
+a whole-game FPS measurement. Results are in `reports/restore_verification.txt`
+and `reports/restore_benchmark.txt`.
+
+### EMS For Flob And Slime
+
+Flob and small slime now use an EndMask blitter adapter inspired by AGT EMS
+(`agtools/agtsys/m68k/emsprt.inc`), without linking the AGT framework.
+`asm/ems.s` draws four planes per scanline with LOP=source, using preshifted
+opacity as EndMask1/3. Colour data is NOT preshifted. Other sprites and effects
+retain the original eight-pass blitter. Collision masks and dirty restoration
+are unchanged.
+
+The eight-pass path now uses `asm/ims.s`, an IMS-style register driver adapted
+to our separate mask/colour blocks (not an AGT IMS asset-format conversion).
+It preserves four AND + four OR operations, HOG mode, skew/NFSR and current
+whole-sprite bounds rejection; it does not add partial clipping. No asset or
+collision format changed. `NO_IMS` selects the retained Pascal reference path.
+
+`python3 verify_ims.py` builds an isolated test with EMS disabled and checks
+every generated frame against the Pascal path using Hatari's blitter:
+152 sprites, 1,636 frames, 32,720 comparisons, 27,812 actual ASM draws, all
+16 horizontal shifts plus screen-edge rejection. No pixel differences.
+Its timed all-frame workload (52,352 calls per renderer, no VSync/restore)
+measured 46,770 ms Pascal versus 41,720 ms ASM: 10.8% less draw time at STE
+8 MHz. This is not a claim of 10.8% higher game FPS. Logs and results are in
+`reports/ims_verification.txt` and `reports/ims_benchmark.txt`.
+
+The asset build emits all 16 mask shifts for both orientations, costing 34,304
+extra mask bytes (+72 bytes of offset tables). This trades memory for time.
+For these two sprite types, the otherwise unused `paletteOffset` field stores
+the EMS mask word offset (`paletteCount` stays zero). This avoids a costly
+32-bit frame-index division on the 68000. The same canonical PNG remains the
+build source; do not edit generated EMS masks.
+
+`python3 verify_ems.py` compares real Hatari blitter output against the legacy
+renderer: 2,304 framebuffer comparisons, 1,304 actual EMS draws, all frames,
+both orientations, all horizontal shifts, top/bottom/right-edge cases and
+untouched pixels. See `reports/ems_verification.txt`.
+
+`python3 run_slime_benchmark.py` now tests EMS; add `--legacy` to test the old
+renderer. Three repetitions each measured W0 R06 moving Flob + animated slime
+at 50 FPS / zero missed deadlines with EMS, versus 45.47 FPS / 51 two-VBL frames
+out of 512 with legacy. These remain controlled renderer measurements, not a
+claim of full gameplay FPS. Reports have `_ems` and `_legacy` suffixes.
+
+`python3 audit_sprite_bounds.py` audits all 152 packed sprites, without changing
+artwork. See `reports/sprite_bounds.md`: common animation crops save 2,040 bytes;
+per-frame crops/empty-frame omission could save 35,640 bytes before offset metadata.
+Per-frame cropping requires shared anchor handling in drawing AND collisions.
+
+## Title Artwork
 
 Kanonicznym zrodlem title screenu sa indeksowane PNG `320x184`:
 
@@ -414,7 +576,7 @@ Oba warianty powstaly przez jednorazowy Scale2x oryginalnego obrazu `160x92`.
 Kolory uwzgledniaja PAL DLI: logo i dolne napisy maja osobne indeksy w jednej
 palecie PNG (stan po 150 klatkach). Napisy to PRESS FIRE TO START,
 A FOR ACHIEVEMENTS i C FOR CREDITS. W title A otwiera achievements,
-C lub fizyczny klawisz HELP otwiera credits; FIRE/Return rozpoczyna gre.
+C lub fizyczny klawisz HELP otwiera credits; FIRE/Return/spacja rozpoczyna gre.
 Korona jest nakladana przed skalowaniem, a normalny build tylko centruje gotowe
 PNG w ekranie `320x200`, dodajac po 8 czarnych linii u gory i na dole.
 Konwerter zachowuje indeksy PNG, zapisuje palete z precyzja STE i pakuje
@@ -545,7 +707,8 @@ Glowny loop gry robi w uproszczeniu:
 10. kolizje / przejscia pokojow / death / achievements
 11. `PresentQueuedSprites`
 
-W trybie gry klawiatura nie jest czytana do sterowania. Joystick idzie przez raw IKBD handler. Menu/title/cutscenes nadal korzystaja z klawiatury.
+W trybie gry joystick, spacja-FIRE i klawisze pomocnicze ida przez raw IKBD,
+bez BIOS/GEMDOS polling. Menu/title/cutscenes nadal korzystaja z klawiatury.
 Raw IKBD obsluguje takze pauze w grze: `P` lub Enter zatrzymuje petle, a `P`, Enter, Esc albo FIRE wznawia gre.
 
 Efekt `Reveal` buduje dwa warianty docelowego pokoju w osobnych buforach i miga

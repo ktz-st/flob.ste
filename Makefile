@@ -74,6 +74,7 @@ SOURCES = \
 	vnumber.inc \
 	types.inc \
 	input.inc \
+	danger_expand.inc \
 	saving_routines.inc \
 	bank_0_files.inc \
 	assets/sprites.inc \
@@ -153,6 +154,15 @@ unapl.o: unapl.s
 font.o: asm/font.s
 	$(AS) -quiet -Faout -o font.o asm/font.s
 
+ems.o: asm/ems.s
+	$(AS) -quiet -Faout -o ems.o asm/ems.s
+
+ims.o: asm/ims.s
+	$(AS) -quiet -Faout -o ims.o asm/ims.s
+
+restore.o: asm/restore.s
+	$(AS) -quiet -Faout -o restore.o asm/restore.s
+
 ikbd.o: asm/ikbd.s
 	$(AS) -quiet -Faout -o ikbd.o asm/ikbd.s
 
@@ -165,11 +175,11 @@ sfxsynth.o: asm/sfxsynth.s
 psgsound.o: asm/psgsound.s
 	$(AS) -quiet -Faout -o psgsound.o asm/psgsound.s
 
-$(TARGET): unapl.o font.o ikbd.o dmasound.o sfxsynth.o psgsound.o $(SOURCES) Makefile
+$(TARGET): unapl.o font.o ems.o ims.o restore.o ikbd.o dmasound.o sfxsynth.o psgsound.o $(SOURCES) Makefile
 	$(PPC) $(PFLAGS) -o$(TARGET) $(MAIN)
 
 clean:
-	rm -f $(TARGET) flob.o flob.s unapl.o font.o ikbd.o dmasound.o sfxsynth.o psgsound.o *.ppu *.map
+	rm -f $(TARGET) flob.o flob.s unapl.o font.o ems.o ims.o restore.o ikbd.o dmasound.o sfxsynth.o psgsound.o *.ppu *.map
 
 run: $(TARGET)
 	$(HATARI) -w --monitor rgb --machine ste --fast-boot true $(TARGET) &

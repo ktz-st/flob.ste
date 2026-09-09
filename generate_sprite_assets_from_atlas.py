@@ -137,6 +137,20 @@ def main() -> None:
         frames.sort(key=lambda item: item["frame"])
 
     generated_sprites: dict[str, list[dict]] = dict(by_sprite)
+    # Keep the editable grid intact; pack only the union of visible slime pixels.
+    slime_points = []
+    for frame in by_sprite['slime']:
+        for y in range(frame['h']):
+            for x in range(frame['w']):
+                if atlas_px[frame['x'] + x, frame['y'] + y]:
+                    slime_points.append((x, y))
+    slime_left = min((p[0] for p in slime_points), default=0)
+    slime_top = min((p[1] for p in slime_points), default=0)
+    slime_width = max((p[0] for p in slime_points), default=0) - slime_left + 1
+    slime_height = max((p[1] for p in slime_points), default=0) - slime_top + 1
+    generated_sprites['slime'] = [dict(frame, x=frame['x'] + slime_left,
+        y=frame['y'] + slime_top, w=slime_width, h=slime_height)
+        for frame in by_sprite['slime']]
     for base_name in sorted(MERGED_OVERLAY_ATLAS_NAMES):
         p0_name = f"{base_name}_p0"
         p1_name = f"{base_name}_p1"
@@ -234,6 +248,8 @@ def main() -> None:
         ident = to_ident(sprite_name)
         frames_meta = []
         word_blob: list[int] = []
+        ems_masks: list[int] = []
+        ems_offsets: list[int] = []
 
         def append_frame(frame_meta: dict, vertical_flip: bool = False) -> None:
             x = int(frame_meta["x"])
@@ -295,6 +311,15 @@ def main() -> None:
                     indices.append(color_index)
 
             row_words, mask_words, gfx_words = pack_masked_words(w, h, indices)
+            if sprite_name in ('flob', 'slime'):
+                if row_words != 1:
+                    raise ValueError(f'{sprite_name}: EMS adapter supports widths up to 16 pixels')
+                ems_offsets.append(len(ems_masks))
+                for shift in range(16):
+                    for mask in mask_words:
+                        opaque = (~mask) & 0xFFFF
+                        shifted = (opaque << 16) >> shift
+                        ems_masks.extend([shifted >> 16, shifted & 0xFFFF])
             mask_offset = len(word_blob)
             word_blob.extend(mask_words)
             data_offset = len(word_blob)
@@ -302,12 +327,13 @@ def main() -> None:
 
             frames_meta.append(
                 "    (widthPx:{w}; heightPx:{h}; rowWords:{rw}; maskOffset:{mo}; "
-                "dataOffset:{do}; paletteOffset:0; paletteCount:0)".format(
+                "dataOffset:{do}; paletteOffset:{aux}; paletteCount:0)".format(
                     w=w,
                     h=h,
                     rw=row_words,
                     mo=mask_offset,
                     do=data_offset,
+                    aux=ems_offsets[-1] if ems_offsets else 0,
                 )
             )
 
@@ -318,6 +344,9 @@ def main() -> None:
 
         out_path = OUT_DIR / f"{sprite_name}.inc"
         with out_path.open("w") as f:
+            if sprite_name == 'slime':
+                f.write(f'const SPR_SLIME_CROP_X = {slime_left};\n')
+                f.write(f'const SPR_SLIME_CROP_Y = {slime_top};\n')
             f.write(f"const SPR_{ident}_FRAME_COUNT = {len(frames_meta)};\n")
             f.write(
                 f"const SPR_{ident}_FRAMES : array[0..{len(frames_meta)-1}] of TSteSpriteFrame = (\n"
@@ -325,6 +354,9 @@ def main() -> None:
             f.write(",\n".join(frames_meta))
             f.write("\n);\n\n")
             f.write(words_to_pascal_array(f"SPR_{ident}_WORDS", word_blob))
+            if ems_offsets:
+                f.write(words_to_pascal_array(f'SPR_{ident}_EMS_OFFSETS', ems_offsets))
+                f.write(words_to_pascal_array(f'SPR_{ident}_EMS_MASKS', ems_masks))
         outputs.append(out_path)
         print(f"generated atlas sprite {sprite_name} -> {out_path.name}")
 

@@ -1,0 +1,2 @@
+PASS comparisons=400
+BENCH rects=32000 pascal_ticks=3533 asm_ticks=1071

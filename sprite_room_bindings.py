@@ -35,6 +35,8 @@ BINDINGS = (
 
 def apply_bindings(sheet, meta):
     """Change only opaque source-mask pixels; preserve palette and geometry."""
+    if meta.get('palette_roles_version'):
+        raise ValueError('Legacy room bindings cannot overwrite a semantic-role atlas')
     assert sheet.mode == 'P'
     constants = load_constants()
     rows = {r['name']: r for r in meta['rows']}

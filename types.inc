@@ -143,7 +143,7 @@ type TSteSpriteFrame = record
     rowWords: word;
     maskOffset: word;
     dataOffset: word;
-    paletteOffset: word;
+    paletteOffset: word; // Flob/slime with paletteCount=0: EMS mask word offset.
     paletteCount: byte;
 end;
 

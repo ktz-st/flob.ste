@@ -10,7 +10,7 @@ from PIL import Image
 from build_full_sprite_atlas import load_constants, parse_byte_file
 from sprite_combined_config import MERGED_COMPOUND_ATLAS_GAPS
 from create_game_sprite_sheet import make_guide
-from sprite_room_bindings import apply_bindings
+from sprite_palette_roles import apply_roles
 
 ROOT=Path(__file__).resolve().parent
 DIR=ROOT/'images/sprite_atlas'
@@ -109,7 +109,6 @@ def main():
     assert result.getpalette()[:12]==oldpal[:12]
     assert result.getpalette()[45:48]==oldpal[45:48]
     assert set(result.getdata())<=set([0]+list(range(4,15)))
-    apply_bindings(result, meta)
     meta['palette_rgb']=[flat[i*3:i*3+3] for i in range(16)]
     meta['sprite_color_count']=11
     meta['quantized_from_unique_colors']=len(histogram)
@@ -117,6 +116,8 @@ def main():
         'precision':'STE 4 bits/channel','pinned_a8_colors':['34','38','3c','24','28','2c'],
         'preserved_artwork':['flob'],'restored_rows':len(restored),
         'limitation':'11 shared colours; other A8 colours approximated'}
+    meta.pop('palette_roles_version', None)
+    apply_roles(result, meta)
     result.save(DIR/'game_sprites.png',transparency=0)
     (DIR/'game_sprites.json').write_text(json.dumps(meta,indent=2)+'\n')
     make_guide(result,meta['rows'],meta['frames'],DIR/'game_sprites_guide.png')
