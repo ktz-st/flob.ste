@@ -92,6 +92,14 @@ begin
         joyStatus := RawIkbdJoyStatus;
 
     rawJoy := joyStatus and $8F; // keep only directions and fire, ignore any packet noise
+    if gameplayInputInstalled then begin
+        if PByte(@RawIkbdKeyStates)[KEY_LEFT_CODE] <> 0 then
+            rawJoy := rawJoy or $04;
+        if PByte(@RawIkbdKeyStates)[KEY_RIGHT_CODE] <> 0 then
+            rawJoy := rawJoy or $08;
+        // Opposing directions cancel, including keyboard versus joystick.
+        if (rawJoy and $0C) = $0C then rawJoy := rawJoy and $F3;
+    end;
     // Shared held state: pressing the other source while held creates no edge.
     if gameplayInputInstalled and
        (PByte(@RawIkbdKeyStates)[KEY_SPACE_CODE] <> 0) then

@@ -21,8 +21,8 @@ const
     WORLD_SPRITE_OFFSET_X = -2;
     WORLD_SPRITE_OFFSET_Y = 4;
     WORLD_SPRITE_MOVE_STEP = 1;
-    FLOB_MOVE_STEP = 2;
-    FLOB_FALL_STEP = 2;
+    FLOB_MOVE_STEP = 1;
+    FLOB_FALL_STEP = 1;
     HUD_HEIGHT = 8;
     HUD_SCORE_X = 272;
     HUD_SCORE_COPY_WIDTH = 48; // five 8px digits plus the right 8px margin
@@ -5391,7 +5391,7 @@ begin
 
                     FlobFootUpdate;
 
-                    joyRaw := joyStatus and $8F;
+                    joyRaw := byte(not stick0) and $0F; // merged joystick/arrow directions
                     if not HandleCheatRoomNavigation then begin
                         if (joyRaw and %0100) <> 0 then begin
                             spriteCollisionMovePending := false;

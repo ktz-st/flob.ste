@@ -8,6 +8,12 @@
 - Keep the game responsive: avoid per-frame redraws of HUD/message/palette unless data changes.
 - Keep `VSync` as the last operation in `SwapScreen` to avoid sprite tearing.
 
+## Planned Atari ST Version
+
+- [ ] Prepare a plain Atari ST build with preshifted sprite graphics and masks, rendered by the 68000 without requiring a blitter.
+- [ ] Generate preshift variants from the same canonical sprite atlas; measure their RAM cost and choose shifts according to actual movement/alignment requirements.
+- [ ] Provide CPU background restore/copy/clear paths and audit STE-only hardware dependencies, while preserving the existing STE backend.
+
 ## Completed Optimization Batch
 
 - [x] ASM IMS driver for remaining masked sprites, EMS for Flob/small slime, and one ASM call for the background-restore list.

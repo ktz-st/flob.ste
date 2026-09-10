@@ -707,8 +707,10 @@ Glowny loop gry robi w uproszczeniu:
 10. kolizje / przejscia pokojow / death / achievements
 11. `PresentQueuedSprites`
 
-W trybie gry joystick, spacja-FIRE i klawisze pomocnicze ida przez raw IKBD,
+W trybie gry joystick, strzalki lewo/prawo, spacja-FIRE i klawisze pomocnicze ida przez raw IKBD,
 bez BIOS/GEMDOS polling. Menu/title/cutscenes nadal korzystaja z klawiatury.
+Przeciwne kierunki (takze strzalka kontra joystick) znosza sie. Ruch czyta
+polaczony `stick0`, a `joyStatus` pozostaje surowym stanem joysticka.
 Raw IKBD obsluguje takze pauze w grze: `P` lub Enter zatrzymuje petle, a `P`, Enter, Esc albo FIRE wznawia gre.
 
 Efekt `Reveal` buduje dwa warianty docelowego pokoju w osobnych buforach i miga
