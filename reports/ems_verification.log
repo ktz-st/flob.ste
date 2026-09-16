@@ -1,6 +1,6 @@
 INFO : Hatari v2.5.0, compiled on:  Jun  1 2026, 10:09:45
 INFO : Image 'lotus_ste.st' not found
-INFO : GEMDOS HDD emulation, C: <-> /var/folders/1n/wn49ggsx70q1tnrqs1l8yxmh0000gn/T/flob-ems-2gd08x0m.
+INFO : GEMDOS HDD emulation, C: <-> /var/folders/1n/wn49ggsx70q1tnrqs1l8yxmh0000gn/T/flob-ems-01xj2ibj.
 INFO : OS clock ticks / second: 100
 WARN : Bus Error reading at address $ffffa200, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
 WARN : Bus Error reading at address $400000, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
@@ -9,5 +9,5 @@ WARN : Bus Error reading at address $5d1234, PC=$e00d76 addr_e3=e00d76 op_e3=4a1
 WARN : Bus Error reading at address $6d3148, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
 WARN : Bus Error reading at address $400000, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
 WARN : Bus Error reading at address $d003c3, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
-WARN : No GEMDOS dir '/var/folders/1n/wn49ggsx70q1tnrqs1l8yxmh0000gn/T/flob-ems-2gd08x0m/AUTO'
+WARN : No GEMDOS dir '/var/folders/1n/wn49ggsx70q1tnrqs1l8yxmh0000gn/T/flob-ems-01xj2ibj/AUTO'
 GemDOS drives: 1

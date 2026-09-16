@@ -5062,6 +5062,7 @@ var slide: byte;
     textFadeStep: byte;
     textFadeStart: word;
     cutsceneHold: boolean;
+    skipRequested: boolean;
     syncMusicTiming: boolean;
     c0, c1, c2, bg: byte;
     l0, l1, l2, l3: string;
@@ -5073,6 +5074,10 @@ begin
     ClearScreen(SCREEN_PHY);
     slide := 0;
     WaitFrame;
+    // ShowCredits already opens with WaitForStartKeyUp; without the same guard
+    // here, one press during the preceding fade wiped the entire outro.
+    FlushBufferedKeys;
+    WaitForStartKeyUp;
     if csbank = INTRO_BANK then PlaySong(MUSIC_INTRO)
     else if csbank = OUTRO_BANK then PlaySong(MUSIC_OUTRO);
     syncMusicTiming := (csbank = INTRO_BANK) or (csbank = OUTRO_BANK);
@@ -5139,10 +5144,15 @@ begin
                 end;
             end;
         until (cutsceneHold and (slideDelay = 0)) or IsStartingButtonDown;
+        // Latch the request before FadeOut, as the 8-bit original does. Testing
+        // it again after the fade loses a transient press: the slide had already
+        // been cut short by it, but the skip no longer fires, so a stray key
+        // shortens one slide instead of either doing nothing or skipping.
+        skipRequested := IsStartingButtonDown;
         FadeOut;
-        if IsStartingButtonDown then break;
+        if skipRequested then break;
         Inc(slide);
-    until (slide = cscount) or IsStartingButtonDown;
+    until (slide = cscount) or skipRequested;
     WaitForStartKeyUp;
     WaitFrame;
 end;
@@ -5778,6 +5788,22 @@ begin
 {$endif}
 {$ifdef VERIFY_IMS}
     VerifyIMS;
+    UnInstallInput;
+    DoneSound;
+    ScreenDone;
+    Halt;
+{$endif}
+{$ifdef TEST_ENDING}
+    // Run the real completion path: end-world screen, outro cutscene, credits.
+    CheckDiags;
+    InitGame;
+    worldCurrent := 5;
+    LoadWorld(worldCurrent);
+    InitWorld;
+    music_track := 0;
+    mainGoalReached := true;
+    gametime := 50 * 600;
+    EndWorld;
     UnInstallInput;
     DoneSound;
     ScreenDone;

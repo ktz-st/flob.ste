@@ -464,6 +464,12 @@ render iterations/s, versus 50 for either workload alone (51/512 frames used
 two VBLs). sysframe increments per game iteration, explaining coupled slowdowns.
 Production rendering is unchanged by the conditional benchmark instrumentation.
 
+Ending sequence: build with `-dTEST_ENDING` to enter the completion path directly
+(end-world summary, outro cutscene, credits) without playing through the game; it was
+built to measure the outro and is the quickest way to re-check it. `ShowCutScene` latches
+the skip request before `FadeOut`, matching the original — testing it after the fade loses
+a transient press, which used to shorten one slide per stray key instead of skipping.
+
 Whole-loop profiling: `python3 profile_room.py --room 11` (add `--move`) cycle-profiles the
 production gameplay loop in one room through hatari-hrdb's remote debug profiler, and
 `python3 profile_report.py reports/profile_w0_r11_idle.json --out reports/x.md` attributes

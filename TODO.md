@@ -85,6 +85,21 @@
       was never caught firing in ~9,400 recorded frames, so the link to the reported
       symptom is strong but not proven.
 
+## Ending Sequence
+
+- [x] Latch the skip request before `FadeOut` in `ShowCutScene`, as the 8-bit original does.
+      The port tested `IsStartingButtonDown` again *after* the fade, by which time a transient
+      press had evaporated: the slide had already been cut short by it but the skip never
+      fired, so every stray key shortened one slide instead of skipping the cutscene. A held
+      key with auto-repeat did that repeatedly and the whole outro flew past.
+- [x] `FlushBufferedKeys` at the start of `ShowCutScene`, so a press meant for the end-world
+      summary cannot skip an outro the player has not seen yet. `ShowCredits` has always had
+      the equivalent `WaitForStartKeyUp`, which is why the credits behaved correctly.
+- Measured with `-dTEST_ENDING` (enters the completion path directly): untouched, the outro
+  runs 8.6 / 16.3 / 8.6 s; with a key held it now skips cleanly instead of flying past.
+- [ ] Optional fidelity: the original starts each cutscene slide at `slideDelay := 50`, the
+      port at 18 — the port holds each slide 0.64 s less. Not changed.
+
 ## Further Performance Work
 
 - [ ] Profile full gameplay only where playtesting finds a remaining slowdown; include physics, hazards, pickup, messages, NPCs and audio.

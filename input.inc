@@ -159,6 +159,27 @@ begin
     repeat ReadInput; VSync; until not IsStartingButtonDown;
 end;
 
+// Drop keystrokes buffered while nobody was reading input. FadeOut and the
+// room loaders never call ReadInput, so a press during them survives in the
+// BIOS buffer and the next IsStartingButtonDown consumes it -- which inside
+// ShowCutScene skips every remaining slide, not just the current one. The 8-bit
+// original reads the hardware directly and has nothing to flush.
+procedure FlushBufferedKeys;
+var stat: shortint;   // D0.B only: the trap leaves garbage in the upper bytes,
+                      // and comparing the full result never reads as empty
+    guard: byte;
+begin
+    guard := 0;
+    repeat
+        stat := bios_bconstat(2);
+        if stat = 0 then break;
+        bios_bconin(2);
+        Inc(guard);
+    until guard = 64;
+    kbcode := $FF;
+    skstat := skstat or $04;
+end;
+
 function CRT_StartPressed:  boolean;
 begin Result := IsStartingButtonDown; end;
 
