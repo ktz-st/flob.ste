@@ -1,0 +1,14 @@
+# Build outputs
+*.o
+flob.s
+*.ppu
+*.map
+
+# Generated audio: converted from the sources in audio/, not edited by hand
+*.wav
+*.raw
+
+# Tool scratch output
+reports/profile_shots/
+__pycache__/
+*.pyc
