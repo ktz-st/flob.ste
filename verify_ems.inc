@@ -5,6 +5,11 @@ var kind, f, shift, edge, vertical, count, x, y, firstRow, lastRow, i: word;
     wordsBase: PWord;
     pattern: word;
     output: text;
+{$if defined(SLIME_EMX) or defined(SLIME_CPU)}
+    mode, repeatDraw, dstCount, skewValue: word;
+    gfx, dst, masks: PWord;
+    started, elapsed, dispatch: longword;
+{$endif}
 begin
     Assign(output, 'EMS.TXT');
     Rewrite(output);
@@ -56,6 +61,39 @@ begin
             Dec(f);
         until false;
     end;
+{$if defined(SLIME_EMX) or defined(SLIME_CPU)}
+    PByte(pointer(longword($FFFF820A)))^ := 2;
+    VSync;
+    for mode := 0 to 1 do begin
+        elapsed := 0;
+        for f := 0 to High(SPR_SLIME_FRAMES) do begin
+            frame := @SPR_SLIME_FRAMES[f];
+            gfx := @SPR_SLIME_WORDS[frame^.dataOffset];
+            dst := SCREEN_LOG;
+            for shift := 0 to 15 do begin
+                dstCount := (shift + frame^.widthPx + 15) shr 4;
+                skewValue := shift;
+                if dstCount > 1 then skewValue := skewValue or BLITTER_SKEW_NFSR;
+                masks := @SPR_SLIME_EMS_MASKS[frame^.paletteOffset + shift * frame^.heightPx * 2];
+                dispatch := frame^.paletteOffset + shift * 4;
+                started := PLongWord(pointer(longword($4BA)))^;
+                if mode = 0 then
+                    for repeatDraw := 1 to 256 do
+                        DrawSpriteEMS(gfx, dst, masks, frame^.heightPx, dstCount, skewValue)
+                else
+                    for repeatDraw := 1 to 256 do
+{$ifdef SLIME_CPU}
+                        DrawSlimeCPU(dst, dispatch);
+{$else}
+                        DrawSlimeEMX(gfx, dst, dispatch);
+{$endif}
+                Inc(elapsed, PLongWord(pointer(longword($4BA)))^ - started);
+            end;
+        end;
+        Writeln(output, 'MICRO mode=', mode, ' (0=EMS 1=experimental), 16384 calls, HZ200 ticks=', elapsed);
+        Flush(output);
+    end;
+{$endif}
     Writeln(output, 'PASS ', count, ' framebuffer comparisons, all frames/orientations/shifts, top/bottom/right-edge guards');
     Writeln(output, 'EMS calls: ', emsDrawCounter);
     Close(output);

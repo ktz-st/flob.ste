@@ -1,0 +1,18 @@
+{
+  "source": "/Users/kriss/GCC.ELF/flob/assets/_flob_theme.rmt",
+  "song": 0,
+  "loop_seconds": 41.07,
+  "frame_rate": 49.860759,
+  "frame_count": 2048,
+  "left_pokey_channels": [
+    2,
+    3,
+    4
+  ],
+  "format": "FYM1 register delta stream",
+  "register_count": 11,
+  "stream_bytes": 12562,
+  "wav_rate": 22050,
+  "noise_volume_attenuation": 3,
+  "noise_period_scale": 1.25
+}

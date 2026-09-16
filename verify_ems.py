@@ -4,24 +4,38 @@ from pathlib import Path
 import subprocess
 import tempfile
 import time
+import argparse
 
 ROOT = Path(__file__).resolve().parent
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--emx', action='store_true')
+    parser.add_argument('--cpu', action='store_true')
+    args = parser.parse_args()
+    tag = 'emx' if args.emx else 'ems'
+    if args.cpu:
+        assert not args.emx
+        tag = 'cpu'
+        subprocess.run(['make', 'slime_cpu.o'], cwd=ROOT, check=True)
+    if args.emx:
+        subprocess.run(['make', 'slime_emx.o'], cwd=ROOT, check=True)
     subprocess.run(['make','ems.o','ims.o'],cwd=ROOT,check=True)
     with tempfile.TemporaryDirectory(prefix='flob-ems-') as directory:
         directory = Path(directory)
         program = directory/'VERIFY.PRG'
         subprocess.run(['/opt/fpc/lib/fpc/3.3.1/ppcross68k','-Tatari','-O2','-Si','-Xs',
-            '-dSTE','-dNO_IMS','-dVERIFY_EMS','-vw','-vm','-vi',f'-o{program}','flob.pas'],cwd=ROOT,check=True)
+            '-dSTE','-dNO_IMS','-dVERIFY_EMS','-vw','-vm','-vi',
+            *(['-dSLIME_EMX'] if args.emx else []),
+            *(['-dSLIME_CPU'] if args.cpu else []), f'-o{program}','flob.pas'],cwd=ROOT,check=True)
         command = [str(ROOT.parent/'hatariB/hatari/build-headless/src/hatari'),
             '--machine','ste','--memsize','4','--cpulevel','0','--cpuclock','8',
             '--monitor','rgb','--tos',str(ROOT.parent/'hatariB/emutos/etos1024k.img'),
             '--fast-boot','true','--fast-forward','true','--frameskips','0','--sound','off',
             '--joy0','none','--joy1','none','--confirm-quit','false',
             '--run-vbls','90000','--benchmark',str(program)]
-        with (ROOT/'reports/ems_verification.log').open('w') as log:
+        with (ROOT/f'reports/{tag}_verification.log').open('w') as log:
             process = subprocess.Popen(command,stdout=log,stderr=subprocess.STDOUT,
                 env=dict(os.environ,SDL_VIDEODRIVER='dummy',SDL_AUDIODRIVER='dummy'))
             result = ''
@@ -39,7 +53,7 @@ def main():
                     try: process.wait(timeout=3)
                     except subprocess.TimeoutExpired:
                         process.kill(); process.wait()
-        (ROOT/'reports/ems_verification.txt').write_text(result)
+        (ROOT/f'reports/{tag}_verification.txt').write_text(result)
         assert 'PASS 2304 framebuffer comparisons' in result, result
         assert 'EMS calls: 1304' in result, result
         assert 'FAIL' not in result, result

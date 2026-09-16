@@ -46,12 +46,18 @@ def main():
                         process.wait()
     (ROOT / 'reports/restore_verification.txt').write_text(result)
     assert 'PASS comparisons=400' in result, result
+    assert 'PASS prepared records, cache hits, changed rectangles and buffer bases' in result, result
     match = re.search(r'pascal_ticks=(\d+) asm_ticks=(\d+)', result)
     assert match, result
     old, new = map(int, match.groups())
     summary = (f'32000 rectangles: Pascal {old*5} ms, ASM {new*5} ms; '
                f'{100*(old-new)/old:.1f}% less time.\n'
                'Hatari STE 8 MHz, HZ200 timing; isolated restore, not gameplay FPS.\n')
+    prepared = re.search(r'prepared_only_ticks=(\d+) cached_total_ticks=(\d+) cold_total_ticks=(\d+)', result)
+    assert prepared, result
+    ready, cached, cold = map(int, prepared.groups())
+    summary += (f'Prepared copy only: {ready*5} ms; including cache checks: {cached*5} ms; '
+                f'including rebuilding every record: {cold*5} ms.\n')
     (ROOT / 'reports/restore_benchmark.txt').write_text(summary)
     print(result + summary)
 

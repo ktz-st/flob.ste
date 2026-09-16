@@ -13,6 +13,7 @@ import json
 from pathlib import Path
 
 from PIL import Image
+from room_palette_config import SOURCE_TO_A8, remap_source
 
 
 ROOT = Path(__file__).resolve().parent
@@ -134,14 +135,16 @@ def main() -> None:
             if output_path.exists() and not args.force:
                 skipped += 1
             else:
-                room = scale2x(source)
+                room = scale2x(remap_source(source, (world_index, room_number))
+                               if (world_index, room_number) in SOURCE_TO_A8 else source)
                 room.save(output_path, optimize=True)
                 created += 1
 
             if collision_path.exists() and not args.force:
                 collision_skipped += 1
             else:
-                collision = normalized_collision(source)
+                collision = (remap_source(source, (world_index, room_number), collision=True)
+                             if (world_index, room_number) in SOURCE_TO_A8 else normalized_collision(source))
                 collision.save(collision_path, optimize=True)
                 collision_created += 1
 

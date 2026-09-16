@@ -1,0 +1,4 @@
+const SPRITE_ATLAS_PAL : array[0..15] of word=(
+  $0000,$0111,$0333,$0EEE,$0C8A,$06AC,$0FCE,$0C90,
+  $0632,$0F54,$0FFF,$05D4,$0B4B,$05A2,$0119,$0F0F
+);

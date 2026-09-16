@@ -1,0 +1,10 @@
+PASS 4000 mask comparisons, widths 1..48
+PASS 2000 dynamic danger comparisons, both flips and edges
+PASS tile danger accounting and last-hazard removal
+PASS 80 dirty-render frames on both buffers
+PASS 96 overlap-chain, full-queue and empty-frame comparisons
+PASS 128 W0 R13 switch overlaps, both buffers/orientations and queue orders
+PASS W1 R07 falling lever contact in both orientations
+PASS held arrows, release and opposing sources
+PASS space/fire shared edge and menu alias
+DONE

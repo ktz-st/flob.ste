@@ -43,3 +43,10 @@ MERGED_COMPOUND_ATLAS_GAPS = {
     atlas_name: gap
     for atlas_name, gap in MERGED_COMPOUND_BY_WORLD_LABEL.values()
 }
+
+# W2 R17 Jan and W2 R07 blinking light use SIZEP2=1; atlas art is normal width.
+# Bake the hardware expansion into generated planes/masks, not the frame loop.
+HARDWARE_DOUBLE_WIDTH_SPRITES = frozenset({
+    'sprite_jan_drop_p0',
+    'sprite_light_electro_p0',
+})

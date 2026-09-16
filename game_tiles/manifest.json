@@ -638,7 +638,7 @@
       "world": 4,
       "index": 0,
       "label": "tile_doors",
-      "source_addr": 42080,
+      "source_addr": 42192,
       "image": "game_tiles/world_04/00_tile_doors.png",
       "size": [
         32,
@@ -656,7 +656,7 @@
       "world": 4,
       "index": 1,
       "label": "tile_hatch",
-      "source_addr": 42134,
+      "source_addr": 42246,
       "image": "game_tiles/world_04/01_tile_hatch.png",
       "size": [
         32,
@@ -674,7 +674,7 @@
       "world": 4,
       "index": 2,
       "label": "tile_krata",
-      "source_addr": 42164,
+      "source_addr": 42276,
       "image": "game_tiles/world_04/02_tile_krata.png",
       "size": [
         48,
@@ -692,7 +692,7 @@
       "world": 4,
       "index": 3,
       "label": "tile_bridge_up",
-      "source_addr": 42376,
+      "source_addr": 42488,
       "image": "game_tiles/world_04/03_tile_bridge_up.png",
       "size": [
         16,
@@ -710,7 +710,7 @@
       "world": 4,
       "index": 4,
       "label": "tile_bridge_down",
-      "source_addr": 42406,
+      "source_addr": 42518,
       "image": "game_tiles/world_04/04_tile_bridge_down.png",
       "size": [
         32,
@@ -728,7 +728,7 @@
       "world": 4,
       "index": 5,
       "label": "tile_cable",
-      "source_addr": 42424,
+      "source_addr": 42536,
       "image": "game_tiles/world_04/05_tile_cable.png",
       "size": [
         24,
@@ -746,7 +746,7 @@
       "world": 4,
       "index": 6,
       "label": "tile_water",
-      "source_addr": 42531,
+      "source_addr": 42643,
       "image": "game_tiles/world_04/06_tile_water.png",
       "size": [
         16,

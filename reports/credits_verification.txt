@@ -1,0 +1,9 @@
+PASS slide=0
+PASS slide=1
+PASS slide=2
+PASS slide=3
+PASS slide=4
+PASS slide=5
+PASS slide=6
+PASS seven credits slides
+DONE

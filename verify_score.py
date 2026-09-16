@@ -9,13 +9,14 @@ ROOT = Path(__file__).resolve().parent
 
 
 def main(define='VERIFY_SCORE', filename='SCORE.TXT', report='score',
-         success='PASS 12 score changes', marker='PASS'):
+         success='PASS 12 score changes', marker='PASS', extra_defines=()):
     subprocess.run(['make', 'ems.o', 'ims.o', 'restore.o'], cwd=ROOT, check=True)
     with tempfile.TemporaryDirectory(prefix='flob-score-') as directory:
         directory = Path(directory)
         program = directory / 'VERIFY.PRG'
         subprocess.run(['/opt/fpc/lib/fpc/3.3.1/ppcross68k', '-Tatari', '-O2', '-Si', '-Xs',
                         '-dSTE', f'-d{define}', '-vw', '-vm', '-vi',
+                        *[f'-d{name}' for name in extra_defines],
                         f'-o{program}', 'flob.pas'], cwd=ROOT, check=True)
         cmd = [str(ROOT.parent / 'hatariB/hatari/build-headless/src/hatari'),
                '--machine', 'ste', '--memsize', '4', '--cpulevel', '0', '--cpuclock', '8',

@@ -17,4 +17,3 @@
 {$i images/global/IMG_CREDITS_05.inc}
 {$i images/global/IMG_CREDITS_06.inc}
 {$i images/global/IMG_CREDITS_07.inc}
-{$i images/global/IMG_CREDITS_08.inc}

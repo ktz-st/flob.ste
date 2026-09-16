@@ -15,6 +15,7 @@ Usage (from flob-ste/):
 import os, sys, struct, subprocess, tempfile, re
 from pathlib import Path
 from PIL import Image
+from room_palette_config import SOURCE_TO_A8
 
 FLOB_SRC   = Path('/Users/kriss/GCC.ELF/flob')
 FLOB_STE   = Path('/Users/kriss/GCC.ELF/flob-ste')
@@ -23,6 +24,7 @@ OUTDIR     = FLOB_STE / 'images'
 GAME_ROOMS = FLOB_STE / 'game_rooms'
 GAME_CUTSCENES = FLOB_STE / 'game_cutscenes'
 GAME_TITLE = FLOB_STE / 'game_title'
+GAME_CREDITS = FLOB_STE / 'game_credits'
 
 WORLD_DIRS = [
     '00_Escape_From_The_Lab',
@@ -46,12 +48,17 @@ def image_to_pi1(image_path: Path) -> bytes:
     Convert GIF to PI1 (32034 bytes, ST low 320x200x16).
     Scales to fit 320x200, maintaining aspect ratio, pads with black.
     """
-    if image_path.parent == GAME_TITLE:
+    native_room = any(image_path == GAME_ROOMS / f'world_{w:02d}' / f'room_{r:02d}.png'
+                      for w, r in SOURCE_TO_A8)
+    if image_path.parent in (GAME_TITLE, GAME_CREDITS) or native_room:
         # Keep the flattened DLI palette and artist indices; ppmtopi1 would
         # reorder colours and quantize them to ST rather than STE precision.
         image = Image.open(image_path)
-        if image.mode != 'P' or image.size != (320, 184):
-            raise ValueError(f'{image_path}: expected indexed 320x184 title')
+        expected_size = (320, 184) if image_path.parent == GAME_TITLE else (320, 200)
+        if native_room:
+            expected_size = (320, 160)
+        if image.mode != 'P' or image.size != expected_size:
+            raise ValueError(f'{image_path}: expected indexed {expected_size}')
         if max(image.getdata()) > 15:
             raise ValueError(f'{image_path}: title exceeds 16 colours')
         palette = image.getpalette()
@@ -63,7 +70,7 @@ def image_to_pi1(image_path: Path) -> bytes:
             r, g, b = palette[index * 3:index * 3 + 3]
             words.append((channel(r) << 8) | (channel(g) << 4) | channel(b))
         screen = Image.new('P', (320, 200), 0)
-        screen.paste(image, (0, 8))
+        screen.paste(image, (0, 20 if native_room else (8 if image_path.parent == GAME_TITLE else 0)))
         pixels = list(screen.getdata())
         planar = bytearray()
         for y in range(200):
@@ -156,7 +163,8 @@ def convert_image(image_path: Path, out_dir: Path, name: str) -> tuple:
     out_dir.mkdir(parents=True, exist_ok=True)
     inc_path = out_dir / f'{name}.inc'
 
-    newest_input = max(image_path.stat().st_mtime, Path(__file__).stat().st_mtime)
+    newest_input = max(image_path.stat().st_mtime, Path(__file__).stat().st_mtime,
+                       (FLOB_STE / 'room_palette_config.py').stat().st_mtime)
     if inc_path.exists() and inc_path.stat().st_mtime >= newest_input:
         return None
 
@@ -225,8 +233,8 @@ GLOBAL_IMAGES = {
     **{f'IMG_INTRO_{i:02d}': GAME_CUTSCENES / f'intro_{i:02d}.png' for i in range(6)},
     **{f'IMG_OUTRO_{i:02d}': GAME_CUTSCENES / f'outro_{i:02d}.png' for i in range(3)},
     # credits slides
-    **{f'IMG_CREDITS_{i:02d}': ASSETS_SRC / 'credits' / f'credits_slides_{i:02d}.gif'
-       for i in range(1, 9)},
+    **{f'IMG_CREDITS_{i:02d}': GAME_CREDITS / f'credits_{i:02d}.png'
+       for i in range(1, 8)},
 }
 
 

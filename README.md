@@ -49,7 +49,7 @@ Wszystkie piec punktow ostatniego audytu zostalo wdrozonych:
 
 Wczesniej wdrozono ASM IMS, EMS dla Floba/slime i zbiorcze odtwarzanie
 prostokatow w `asm/restore.s`. Nadal sa trzy bufory i osobna historia sprajtow
-dla kazdej strony; kopiowanie tla pozostaje bez HOG.
+dla kazdej strony; odtwarzanie prostokatow tla uzywa teraz HOG ($C0).
 
 Spacja wspoldzieli z joystickiem FIRE i detekcje zbocza. Przytrzymanie lub
 dolozenie drugiego zrodla nie powoduje kolejnego flipa. W menu spacja
@@ -502,8 +502,9 @@ both paths with `verify_ems.py` and `verify_ims.py` after modifying dispatch.
 `RestoreDirtyRects` sends its already clipped, 16px-aligned rectangles to
 `asm/restore.s` in one cdecl call. The adapter initializes common blitter
 registers once, then copies all four planes in one blit per rectangle from
-SCREEN_BKG to SCREEN_LOG (160-byte stride). It retains non-HOG `$80` starts
-and ordinary BUSY polling; it does not adopt AGT's BUSY restart loop.
+SCREEN_BKG to SCREEN_LOG (160-byte stride). As of 2026-09-12, rectangle restore
+uses HOG `$C0` starts and ordinary BUSY polling, including the optional prepared
+path; it does not adopt AGT's BUSY restart loop. Other copy routines are unchanged.
 Dirty-region merging, per-buffer tracking and the full-copy fallback are
 unchanged. `TDirtyRect` is an eight-byte packed record (x/y/width/height words).
 `NO_RESTORE_ASM` selects the previous Pascal copy path for comparisons.
@@ -909,6 +910,29 @@ make
 Regeneracja ikon/achievements zwykle dzieje sie przez zaleznosci Makefile, ale mozna odpalac odpowiednie `generate_*.py` recznie.
 
 ## Uwaga Dla Przyszlego Mnie
+
+Komunikaty przy STYPE_GOAL (np. fiolka W4 R11) maja w A8 osobne triggery
+punktowe. Kolizja masek STE moze zebrac przedmiot przed wejsciem tego punktu
+w trigger. ShowCollectedGoalMessage uruchamia przy zebraniu nadal aktywne
+ONCE/SHOW_MSG obejmujace oryginalna kotwice przedmiotu. Nie przesuwa globalnie
+triggerow i nie powtarza juz zuzytych komunikatow. Test verify_gameplay.py
+obejmuje kontakt krawedziowy w obu orientacjach W4 R11.
+
+W4: adresy wszystkich siedmiu kafli w `world_04_assets.bin` sa o $70 wyzsze
+niz wyliczone z dostepnych zrodel ASM. Manifest korzysta z adresow binarnych;
+woda w R11 to $A693, nie $A623. Bledne adresy powodowaly ciche pominiecie
+rysowania oraz kolizji przez FindSteTile. Import W4 dopasowuje teraz oryginalne
+bajty kafla do binarnego banku. `python3 test_w4_tile_addresses.py` sprawdza
+wszystkie adresy, odwolanie PUT_TILE w pokoju oraz zabijajacy kolor wody.
+Nie odtwarzac adresow wedlug rozmiaru sprajtow STE ani aktualnego ukladu ASM.
+
+W3 R12 ma tylko trzy uzywane kolory GIF. Sortowanie palety przypisywalo
+podlodze indeks kolizji 3 (zabijajacy), zamiast 2. Mapowanie w
+`room_palette_config.py` jest potwierdzone obrazem z oryginalnego cartridge'a:
+GIF 0/1/2 -> A8 3/1/0. Kanoniczny PNG oraz kolizje sa naprawione;
+`test_room_palette.py` porownuje wszystkie piksele z CAR i wynik planar STE.
+`repair_w2_r22.py` obsluguje teraz obie potwierdzone poprawki: W2 R22 i W3 R12.
+Nie wolno wnioskowac o roli koloru z jasnosci ani liczby uzywanych barw.
 
 Najlatwiej zepsuc:
 

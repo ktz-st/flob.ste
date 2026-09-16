@@ -22,6 +22,7 @@ from pathlib import Path
 from PIL import Image
 
 from sprite_combined_config import (
+    HARDWARE_DOUBLE_WIDTH_SPRITES,
     MERGED_COMPOUND_ATLAS_GAPS,
     MERGED_OVERLAY_ATLAS_NAMES,
 )
@@ -310,6 +311,11 @@ def main() -> None:
                         )
                     indices.append(color_index)
 
+            if sprite_name in HARDWARE_DOUBLE_WIDTH_SPRITES:
+                if w != 16:
+                    raise ValueError(f'{sprite_name}: expected normal-width 16px atlas art before SIZEP expansion')
+                indices = [pixel for pixel in indices for _ in range(2)]
+                w *= 2
             row_words, mask_words, gfx_words = pack_masked_words(w, h, indices)
             if sprite_name in ('flob', 'slime'):
                 if row_words != 1:

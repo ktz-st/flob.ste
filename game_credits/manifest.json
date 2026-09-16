@@ -1,0 +1,83 @@
+{
+  "canonical_build_source": true,
+  "size": [
+    320,
+    200
+  ],
+  "smoothing": "Scale2x",
+  "source_mode": "ANTIC D: 160x100, two scanlines per data row",
+  "dli": "dlicredits sets PF0..2 from credColors; COLBK=0. Settled slide palette; next-slide DLI during scrolling is not baked into a slide.",
+  "removed_slide": "08: In Stereo Where Available",
+  "images": [
+    {
+      "image": "credits_01.png",
+      "a8_selectors": [
+        0,
+        56,
+        63,
+        52
+      ],
+      "source": "assets/credits/credits_slides_01.gfx"
+    },
+    {
+      "image": "credits_02.png",
+      "a8_selectors": [
+        0,
+        152,
+        159,
+        148
+      ],
+      "source": "assets/credits/credits_slides_02.gfx"
+    },
+    {
+      "image": "credits_03.png",
+      "a8_selectors": [
+        0,
+        24,
+        31,
+        20
+      ],
+      "source": "assets/credits/credits_slides_03.gfx"
+    },
+    {
+      "image": "credits_04.png",
+      "a8_selectors": [
+        0,
+        184,
+        191,
+        180
+      ],
+      "source": "assets/credits/credits_slides_04.gfx"
+    },
+    {
+      "image": "credits_05.png",
+      "a8_selectors": [
+        0,
+        120,
+        127,
+        116
+      ],
+      "source": "assets/credits/credits_slides_05.gfx"
+    },
+    {
+      "image": "credits_06.png",
+      "a8_selectors": [
+        0,
+        40,
+        47,
+        36
+      ],
+      "source": "assets/credits/credits_slides_06.gfx"
+    },
+    {
+      "image": "credits_07.png",
+      "a8_selectors": [
+        0,
+        232,
+        239,
+        228
+      ],
+      "source": "assets/credits/credits_slides_07.gfx"
+    }
+  ]
+}

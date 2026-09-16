@@ -96,10 +96,12 @@ def capture_pokey(path: Path, frame_count: int) -> list[converter.PokeyFrame]:
 def source_ym_frames(track: Track, metadata: dict[str, object]) -> list[tuple[int, ...]]:
     # The shipped FYM files were tuned with the original 2 MHz conversion
     # profile. Use it only to recover frames truncated by ASAP's rounded TIME.
-    converter.YM_CLOCK = 2_000_000.0
-    converter.POKEY_PAL_CLOCK = 1_789_760.0
+    converter.YM_CLOCK = float(metadata.get("ym_clock_hz", 2_000_000.0))
+    converter.POKEY_PAL_CLOCK = float(metadata.get("pokey_clock_hz", 1_789_760.0))
     pokey = capture_pokey(track.source, track.frame_count)
-    candidates = tuple(range(8))
+    side = metadata.get("pokey_side", "stereo")
+    candidates = {"left": (0, 1, 2, 3), "right": (4, 5, 6, 7),
+                  "stereo": tuple(range(8))}[side]
     allocations = converter.allocate_dynamic_channels(
         pokey,
         candidates,

@@ -1,0 +1,1 @@
+4096 CheckSlimeCollision calls, Flob at 0,0 (no pickup): 2842 HZ200 ticks

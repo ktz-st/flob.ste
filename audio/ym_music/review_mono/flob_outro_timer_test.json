@@ -1,0 +1,25 @@
+{
+  "track": "flob_outro",
+  "frames": 6144,
+  "affected_voice_frames": 3824,
+  "maximum_simultaneous_timer_voices": 2,
+  "attenuation_sequence": [
+    0,
+    0,
+    15,
+    0,
+    15,
+    15,
+    0,
+    0,
+    0,
+    15,
+    15,
+    0,
+    15,
+    0,
+    15,
+    15
+  ],
+  "note": "Offline waveform concept only; no MFP divider quantization, interrupt jitter or STE CPU cost measured. Existing preview volume ladder retained for A/B. No game files replaced."
+}

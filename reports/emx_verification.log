@@ -1,0 +1,13 @@
+INFO : Hatari v2.5.0, compiled on:  Jun  1 2026, 10:09:45
+INFO : GEMDOS HDD emulation, C: <-> /var/folders/1n/wn49ggsx70q1tnrqs1l8yxmh0000gn/T/flob-ems-xg_h0dgy.
+INFO : OS clock ticks / second: 100
+WARN : Bus Error reading at address $ffffa200, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
+WARN : Bus Error reading at address $400000, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
+WARN : Bus Error reading at address $6c4710, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
+WARN : Bus Error reading at address $5d1234, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
+WARN : Bus Error reading at address $6d3148, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
+WARN : Bus Error reading at address $400000, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
+WARN : Bus Error reading at address $d003c3, PC=$e00d76 addr_e3=e00d76 op_e3=4a10
+WARN : No GEMDOS dir '/var/folders/1n/wn49ggsx70q1tnrqs1l8yxmh0000gn/T/flob-ems-xg_h0dgy/AUTO'
+WARN : Storing NVRAM to '/Users/kriss/Library/Application Support/Hatari/hatari.nvram' failed
+GemDOS drives: 1

@@ -143,8 +143,14 @@ assets/achievement_ui.inc: generate_achievement_ui.py generate_selector_assets.p
 assets/selector_ui.inc: generate_selector_assets.py export_flob_sheet.py create_game_world_icons.py generate_world_icons.py render_title_dli.py ../flob/assets/flob.fnt ../flob/assets/sprites.asm ../flob/const.inc $(GAME_WORLD_ICON_IMAGES) $(wildcard ../flob/worlds/*/world_??.asm) $(wildcard ../flob/worlds/*/icon.gfx)
 	python3 generate_selector_assets.py
 
-images/images.inc: convert_images.py $(GAME_ROOM_IMAGES) game_cutscenes/manifest.json $(GAME_CUTSCENE_IMAGES) game_title/manifest.json $(GAME_TITLE_IMAGES)
+images/images.inc: convert_images.py $(GAME_ROOM_IMAGES) game_cutscenes/manifest.json $(GAME_CUTSCENE_IMAGES) game_title/manifest.json $(GAME_TITLE_IMAGES) $(wildcard game_credits/*.png) game_credits/manifest.json
 	python3 convert_images.py
+
+images/images.inc: room_palette_config.py
+
+.PHONY: credits-import
+credits-import:
+	python3 create_game_credits.py
 
 images/global/IMG_TITLE_CROWN.inc: images/images.inc
 
@@ -156,6 +162,26 @@ font.o: asm/font.s
 
 ems.o: asm/ems.s
 	$(AS) -quiet -Faout -o ems.o asm/ems.s
+
+generated/slime_cpu.s: generate_slime_cpu.py generated/sprite_assets_atlas/slime.inc
+	python3 generate_slime_cpu.py
+
+slime_cpu.o: generated/slime_cpu.s
+	$(AS) -quiet -Faout -o slime_cpu.o generated/slime_cpu.s
+
+ifneq ($(findstring -dSLIME_CPU,$(PFLAGS)),)
+$(TARGET): slime_cpu.o
+endif
+
+generated/slime_emx.s: generate_slime_emx.py generated/sprite_assets_atlas/slime.inc
+	python3 generate_slime_emx.py
+
+slime_emx.o: generated/slime_emx.s
+	$(AS) -quiet -Faout -o $@ $<
+
+ifneq ($(findstring -dSLIME_EMX,$(PFLAGS)),)
+$(TARGET): slime_emx.o
+endif
 
 ims.o: asm/ims.s
 	$(AS) -quiet -Faout -o ims.o asm/ims.s

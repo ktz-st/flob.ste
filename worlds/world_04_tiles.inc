@@ -1,12 +1,12 @@
 const W04_TILE_COUNT = 7;
 const W04_TILES : array[0..6] of TSteTile = (
-    (sourceAddr:$A460; widthPx:32; heightPx:26; rowWords:2; dataOffset:0; collisionOffset:0),
-    (sourceAddr:$A496; widthPx:32; heightPx:14; rowWords:2; dataOffset:260; collisionOffset:52),
-    (sourceAddr:$A4B4; widthPx:48; heightPx:70; rowWords:3; dataOffset:400; collisionOffset:80),
-    (sourceAddr:$A588; widthPx:16; heightPx:28; rowWords:1; dataOffset:1450; collisionOffset:290),
-    (sourceAddr:$A5A6; widthPx:32; heightPx:8; rowWords:2; dataOffset:1590; collisionOffset:318),
-    (sourceAddr:$A5B8; widthPx:24; heightPx:70; rowWords:2; dataOffset:1670; collisionOffset:334),
-    (sourceAddr:$A623; widthPx:16; heightPx:56; rowWords:1; dataOffset:2370; collisionOffset:439)
+    (sourceAddr:$A4D0; widthPx:32; heightPx:26; rowWords:2; dataOffset:0; collisionOffset:0),
+    (sourceAddr:$A506; widthPx:32; heightPx:14; rowWords:2; dataOffset:260; collisionOffset:52),
+    (sourceAddr:$A524; widthPx:48; heightPx:70; rowWords:3; dataOffset:400; collisionOffset:80),
+    (sourceAddr:$A5F8; widthPx:16; heightPx:28; rowWords:1; dataOffset:1450; collisionOffset:290),
+    (sourceAddr:$A616; widthPx:32; heightPx:8; rowWords:2; dataOffset:1590; collisionOffset:318),
+    (sourceAddr:$A628; widthPx:24; heightPx:70; rowWords:2; dataOffset:1670; collisionOffset:334),
+    (sourceAddr:$A693; widthPx:16; heightPx:56; rowWords:1; dataOffset:2370; collisionOffset:439)
 );
 
 const W04_TILE_WORDS : array[0..2649] of word=(

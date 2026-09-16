@@ -365,10 +365,20 @@ def extract_tiles(asm_path: Path, labels: dict[str, int]) -> list[dict]:
             src_width = width_bytes * 4
             width_px, height_px, scaled_pixels = scale_pixels_x2(src_pixels, src_width, height_rows)
 
+            # W4's assembled assets differ from the available ASM layout by
+            # $70. Room commands use the binary addresses, not reconstructed
+            # source labels. Match the original tile bytes on explicit import.
+            binary_addr = None
+            if asm_path.parent.name == '04_Silver_Dust_Mines':
+                binary = (asm_path.parent / 'world_04_assets.bin').read_bytes()
+                signature = bytes((width_bytes, height_rows)) + bytes(gfx_raw)
+                if binary.count(signature) != 1:
+                    raise ValueError(f'{tile_labels}: ambiguous/missing W4 tile in original binary')
+                binary_addr = 0xA000 + binary.index(signature)
             for label in tile_labels:
                 tiles.append({
                     "label": label,
-                    "source_addr": labels[label],
+                    "source_addr": binary_addr if binary_addr is not None else labels[label],
                     "source_width": src_width,
                     "source_height": height_rows,
                     "source_pixels": src_pixels,
