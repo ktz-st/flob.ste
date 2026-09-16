@@ -151,4 +151,4 @@ Testing sprite 149
 Testing sprite 150
 Testing sprite 151
 PASS comparisons=32720 actual_ims_calls=27812
-BENCH draws=52352 pascal_ticks=9354 asm_ticks=8345
+BENCH draws=52352 pascal_ticks=8391 asm_ticks=7382

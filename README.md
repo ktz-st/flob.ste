@@ -464,6 +464,18 @@ render iterations/s, versus 50 for either workload alone (51/512 frames used
 two VBLs). sysframe increments per game iteration, explaining coupled slowdowns.
 Production rendering is unchanged by the conditional benchmark instrumentation.
 
+Whole-loop profiling: `python3 profile_room.py --room 11` (add `--move`) cycle-profiles the
+production gameplay loop in one room through hatari-hrdb's remote debug profiler, and
+`python3 profile_report.py reports/profile_w0_r11_idle.json --out reports/x.md` attributes
+the capture to symbols from an unstripped `-Xm` build whose text is byte-identical to
+`flob.prg`. Unlike the renderer benchmark this includes physics, hazards, collisions,
+input and the music callback. It reaches the room by arming cheatmode (H during boot),
+poking `levelNum`, and patching `Explode` with an RTS so a hazard contact cannot end the
+window; every detection path still runs and is still counted. `--split <symbol>` prints a
+per-address breakdown, which is what separates a stalled routine from a busy one.
+Requires the `hatari-debugging` skill scripts (`HATARI_SKILL_SCRIPTS` overrides the path).
+W0 R11 measured 31.9 FPS against R06's 49.9; see `reports/profile_w0_r11.md`.
+
 ### Batched Background Restore
 
 Gameplay collision/queue follow-up: `GeneratedSpritesOverlap` retains the
@@ -481,6 +493,96 @@ array indices, so collecting one slime does not invalidate every later entry.
 Explicit IDs must be unique within a frame and below 32; generic IDs are
 reserved for the renderer. Changing object draw order would require separate
 invalidation; current gameplay preserves relative layering.
+
+Flob (stable ID 20 with the Flob asset) is drawn last among queued sprites,
+independent of enqueue order. This fixes W0 R13 switches overwriting him when
+room-entry order differs from the gameplay loop. Other sprites keep queue order;
+overlap propagation still controls whether Flob needs repainting. The target
+regression covers 128 W0 R13 overlaps on both buffers and sprite orientations.
+
+2026-09-11: dirty bookkeeping no longer globally merges rectangles. Animation
+changes with identical bounds add one rectangle; changed sprites are marked
+for drawing directly. Unchanged overlapping sprites are included transitively
+so full-sprite redraws preserve layering. Queue fields use a single record
+pointer and per-buffer history is copied in one Move. The previous bookkeeping
+is available for comparison with `LEGACY_DIRTY_BOOKKEEPING` / benchmark
+`--legacy-dirty`. W1 R13 renderer throughput improves from 40 to 44.44 FPS;
+this is not a full gameplay FPS result. See `reports/dirty_bookkeeping.md`.
+
+An optional `SLIME_CPU` experiment draws preshifted slime graphics/masks with
+68000 AND/OR operations. Isolated drawing takes about 30% less time than EMS,
+but W1 R13 remains at 44.44 FPS in the controlled render benchmark. It adds about
+7 KB and is not enabled in normal builds. Reproduction commands and validation
+are in `reports/slime_cpu_preshift.md`.
+
+Delaying odd slime animation IDs by one tick (`STAGGER_SLIME`) is enabled in
+normal builds since 2026-09-16. It worsens the *controlled render benchmark* in
+W1 R13 from 44.52 to 42.11 FPS, because there every frame does the same work and
+spreading a change over three iterations is simply more of it. In the production
+loop the opposite holds: W1 R13 averages 61% of the frame budget and redraws 1.9
+sprites on a typical frame, and the only frames that miss the VBL are the two
+(one per screen page) where all 16 slime change at once. Staggering raises that
+room from 44.3 to 46.7 FPS while total work rises 1.8%. It costs 0.3 FPS in
+W0 R11, which has no peak to flatten. See `reports/slime_stagger.md`. This is
+the clearest case in the project of the render benchmark and the real loop
+disagreeing in sign; trust `profile_room.py` for perceived smoothness.
+
+Graphics arithmetic (2026-09-12): `SpriteCollisionRect` uses a shift for the
+current 2x scale, and `NarrowFlobDynamicDanger` shifts only after bounds checks
+guarantee nonnegative numerators. Flip heights 160/80/32/8 use precomputed blitter
+source increments and destination offsets; border centering also uses shifts.
+The release object contains no FPC division/modulo helpers in these four routines.
+Other heights retain CPU sampling as a fallback. Palette fades and text formatting
+are unchanged. Gameplay verification compares the flip table against CPU sampling.
+
+Credits (2026-09-12): seven canonical indexed `game_credits/credits_01..07.png`
+images at 320x200, imported explicitly by `python3 create_game_credits.py`.
+The importer decodes original ANTIC D `.gfx` selectors and `credColors` in
+`flob/flob.pas`: COLBK=0 and PF0/PF1/PF2 as set by `dlicredits`. It applies the
+canonical PAL RGB mapping, STE quantization and Scale2x. Existing PNG edits are
+preserved unless `--force` is requested; normal builds only convert the PNGs.
+`ShowCredits` displays full-height images and fades to their own palettes, without
+intro cropping, captions or palette rebuilding. The original rolling transition's
+second DLI palette is not emulated: the STE presentation retains slide fades.
+The eighth "In Stereo Where Available" slide is excluded from the image include
+list and runtime sequence. `python3 verify_credits.py` tests all seven visible
+framebuffers and hardware palettes in Hatari after fade-in.
+
+Jan in W2 R17 uses hardware double-width PMG (`SIZEP2=1`) in the original.
+`HARDWARE_DOUBLE_WIDTH_SPRITES` in `sprite_combined_config.py` makes the build
+expand `sprite_jan_drop_p0` from canonical 16x46 to 32x46, including masks and
+vertically flipped frames. The artist PNG is unchanged; the adjacent drop P1
+remains normal width. Do not also widen this atlas row without removing the
+build-time expansion. Runtime rendering, restore bounds and sprite contact bounds
+use the generated width; there is no per-frame scaling.
+
+W2 R07's blinking horizontal light (`sprite_light_electro_p0`) also has SIZEP2=1
+and is expanded to 32x2 at build time. Its six opaque source bits cover 24 screen
+pixels rather than 12. `path_light` moves the same sprite between two positions;
+the P1 electrical discharge has SIZEP3=0 and remains normal width.
+
+Flob-only foreground occlusion: the deferred stable-ID 20 Flob draw uses
+`DrawOccludedFlob`. It intersects the preshifted EMS opacity masks with the
+inverse of BKG indices 1/2 inside the playfield, then uses the existing EMS
+blitter. Four-plane equality is `(plane0 xor plane1) and not (plane2 or plane3)`;
+matching RGB values in other palette slots do not occlude. The scratch mask is
+built only when Flob is redrawn, directly from current BKG, so tile changes and
+flips need no separate cached mask. Other sprites are neither clipped nor erased
+by this pass. Collisions are unchanged. Split explosion layers and particles
+use different assets/IDs and retain their previous foreground behaviour.
+Gameplay verification includes an independent per-pixel reference, both-page
+overlap checks and 128 direct mask comparisons across frames/shifts/field edges.
+
+W2 R22 palette repair: the original GIF has only three used indices and a
+nonstandard grey palette. Sorting/requantizing these colours corrupted both
+the visible room and collision meanings. `room_palette_config.py` records the
+verified GIF-to-A8 selector mapping (0->3, 1->0, 2->1). This room's canonical PNG
+now uses fixed STE indices and bypasses Netpbm palette reordering; its collision
+PNG matches the cartridge bitmap. The original room colour bytes remain
+96/EA/82/00 (not copied from R21). The importer reproduces the correction on an
+explicit reimport. `repair_w2_r22.py` is the guarded one-time migration;
+`python3 -m unittest test_room_palette` checks cartridge collisions, smoothing
+geometry and all planar pixels including the 20-line top/bottom margins.
 
 Space is also FIRE: gameplay reads its held state from the existing raw IKBD
 handler and ORs it with joystick fire before edge detection. No BIOS polling

@@ -1,7 +1,14 @@
 PASS 4000 mask comparisons, widths 1..48
 PASS 2000 dynamic danger comparisons, both flips and edges
 PASS tile danger accounting and last-hazard removal
+PASS 128 Flob occlusion comparisons, all shifts, frames and playfield edges
+PASS flip table against CPU sampling, all nonzero FLIP_H heights
 PASS 80 dirty-render frames on both buffers
+PASS 96 overlap-chain, full-queue and empty-frame comparisons
+PASS 128 W0 R13 switch overlaps, both buffers/orientations and queue orders
+PASS 128 slime animation frames, counter wrap, collision frames and both pages
+PASS W1 R07 falling lever contact in both orientations
+PASS W4 R11 edge pickup message, both flips, once only
 PASS held arrows, release and opposing sources
 PASS space/fire shared edge and menu alias
 DONE

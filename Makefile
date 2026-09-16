@@ -65,7 +65,7 @@ TILE_OUT = \
 	worlds/world_tiles.inc \
 	worlds/world_00_tiles.inc worlds/world_01_tiles.inc worlds/world_02_tiles.inc \
 	worlds/world_03_tiles.inc worlds/world_04_tiles.inc worlds/world_05_tiles.inc
-PFLAGS = -Tatari -O2 -Si -Xs -dSTE -vw -vm -vi
+PFLAGS = -Tatari -O2 -Si -Xs -dSTE -dSAFE_FLIP_VBL -dSTAGGER_SLIME -vw -vm -vi
 
 SOURCES = \
 	$(MAIN) \

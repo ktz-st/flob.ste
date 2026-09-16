@@ -104,9 +104,21 @@ const
 
 // *** STE screen constants ***
     SCREEN_LINE_BYTES = 160;
+    // Precomputed parameters for FLIP_H: 160, 80, 32 and 8 lines.
+    FLIP_SOURCE_INC_Y: array[0..3] of word = (2, 162, 642, 3042);
+    FLIP_DEST_OFFSET: array[0..3] of word = (
+        BG_IMAGE_OFFSET_Y * SCREEN_LINE_BYTES,
+        (BG_IMAGE_OFFSET_Y + 40) * SCREEN_LINE_BYTES,
+        (BG_IMAGE_OFFSET_Y + 64) * SCREEN_LINE_BYTES,
+        (BG_IMAGE_OFFSET_Y + 76) * SCREEN_LINE_BYTES);
     SCREEN_BYTES      = 32000;
     SCREEN_ALIGN      = 256;
     SCREEN_ALLOC      = SCREEN_BYTES + SCREEN_ALIGN;
+    // Both display buffers inside one 64 KB page, 32 KB apart: switching
+    // between them then changes only $FFFF8203, and a single byte write cannot
+    // be latched half-done by the shifter at a frame boundary.
+    SCREEN_PAIR_OFFSET = $8000;
+    SCREEN_PAIR_ALLOC  = $10000 + SCREEN_PAIR_OFFSET + SCREEN_BYTES;
 
 {$i types.inc}        // starts with: type
 {$i assets/achievements.inc} // generated achievement definitions
@@ -128,6 +140,12 @@ const
 {$L unapl.o}
 {$L font.o}
 {$L ems.o}
+{$ifdef SLIME_CPU}
+{$L slime_cpu.o}
+{$endif}
+{$ifdef SLIME_EMX}
+{$L slime_emx.o}
+{$endif}
 {$L ims.o}
 {$L restore.o}
 {$L ikbd.o}
@@ -137,10 +155,18 @@ const
 procedure UnApl(src, dst: pointer); external;
 procedure DrawChar(screen, font: pointer; x, y, ch, fg, bg: longword); cdecl; external;
 procedure DrawSpriteEMS(gfx, dst, masks: pointer; height, dstWords, skew: longword); cdecl; external;
+{$ifdef SLIME_CPU}
+procedure DrawSlimeCPU(dst: pointer; dispatchOffset: longword); cdecl; external;
+{$endif}
+{$ifdef SLIME_EMX}
+procedure DrawSlimeEMX(gfx, dst: pointer; dispatchOffset: longword); cdecl; external;
+{$endif}
 procedure DrawSpriteIMS(mask, gfx, dst: pointer; height, countX, skew,
     endmask1, endmask2, endmask3: longword); cdecl; external;
 procedure RawIkbdHandler; external;
 procedure RestoreRectsASM(src, dst, rects: pointer; count: longword); cdecl; external;
+procedure PrepareRestoreRectsASM(src, dst, rects: pointer; count: longword; cache: pointer); cdecl; external;
+procedure RestorePreparedASM(entries: pointer; count: longword); cdecl; external;
 procedure DmaSoundInit; external;
 procedure DmaSoundDone; external;
 procedure DmaSoundStop; external;
@@ -209,6 +235,11 @@ type
         palBase: PWord;
         palSlot: byte;
         stableId: byte;
+        // Pad to 32. At 24 bytes every `list^[i]` cost a four-instruction
+        // stride (lsl #3 / sub / lsl #2 / add, ~56 cycles); profiling W0 R11
+        // charged a quarter of RenderQueuedSprites to exactly that sequence.
+        // A power of two makes it one lsl.l #5. Costs 192 x 8 bytes of RAM.
+        reserved: array[0..9] of byte;
     end;
     PQueuedSprite = ^TQueuedSprite;
 
@@ -227,7 +258,23 @@ const
     DIRTY_FULL_COPY_RECTS = 40;
 
 type
+    // One frame's worth of sprites for one screen buffer. The queued and the
+    // previously rendered list are two of these, swapped by pointer each frame
+    // instead of copied: profiling W0 R11 charged 10-12k cycles a frame to a
+    // byte-wise Move of 16 x 22 bytes, and the rendered list is read-only.
+    TQueuedSpriteSlots = array[0..MAX_QUEUED_SPRITES - 1] of TQueuedSprite;
+    PQueuedSpriteSlots = ^TQueuedSpriteSlots;
     TDirtyRectArray = array[0..MAX_DIRTY_RECTS - 1] of TDirtyRect;
+    // ASM ABI: 22 bytes per entry, eight-byte cache header.
+    TPreparedRestoreRect = packed record
+        bounds: TDirtyRect;
+        src, dst: pointer;
+        yInc, xCount, yCount: word;
+    end;
+    TRestoreCache = packed record
+        srcBase, dstBase: pointer;
+        entries: array[0..MAX_DIRTY_RECTS - 1] of TPreparedRestoreRect;
+    end;
 
 var
 // --- ST screen management ---
@@ -305,7 +352,7 @@ var
 
     slimeX: array[0..19] of byte;
     slimeGoal: array[0..19] of byte;
-    slimeDrawFrame: byte;
+    slimeDrawFrame: array[0..19] of byte;
 {$ifdef VERIFY_GAMEPLAY}
     verifyRestoreCount: byte;
 {$endif}
@@ -321,6 +368,9 @@ var
 {$endif}
 {$ifdef BENCH_SLIME}
     benchBlits, benchRestoreRects, benchRestorePixels: longword;
+{$endif}
+{$ifdef BENCH_PROFILE}
+    benchBuildTicks, benchCopyTicks, benchDrawTicks, benchHistoryTicks: longword;
 {$endif}
     dxslime0, dxslime1, dlrow: byte;
     scoreadd: word;
@@ -358,10 +408,14 @@ var
     spriteBgW: array[0..1] of word;
     spriteBgH: array[0..1] of word;
     spriteBgPixels: array[0..1, 0..8191] of byte;
-    queuedSprites: array[0..1, 0..MAX_QUEUED_SPRITES - 1] of TQueuedSprite;
+    spriteSlots: array[0..1, 0..1] of TQueuedSpriteSlots;
+    queuedSprites: array[0..1] of PQueuedSpriteSlots;     // filled this frame
     queuedSpriteCount: array[0..1] of byte;
-    renderedSprites: array[0..1, 0..MAX_QUEUED_SPRITES - 1] of TQueuedSprite;
+    renderedSprites: array[0..1] of PQueuedSpriteSlots;   // drawn last frame
     renderedSpriteCount: array[0..1] of byte;
+{$ifdef PREPARED_RESTORE}
+    restoreCache: array[0..1] of TRestoreCache;
+{$endif}
 
     roomTriggers: array[0..3, 0..9] of byte;
     triggerCount: byte;
@@ -433,6 +487,17 @@ var
 
 
     vramLineOffset: array[0..99] of word; // unused on STE, kept for compatibility
+{$ifdef PROBE_FLIP}
+    flipWrites, flipStraddles: longword;
+{$endif}
+{$ifdef SAFE_FLIP_VBL}
+    pendingScreen: longword = 0;   // written to the shifter by the VBL routine
+    vblSlot: integer = -1;
+{$endif}
+{$ifdef PROBE_FLIP_WIDEN}
+    probeDelay: word;
+    probeSink: longword;
+{$endif}
 
 {$i generated/world_sprite_atlas_map.inc}
 
@@ -567,6 +632,16 @@ begin
     Result := (v shr 8) or (v shl 8);
 end;
 
+// FPC's m68k backend emits no MULU.W at all: every variable product, even
+// word * word assigned to a word, becomes a call to fpc_mul_dword, measured at
+// ~510 cycles in W0 R11. MULU.W is 70. Use this wherever both factors are
+// known to fit in 16 bits and the product fits in 32.
+function MulWord(a, b: word): longword; assembler; nostackframe;
+asm
+    move.w  a, d0
+    mulu.w  b, d0
+end;
+
 procedure FixWorldEndian(var w: TWorld);
 var i: byte;
 begin
@@ -598,17 +673,78 @@ begin
     BlitterClearBitmap4(buf, 320, 200, 0, 0, 320);
 end;
 
+{$ifdef SAFE_FLIP_VBL}
+// Runs from the TOS VBL queue, inside the vertical blank, so the byte writes
+// cannot be split by the shifter's address reload. The counter ($8205/07/09) is
+// forced as well as the base: the ST reloads the counter near the end of the
+// previous frame, before the VBL interrupt, so writing only the base would take
+// effect one frame late. This is what AGTools' STE display service does.
+procedure VblSetScreen; assembler;
+asm
+    movem.l d0-d1/a0,-(sp)
+    move.l  pendingScreen,d0
+    beq.s   @done
+    lea     $FFFF8200,a0
+    move.l  d0,d1
+    swap    d1
+    move.b  d1,1(a0)        // $FFFF8201  base  bits 16-23
+    move.b  d1,5(a0)        // $FFFF8205  counter
+    move.l  d0,d1
+    lsr.l   #8,d1
+    move.b  d1,3(a0)        // $FFFF8203  base  bits 8-15
+    move.b  d1,7(a0)        // $FFFF8207  counter
+    move.b  d0,$D(a0)       // $FFFF820D  base  bits 0-7
+    move.b  d0,9(a0)        // $FFFF8209  counter
+@done:
+    movem.l (sp)+,d0-d1/a0
+end;
+
+procedure InstallVblScreen;
+var queue: ^pointer;
+    count, i: word;
+begin
+    count := PWord(pointer(longword($00000454)))^;
+    queue := pointer(PLongWord(pointer(longword($00000456)))^);
+    for i := 0 to count - 1 do
+        if queue[i] = nil then begin
+            queue[i] := @VblSetScreen;
+            vblSlot := i;
+            exit;
+        end;
+end;
+
+procedure RemoveVblScreen;
+var queue: ^pointer;
+begin
+    if vblSlot < 0 then exit;
+    queue := pointer(PLongWord(pointer(longword($00000456)))^);
+    queue[vblSlot] := nil;
+    vblSlot := -1;
+end;
+{$endif}
+
 procedure ScreenInit;
+{$ifdef SAFE_FLIP_ALIGN}
+var pairBase: longword;
+{$endif}
 begin
     oldRez := xbios_getrez;
     // TODO: save palette – needs external SavePalette from screen.s
     FillChar(oldPalette, SizeOf(oldPalette), 0);
     oldScreen := xbios_logbase;
+{$ifdef SAFE_FLIP_ALIGN}
+    SCREEN_LOG_RAW := gemdos_malloc(SCREEN_PAIR_ALLOC);
+    SCREEN_PHY_RAW := nil;
+    pairBase := (longword(SCREEN_LOG_RAW) + $FFFF) and (not longword($FFFF));
+    SCREEN_LOG := pword(pairBase);
+    SCREEN_PHY := pword(pairBase + SCREEN_PAIR_OFFSET);
+{$else}
     SCREEN_LOG_RAW := gemdos_malloc(SCREEN_ALLOC);
     SCREEN_PHY_RAW := gemdos_malloc(SCREEN_ALLOC);
-    SCREEN_BKG_RAW := gemdos_malloc(SCREEN_ALLOC);
     AlignScreenBuffer(SCREEN_LOG_RAW, SCREEN_LOG);
     AlignScreenBuffer(SCREEN_PHY_RAW, SCREEN_PHY);
+{$endif}
+    SCREEN_BKG_RAW := gemdos_malloc(SCREEN_ALLOC);
     AlignScreenBuffer(SCREEN_BKG_RAW, SCREEN_BKG);
     ClearScreen(SCREEN_LOG);
     ClearScreen(SCREEN_PHY);
@@ -622,27 +758,67 @@ begin
     lastPaletteMsgSource := -1;
     FillChar(queuedSpriteCount, SizeOf(queuedSpriteCount), 0);
     FillChar(renderedSpriteCount, SizeOf(renderedSpriteCount), 0);
+    FillChar(spriteSlots, SizeOf(spriteSlots), 0);
+    queuedSprites[0] := @spriteSlots[0, 0];
+    renderedSprites[0] := @spriteSlots[0, 1];
+    queuedSprites[1] := @spriteSlots[1, 0];
+    renderedSprites[1] := @spriteSlots[1, 1];
     xbios_setscreen(SCREEN_LOG, SCREEN_PHY, 0); // ST Low: 320x200x16
+{$ifdef SAFE_FLIP_VBL}
+    pendingScreen := longword(SCREEN_PHY);
+    InstallVblScreen;
+{$endif}
 end;
 
 procedure ScreenDone;
 begin
+{$ifdef SAFE_FLIP_VBL}
+    RemoveVblScreen;
+    pendingScreen := 0;
+{$endif}
     xbios_setscreen(oldScreen, oldScreen, oldRez);
     xbios_setpalette(@oldPalette[0]);
     gemdos_mfree(SCREEN_LOG_RAW);
-    gemdos_mfree(SCREEN_PHY_RAW);
+    if SCREEN_PHY_RAW <> nil then gemdos_mfree(SCREEN_PHY_RAW);
     gemdos_mfree(SCREEN_BKG_RAW);
     gemdos_super(pointer(1));
 end;
 
 procedure SetPhysicalScreen(screen: pword);
 var addr: longword;
+{$if defined(PROBE_FLIP) and not defined(SAFE_FLIP_VBL)}
+    vbl: longword;
+{$endif}
 begin
     if screen = nil then exit;
     addr := longword(screen);
+{$ifdef SAFE_FLIP_VBL}
+    pendingScreen := addr;
+{$ifdef PROBE_FLIP}
+    Inc(flipWrites);   // no straddle counter: the write happens inside the VBI
+{$endif}
+    if vblSlot >= 0 then exit;   // handler installed; it programs the shifter
+{$endif}
+{$if defined(PROBE_FLIP) and not defined(SAFE_FLIP_VBL)}
+    // The shifter reloads its address counter from these three registers at the
+    // start of display. Writing them is not atomic against that reload, so a
+    // frame boundary landing between two of the writes shows one frame from a
+    // mixed address. Count how often the write straddles a boundary.
+    vbl := PLongWord(pointer(longword($00000466)))^;
+{$endif}
     PByte(pointer(longword($FFFF8201)))^ := byte(addr shr 16);
+{$ifdef PROBE_FLIP_WIDEN}
+    // Deliberately widen the window, to prove the mechanism rather than argue it.
+    for probeDelay := 0 to 200 do probeSink := probeSink + 1;
+{$endif}
     PByte(pointer(longword($FFFF8203)))^ := byte(addr shr 8);
     PByte(pointer(longword($FFFF820D)))^ := byte(addr);
+{$ifndef SAFE_FLIP_VBL}
+{$ifdef PROBE_FLIP}
+    Inc(flipWrites);
+    if PLongWord(pointer(longword($00000466)))^ <> vbl then Inc(flipStraddles);
+{$endif}
+{$endif}
 end;
 
 procedure SwapScreen;
@@ -737,8 +913,8 @@ begin
     if previousH > PLAYFIELD_HEIGHT then previousH := PLAYFIELD_HEIGHT;
     if destH >= previousH then exit;
 
-    previousTop := BG_IMAGE_OFFSET_Y + (PLAYFIELD_HEIGHT - previousH) div 2;
-    destTop := BG_IMAGE_OFFSET_Y + (PLAYFIELD_HEIGHT - destH) div 2;
+    previousTop := BG_IMAGE_OFFSET_Y + (word(PLAYFIELD_HEIGHT - previousH) shr 1);
+    destTop := BG_IMAGE_OFFSET_Y + (word(PLAYFIELD_HEIGHT - destH) shr 1);
     stripH := destTop - previousTop;
     if stripH = 0 then exit;
     BlitterClearBitmap4(SCREEN_LOG, 320, stripH,
@@ -875,24 +1051,27 @@ begin
 end;
 
 procedure DrawSquashedPlayfieldBlitter(src: pword; destH: word);
-var srcStep, yDst: word;
+var stepIndex: word;
     srcIncY: word;
     srcPtr, dstPtr: PByte;
 begin
     if (src = nil) or (SCREEN_LOG = nil) then exit;
     if (destH = 0) or (destH > PLAYFIELD_HEIGHT) then exit;
-    if (PLAYFIELD_HEIGHT mod destH) <> 0 then begin
+    case destH of
+        160: stepIndex := 0;
+        80: stepIndex := 1;
+        32: stepIndex := 2;
+        8: stepIndex := 3;
+    else begin
         DrawSquashedPlayfieldCpu(src, destH);
         exit;
     end;
-
-    srcStep := PLAYFIELD_HEIGHT div destH;
-    yDst := BG_IMAGE_OFFSET_Y + (PLAYFIELD_HEIGHT - destH) div 2;
+    end;
     srcPtr := PByte(longword(src) + longword(BG_IMAGE_OFFSET_Y) * SCREEN_LINE_BYTES);
-    dstPtr := PByte(longword(SCREEN_LOG) + longword(yDst) * SCREEN_LINE_BYTES);
+    dstPtr := PByte(longword(SCREEN_LOG) + FLIP_DEST_OFFSET[stepIndex]);
 
     // After the 80th word, advance directly to the next sampled source line.
-    srcIncY := srcStep * SCREEN_LINE_BYTES - (SCREEN_LINE_BYTES - 2);
+    srcIncY := FLIP_SOURCE_INC_Y[stepIndex];
 
     BlitterWait;
     BlitterWriteByte(BLITTER_SKEW, 0);
@@ -1084,20 +1263,22 @@ end;
 procedure QueueGeneratedSprite(dstX, dstY: word; frame: PSteSpriteFrame;
     wordsBase, palBase: PWord; palSlot: byte; stableId: byte = $FF);
 var idx: byte;
+    spr: PQueuedSprite;
 begin
     if frame = nil then exit;
     idx := queuedSpriteCount[screenLogIndex];
-    if idx > High(queuedSprites[0]) then exit;
-    queuedSprites[screenLogIndex, idx].x := dstX;
-    queuedSprites[screenLogIndex, idx].y := dstY;
-    queuedSprites[screenLogIndex, idx].widthPx := frame^.widthPx;
-    queuedSprites[screenLogIndex, idx].heightPx := frame^.heightPx;
-    queuedSprites[screenLogIndex, idx].frame := frame;
-    queuedSprites[screenLogIndex, idx].wordsBase := wordsBase;
-    queuedSprites[screenLogIndex, idx].palBase := palBase;
-    queuedSprites[screenLogIndex, idx].palSlot := palSlot;
+    if idx > MAX_QUEUED_SPRITES - 1 then exit;
+    spr := @queuedSprites[screenLogIndex]^[idx];
+    spr^.x := dstX;
+    spr^.y := dstY;
+    spr^.widthPx := frame^.widthPx;
+    spr^.heightPx := frame^.heightPx;
+    spr^.frame := frame;
+    spr^.wordsBase := wordsBase;
+    spr^.palBase := palBase;
+    spr^.palSlot := palSlot;
     if stableId >= 32 then stableId := 32 + idx;
-    queuedSprites[screenLogIndex, idx].stableId := stableId;
+    spr^.stableId := stableId;
     Inc(queuedSpriteCount[screenLogIndex]);
 end;
 
@@ -1105,16 +1286,16 @@ procedure QueueSpriteRect(dstX, dstY, widthPx, heightPx: word);
 var idx: byte;
 begin
     idx := queuedSpriteCount[screenLogIndex];
-    if idx > High(queuedSprites[0]) then exit;
-    queuedSprites[screenLogIndex, idx].x := dstX;
-    queuedSprites[screenLogIndex, idx].y := dstY;
-    queuedSprites[screenLogIndex, idx].widthPx := widthPx;
-    queuedSprites[screenLogIndex, idx].heightPx := heightPx;
-    queuedSprites[screenLogIndex, idx].frame := nil;
-    queuedSprites[screenLogIndex, idx].wordsBase := nil;
-    queuedSprites[screenLogIndex, idx].palBase := nil;
-    queuedSprites[screenLogIndex, idx].palSlot := 0;
-    queuedSprites[screenLogIndex, idx].stableId := 32 + idx;
+    if idx > MAX_QUEUED_SPRITES - 1 then exit;
+    queuedSprites[screenLogIndex]^[idx].x := dstX;
+    queuedSprites[screenLogIndex]^[idx].y := dstY;
+    queuedSprites[screenLogIndex]^[idx].widthPx := widthPx;
+    queuedSprites[screenLogIndex]^[idx].heightPx := heightPx;
+    queuedSprites[screenLogIndex]^[idx].frame := nil;
+    queuedSprites[screenLogIndex]^[idx].wordsBase := nil;
+    queuedSprites[screenLogIndex]^[idx].palBase := nil;
+    queuedSprites[screenLogIndex]^[idx].palSlot := 0;
+    queuedSprites[screenLogIndex]^[idx].stableId := 32 + idx;
     Inc(queuedSpriteCount[screenLogIndex]);
 end;
 
@@ -1256,7 +1437,6 @@ begin
             4: begin imgPtr := @IMG_CREDITS_05[0]; palPtr := @IMG_CREDITS_05_PAL[0]; end;
             5: begin imgPtr := @IMG_CREDITS_06[0]; palPtr := @IMG_CREDITS_06_PAL[0]; end;
             6: begin imgPtr := @IMG_CREDITS_07[0]; palPtr := @IMG_CREDITS_07_PAL[0]; end;
-            7: begin imgPtr := @IMG_CREDITS_08[0]; palPtr := @IMG_CREDITS_08_PAL[0]; end;
         end;
     end;
     if imgPtr = nil then exit;
@@ -1394,6 +1574,7 @@ procedure DrawGeneratedSpriteFrameBlitter(scr: pword; dstX, dstY: word;
     frame: PSteSpriteFrame; wordsBase: PWord);
 var rowWords: word;
     lX2, lXcount: word;
+    emsRowOffset: word;
     skew: byte;
     endMask1, endMask2, endMask3: word;
     dstWords: pword;
@@ -1422,7 +1603,8 @@ begin
         skew := skew or BLITTER_SKEW_NFSR;
 
     dstWords := scr;
-    Inc(dstWords, (longword(dstY) * SCREEN_LINE_BYTES + longword(dstX shr 4) * 8) shr 1);
+    // dstY * SCREEN_LINE_BYTES div 2 words; shifts, not a 32-bit multiply.
+    Inc(dstWords, (longword(dstY) shl 6) + (longword(dstY) shl 4) + ((dstX shr 4) shl 2));
     gfxBase := wordsBase;
     Inc(gfxBase, frame^.dataOffset);
 
@@ -1443,7 +1625,20 @@ begin
 {$if defined(VERIFY_EMS) or defined(BENCH_SLIME)}
         Inc(emsDrawCounter);
 {$endif}
-        Inc(emsMasks, word(dstX and 15) * frame^.heightPx * 2);
+{$ifdef SLIME_CPU}
+        if wordsBase = @SPR_SLIME_WORDS[0] then begin
+            DrawSlimeCPU(dstWords, frame^.paletteOffset + word(dstX and 15) * 4);
+            exit;
+        end;
+{$endif}
+{$ifdef SLIME_EMX}
+        if wordsBase = @SPR_SLIME_WORDS[0] then begin
+            DrawSlimeEMX(gfxBase, dstWords, frame^.paletteOffset + word(dstX and 15) * 4);
+            exit;
+        end;
+{$endif}
+        emsRowOffset := word(MulWord(dstX and 15, frame^.heightPx)) shl 1;
+        Inc(emsMasks, emsRowOffset);
         DrawSpriteEMS(gfxBase, dstWords, emsMasks, frame^.heightPx, lXcount, skew);
         exit;
     end;
@@ -1569,6 +1764,7 @@ begin
     candidate.heightPx := word(bottom) - candidate.y;
     if (candidate.widthPx = 0) or (candidate.heightPx = 0) then exit;
 
+{$if defined(LEGACY_DIRTY_BOOKKEEPING) and not defined(SIMPLE_RESTORE)}
     i := 0;
     while i < count do begin
         if DirtyRectsTouch(candidate, rects[i]) then begin
@@ -1579,6 +1775,7 @@ begin
         end else
             Inc(i);
     end;
+{$endif}
 
     if count >= MAX_DIRTY_RECTS then exit;
     rects[count] := candidate;
@@ -1591,6 +1788,8 @@ var i: byte;
 begin
     Result := false;
     if (spr = nil) or (count = 0) then exit;
+    // Caching spr^'s edges in locals and walking `rects` by pointer was tried
+    // and measured worse: 906 -> 1,241 cycles a call, FPC spilling instead.
     for i := 0 to count - 1 do
         if (spr^.x < rects[i].x + rects[i].widthPx) and
            (rects[i].x < spr^.x + spr^.widthPx) and
@@ -1613,7 +1812,7 @@ begin
     if forceFullCopy then Inc(benchRestorePixels, 64000)
     else if count > 0 then
         for i := 0 to count - 1 do
-            Inc(benchRestorePixels, longword(rects[i].widthPx) * rects[i].heightPx);
+            Inc(benchRestorePixels, MulWord(rects[i].widthPx, rects[i].heightPx));
 {$endif}
     if forceFullCopy then begin
         BlitterCopyData16(SCREEN_BKG, SCREEN_LOG, SCREEN_BYTES);
@@ -1621,7 +1820,13 @@ begin
     end;
     if count = 0 then exit;
 {$ifndef NO_RESTORE_ASM}
+{$ifdef PREPARED_RESTORE}
+    PrepareRestoreRectsASM(SCREEN_BKG, SCREEN_LOG, @rects[0], count,
+        @restoreCache[screenLogIndex]);
+    RestorePreparedASM(@restoreCache[screenLogIndex].entries[0], count);
+{$else}
     RestoreRectsASM(SCREEN_BKG, SCREEN_LOG, @rects[0], count);
+{$endif}
     exit;
 {$endif}
     for i := 0 to count - 1 do
@@ -1634,53 +1839,184 @@ begin
         );
 end;
 
+procedure DrawOccludedFlob(scr: PWord; x, y: word; frame: PSteSpriteFrame);
+var masks: array[0..399] of word;
+    sourceMask, destMask, background, gfx, dst: PWord;
+    row, col, count, screenY, shift, maskRowOffset: word;
+    blocked: word;
+begin
+    if (frame = nil) or (scr = nil) or (SCREEN_BKG = nil) then exit;
+    if (x >= 320) or (y >= 200) then exit;
+    if (frame^.heightPx = 0) or (frame^.heightPx > 200) then exit;
+    if (x + frame^.widthPx > 320) or (y + frame^.heightPx > 200) then exit;
+    if (frame^.rowWords <> 1) or (frame^.widthPx > 16) then exit;
+    count := (word((x and 15) + frame^.widthPx + 15)) shr 4;
+    shift := x and 15;
+    maskRowOffset := word(MulWord(shift, frame^.heightPx)) shl 1;
+    sourceMask := @SPR_FLOB_EMS_MASKS[frame^.paletteOffset + maskRowOffset];
+    destMask := @masks[0];
+    background := SCREEN_BKG;
+    Inc(background, (longword(y) shl 6) + (longword(y) shl 4) + ((x shr 4) shl 2));
+    screenY := y;
+    for row := 0 to frame^.heightPx - 1 do begin
+        destMask[0] := sourceMask[0];
+        destMask[1] := sourceMask[1];
+        if (screenY >= BG_IMAGE_OFFSET_Y) and
+           (screenY < BG_IMAGE_OFFSET_Y + PLAYFIELD_HEIGHT) then
+            for col := 0 to count - 1 do begin
+                // Exact palette indices 1 or 2, not equal-looking RGB colours.
+                blocked := (background[col*4] xor background[col*4+1]) and
+                    not (background[col*4+2] or background[col*4+3]);
+                destMask[col] := destMask[col] and not blocked;
+            end;
+        Inc(background, 80);
+        Inc(sourceMask, 2);
+        Inc(destMask, 2);
+        Inc(screenY);
+    end;
+    dst := scr;
+    Inc(dst, (longword(y) shl 6) + (longword(y) shl 4) + ((x shr 4) shl 2));
+    gfx := @SPR_FLOB_WORDS[frame^.dataOffset];
+    if count > 1 then shift := shift or BLITTER_SKEW_NFSR;
+{$if defined(VERIFY_EMS) or defined(BENCH_SLIME)}
+    Inc(emsDrawCounter);
+{$endif}
+{$ifdef BENCH_SLIME}
+    Inc(benchBlits);
+{$endif}
+    DrawSpriteEMS(gfx, dst, @masks[0], frame^.heightPx, count, shift);
+end;
+
 procedure RenderQueuedSprites;
 var rects: TDirtyRectArray;
+    foregroundFlob: PQueuedSprite;
+{$ifdef BENCH_PROFILE}
+    benchTick: longword;
+{$endif}
     dirtyCount, oldCount, newCount: byte;
     i, oldIndex: byte;
     oldById: array[0..32 + MAX_QUEUED_SPRITES - 1] of byte;
     dirtyPixels: longword;
     forceFullCopy: boolean;
     spr: PQueuedSprite;
+{$ifndef LEGACY_DIRTY_BOOKKEEPING}
+    changed: array[0..MAX_QUEUED_SPRITES - 1] of boolean;
+    oldSpr: PQueuedSprite;
+    expanded: boolean;
+{$endif}
+    queued, rendered: PQueuedSpriteSlots;
 begin
+{$ifdef BENCH_PROFILE}
+    benchTick := PLongWord(pointer(longword($4BA)))^;
+{$endif}
+    // Hold both lists in locals: every `queuedSprites[screenLogIndex]^[i]` else
+    // reloads screenLogIndex and the pointer from absolute globals, ~50 cycles
+    // a time on a routine that walks 16 sprites several times over.
+    queued := queuedSprites[screenLogIndex];
+    rendered := renderedSprites[screenLogIndex];
     dirtyCount := 0;
     oldCount := renderedSpriteCount[screenLogIndex];
     newCount := queuedSpriteCount[screenLogIndex];
+{$ifndef LEGACY_DIRTY_BOOKKEEPING}
+    FillChar(changed, SizeOf(changed), 0);
+{$endif}
+{$ifdef SIMPLE_RESTORE}
+    // Restore this page's previous sprites, then redraw all live sprites.
+    // Benchmark alternative: no merging or dirty-intersection searches.
+    if oldCount > 0 then
+        for i := 0 to oldCount - 1 do
+            AddDirtySpriteRect(rects, dirtyCount, @rendered^[i]);
+    if newCount > 0 then
+        for i := 0 to newCount - 1 do
+            if queued^[i].frame = nil then
+                AddDirtySpriteRect(rects, dirtyCount, @queued^[i]);
+{$else}
     // IDs 0..19: slime, 20: Flob, 21..22: world objects; 32+: effect slots.
     FillChar(oldById, SizeOf(oldById), $FF);
     if oldCount > 0 then
         for i := 0 to oldCount - 1 do
-            oldById[renderedSprites[screenLogIndex, i].stableId] := i;
+            oldById[rendered^[i].stableId] := i;
     if newCount > 0 then
         for i := 0 to newCount - 1 do begin
-            oldIndex := oldById[queuedSprites[screenLogIndex, i].stableId];
+            oldIndex := oldById[queued^[i].stableId];
             if oldIndex <> $FF then begin
-                oldById[queuedSprites[screenLogIndex, i].stableId] := $FF;
-                if QueuedSpritesEqual(@renderedSprites[screenLogIndex, oldIndex],
-                    @queuedSprites[screenLogIndex, i]) then continue;
+                oldById[queued^[i].stableId] := $FF;
+                if QueuedSpritesEqual(@rendered^[oldIndex],
+                    @queued^[i]) then continue;
+{$ifndef LEGACY_DIRTY_BOOKKEEPING}
+                oldSpr := @rendered^[oldIndex];
+                spr := @queued^[i];
+                // Animation-only changes share bounds: restore that area once.
+                if (oldSpr^.x <> spr^.x) or (oldSpr^.y <> spr^.y) or
+                   (oldSpr^.widthPx <> spr^.widthPx) or (oldSpr^.heightPx <> spr^.heightPx) then
+{$endif}
                 AddDirtySpriteRect(rects, dirtyCount,
-                    @renderedSprites[screenLogIndex, oldIndex]);
+                    @rendered^[oldIndex]);
             end;
-            AddDirtySpriteRect(rects, dirtyCount, @queuedSprites[screenLogIndex, i]);
+{$ifndef LEGACY_DIRTY_BOOKKEEPING}
+            changed[i] := true;
+{$endif}
+            AddDirtySpriteRect(rects, dirtyCount, @queued^[i]);
         end;
     if oldCount > 0 then
         for i := 0 to oldCount - 1 do
-            if oldById[renderedSprites[screenLogIndex, i].stableId] <> $FF then
-                AddDirtySpriteRect(rects, dirtyCount, @renderedSprites[screenLogIndex, i]);
+            if oldById[rendered^[i].stableId] <> $FF then
+                AddDirtySpriteRect(rects, dirtyCount, @rendered^[i]);
+{$endif}
+
+{$if not defined(LEGACY_DIRTY_BOOKKEEPING) and not defined(SIMPLE_RESTORE)}
+    // Redrawing a sprite touches its whole bounds, not just the original dirty
+    // area. Expand through overlaps so later, unchanged sprites stay on top.
+    if (dirtyCount > 0) and (newCount > 0) then
+        repeat
+            expanded := false;
+            for i := 0 to newCount - 1 do begin
+                if changed[i] then continue;
+                spr := @queued^[i];
+                if spr^.frame = nil then continue;
+                if SpriteIntersectsDirty(spr, rects, dirtyCount) then begin
+                    changed[i] := true;
+                    AddDirtySpriteRect(rects, dirtyCount, spr);
+                    expanded := true;
+                end;
+            end;
+        until not expanded;
+{$endif}
 
     dirtyPixels := 0;
     if dirtyCount > 0 then
         for i := 0 to dirtyCount - 1 do
-            Inc(dirtyPixels, longword(rects[i].widthPx) * rects[i].heightPx);
+            Inc(dirtyPixels, MulWord(rects[i].widthPx, rects[i].heightPx));
     forceFullCopy := (dirtyCount >= DIRTY_FULL_COPY_RECTS) or
         (dirtyPixels >= DIRTY_FULL_COPY_PIXELS);
+{$ifdef BENCH_PROFILE}
+    Inc(benchBuildTicks, PLongWord(pointer(longword($4BA)))^ - benchTick);
+    benchTick := PLongWord(pointer(longword($4BA)))^;
+{$endif}
     RestoreDirtyRects(rects, dirtyCount, forceFullCopy);
+{$ifdef BENCH_PROFILE}
+    Inc(benchCopyTicks, PLongWord(pointer(longword($4BA)))^ - benchTick);
+    benchTick := PLongWord(pointer(longword($4BA)))^;
+{$endif}
 
+    foregroundFlob := nil;
     if newCount > 0 then
         for i := 0 to newCount - 1 do begin
-            spr := @queuedSprites[screenLogIndex, i];
+            spr := @queued^[i];
             if spr^.frame = nil then continue;
+{$ifndef SIMPLE_RESTORE}
+{$ifndef LEGACY_DIRTY_BOOKKEEPING}
+            if forceFullCopy or changed[i] then
+{$else}
             if forceFullCopy or SpriteIntersectsDirty(spr, rects, dirtyCount) then
+{$endif}
+{$endif}
+            begin
+                // A8's Flob players have priority over world players. Enforce
+                // it here, independent of room-entry/gameplay enqueue order.
+                if (spr^.stableId = 20) and (spr^.wordsBase = @SPR_FLOB_WORDS[0]) then
+                    foregroundFlob := spr
+                else
                 DrawGeneratedSpriteFrameBlitter(
                     SCREEN_LOG,
                     spr^.x,
@@ -1688,13 +2024,25 @@ begin
                     spr^.frame,
                     spr^.wordsBase
                 );
+            end;
         end;
+    if foregroundFlob <> nil then
+        DrawOccludedFlob(SCREEN_LOG, foregroundFlob^.x, foregroundFlob^.y,
+            foregroundFlob^.frame);
 
+{$ifdef BENCH_PROFILE}
+    Inc(benchDrawTicks, PLongWord(pointer(longword($4BA)))^ - benchTick);
+    benchTick := PLongWord(pointer(longword($4BA)))^;
+{$endif}
     renderedSpriteCount[screenLogIndex] := newCount;
-    if newCount > 0 then
-        for i := 0 to newCount - 1 do
-            renderedSprites[screenLogIndex, i] := queuedSprites[screenLogIndex, i];
+    // The list just rendered becomes the history; next frame refills the other
+    // slot from index 0, and nothing past queuedSpriteCount is ever read.
+    queuedSprites[screenLogIndex] := rendered;
+    renderedSprites[screenLogIndex] := queued;
     queuedSpriteCount[screenLogIndex] := 0;
+{$ifdef BENCH_PROFILE}
+    Inc(benchHistoryTicks, PLongWord(pointer(longword($4BA)))^ - benchTick);
+{$endif}
 end;
 
 procedure FlushQueuedSprites;
@@ -1901,13 +2249,20 @@ end;
 procedure DrawSlimes;
 var i: byte;
     px, py: smallint;
-    frameIdx: byte;
+    frameIdx, baseFrame, oddFrame: byte;
 begin
-    frameIdx := (sysframe shr 4) and 1;
-    slimeDrawFrame := frameIdx;
+    baseFrame := (sysframe shr 4) and 1;
+    oddFrame := baseFrame;
+{$ifdef STAGGER_SLIME}
+    // Delay odd IDs by one tick, including the byte counter wrap at zero.
+    if (sysframe and 15) = 0 then oddFrame := oddFrame xor 1;
+{$endif}
     for i := 0 to 19 do begin
         if slimeX[i] = 0 then
             continue;
+        frameIdx := baseFrame;
+        if (i and 1) <> 0 then frameIdx := oddFrame;
+        slimeDrawFrame[i] := frameIdx;
         SlimeScreenPosition(i, px, py);
         if (px < 0) or (py < 0) then
             continue;
@@ -1999,7 +2354,10 @@ begin
     if flipped and (sprites.flipable[num] = 1) and
         (spriteAtlasFrameCount[num] >= frameCount + frameCount) then
         Inc(frameIdx, frameCount);
-    frame := PSteSpriteFrame(longword(spriteAtlasFrames[num]) + longword(frameIdx) * SizeOf(TSteSpriteFrame));
+    // Let the compiler scale by SizeOf: a hand-written stride silently breaks
+    // the flipped frame set whenever the record's padding changes.
+    frame := spriteAtlasFrames[num];
+    Inc(frame, frameIdx);
 
     x := sprites.x[num];
     y := sprites.y[num];
@@ -2061,6 +2419,7 @@ function GeneratedSpritesOverlap(frameA: PSteSpriteFrame; wordsA: PWord; ax, ay:
 var left, top, right, bottom: smallint;
     x, y, span: smallint;
     maskA, maskB: PWord;
+    rowOffsetA, rowOffsetB: word;
     bitsA, bitsB, clip: word;
 begin
     Result := false;
@@ -2095,8 +2454,10 @@ begin
         exit;
     end;
 
-    maskA := wordsA + frameA^.maskOffset + word(top - ay) * frameA^.rowWords;
-    maskB := wordsB + frameB^.maskOffset + word(top - by) * frameB^.rowWords;
+    rowOffsetA := word(MulWord(word(top - ay), frameA^.rowWords));
+    rowOffsetB := word(MulWord(word(top - by), frameB^.rowWords));
+    maskA := wordsA + frameA^.maskOffset + rowOffsetA;
+    maskB := wordsB + frameB^.maskOffset + rowOffsetB;
     for y := top to bottom - 1 do begin
         x := left;
         while x < right do begin
@@ -3055,7 +3416,9 @@ end;
 procedure FlobFall;
 var drop: byte;
     step: byte;
+    previousY: byte;
 begin
+    previousY := flobY;
     if flobFalling < $ff then Inc(flobFalling);
     if flobFalling > 4 then begin
         flobFrame := FRAME_FALL;
@@ -3078,6 +3441,8 @@ begin
                 break;
         end;
     end;
+    // Gravity counts as movement too; the flip itself must not activate keys.
+    if flobY <> previousY then spriteCollisionMovePending := false;
 end;
 
 // ***************************************************
@@ -3242,7 +3607,11 @@ begin
     if flipped and (sprites.flipable[num] = 1) then
         yy := 80 - (h + yy);
     y := yy;
+{$if LEVEL_SCALE_X = 2}
+    w := (spriteAtlasFrames[num]^.widthPx + 1) shr 1;
+{$else}
     w := (spriteAtlasFrames[num]^.widthPx + LEVEL_SCALE_X - 1) div LEVEL_SCALE_X;
+{$endif}
     Result := true;
 end;
 
@@ -3275,7 +3644,10 @@ begin
     if flipped and (sprites.flipable[num] = 1) and
         (spriteAtlasFrameCount[num] >= frameCount + frameCount) then
         Inc(frameIdx, frameCount);
-    frame := PSteSpriteFrame(longword(spriteAtlasFrames[num]) + longword(frameIdx) * SizeOf(TSteSpriteFrame));
+    // Let the compiler scale by SizeOf: a hand-written stride silently breaks
+    // the flipped frame set whenever the record's padding changes.
+    frame := spriteAtlasFrames[num];
+    Inc(frame, frameIdx);
 
     x := sprites.x[num];
     y := sprites.y[num];
@@ -3327,7 +3699,7 @@ begin
         if not SpriteCollisionRect(p, sx, sy, sw, sh) then
             continue;
         if RectsOverlap(fx, fy, fw, fh, sx, sy, sw, sh) then begin
-            // Interactive objects wait for deliberate movement after a flip,
+            // Interactive objects wait for movement (including falling) after a flip,
             // but moving enemies must remain lethal while Flob stands still.
             if spriteCollisionMovePending and
                (sprites.stype[p] <> STYPE_ENEMY) then
@@ -3349,18 +3721,30 @@ end;
 procedure CheckSlimeCollision;
 var i, flobFrameIdx, slimeFrameIdx: byte;
     flobScreenX, flobScreenY: smallint;
+    flobRight, flobBottom: smallint;
     slimeScreenX, slimeScreenY: smallint;
 begin
     flobFrameIdx := flobFrame + flobDir;
     if flobFrameIdx > High(SPR_FLOB_FRAMES) then exit;
-    slimeFrameIdx := slimeDrawFrame;
     flobScreenX := smallint(flobX) * LEVEL_SCALE_X;
     flobScreenY := smallint(flobY) * LEVEL_SCALE_Y + FLOB_RENDER_OFFSET_Y;
+    // Reject by bounding box before calling. GeneratedSpritesOverlap makes the
+    // same test, but only after eight arguments, a jsr and its prologue: 966
+    // cycles to answer "they do not touch" for fourteen of fifteen slime.
+    flobRight := flobScreenX + smallint(SPR_FLOB_FRAMES[flobFrameIdx].widthPx);
+    flobBottom := flobScreenY + smallint(SPR_FLOB_FRAMES[flobFrameIdx].heightPx);
     for i := 0 to 19 do begin
         if slimeX[i] = 0 then
             continue;
 
+        slimeFrameIdx := slimeDrawFrame[i];
         SlimeScreenPosition(i, slimeScreenX, slimeScreenY);
+        if slimeScreenX >= flobRight then continue;
+        if slimeScreenY >= flobBottom then continue;
+        if slimeScreenX + smallint(SPR_SLIME_FRAMES[slimeFrameIdx].widthPx)
+            <= flobScreenX then continue;
+        if slimeScreenY + smallint(SPR_SLIME_FRAMES[slimeFrameIdx].heightPx)
+            <= flobScreenY then continue;
         if GeneratedSpritesOverlap(@SPR_FLOB_FRAMES[flobFrameIdx], @SPR_FLOB_WORDS[0],
             flobScreenX, flobScreenY, @SPR_SLIME_FRAMES[slimeFrameIdx],
             @SPR_SLIME_WORDS[0], slimeScreenX, slimeScreenY) then begin
@@ -3383,9 +3767,10 @@ begin
     frameTop := FLOB_RENDER_OFFSET_Y + smallint(flobY) * LEVEL_SCALE_Y;
     topCell := 0;
     if frameTop >= BG_IMAGE_OFFSET_Y then
-        topCell := (frameTop - BG_IMAGE_OFFSET_Y) div 2;
+        topCell := word(frameTop - BG_IMAGE_OFFSET_Y) shr 1;
     if frameTop + smallint(frame^.heightPx) <= BG_IMAGE_OFFSET_Y then exit;
-    bottomCell := (frameTop + smallint(frame^.heightPx) - 1 - BG_IMAGE_OFFSET_Y) div 2;
+    // The rejection above guarantees a nonnegative numerator, even above the field.
+    bottomCell := word(frameTop + smallint(frame^.heightPx) - 1 - BG_IMAGE_OFFSET_Y) shr 1;
     if bottomCell > 79 then bottomCell := 79;
     column := flobX shr 3;
     rows := @SPR_FLOB_WORDS[frame^.maskOffset];
@@ -3821,6 +4206,25 @@ end;
 // *** SPRITE COLLISION (1:1 from original)
 // ***************************************************
 
+procedure ShowCollectedGoalMessage(pnum: byte);
+var t: byte;
+begin
+    // Pickup masks can touch before Flob's trigger point enters the object.
+    // Consume only one-shot messages containing this goal's unflipped anchor.
+    if triggerCount = 0 then exit;
+    for t := 0 to triggerCount - 1 do begin
+        if (roomTriggers[t, 5] <> ONCE) or
+           (roomTriggers[t, 7] <> SHOW_MSG) then continue;
+        if (sprites.x[pnum] < roomTriggers[t, 1]) or
+           (sprites.x[pnum] > roomTriggers[t, 3]) or
+           (sprites.y[pnum] < roomTriggers[t, 2]) or
+           (sprites.y[pnum] > roomTriggers[t, 4]) then continue;
+        if ConditionTrigger(roomTriggers[t, 0], ONCE, NONE) then
+            LaunchTrigger(roomTriggers[t, 0], SHOW_MSG,
+                roomTriggers[t, 8], roomTriggers[t, 9], NONE);
+    end;
+end;
+
 procedure Collided(pnum: byte);
 var goal: byte;
     stype: byte;
@@ -3870,6 +4274,7 @@ begin
             if goal > 0 then begin
                 FSfx(SFX_PICKGOAL);
                 mainGoalReached := true;
+                ShowCollectedGoalMessage(pnum);
                 if sprites.state = SPRITE_COMBINED then ClearSprites
                 else ClearSprite(pnum);
             end;
@@ -4173,7 +4578,7 @@ var times, paletteIndex: byte;
         ShowSprites;
         if queuedSpriteCount[screenLogIndex] > 0 then
             for i := 0 to queuedSpriteCount[screenLogIndex] - 1 do begin
-                queued := @queuedSprites[screenLogIndex, i];
+                queued := @queuedSprites[screenLogIndex]^[i];
                 if queued^.frame <> nil then begin
                     DrawGeneratedSpriteFrameBlitter(SCREEN_BKG, queued^.x, queued^.y,
                         queued^.frame, queued^.wordsBase);
@@ -4743,8 +5148,56 @@ begin
 end;
 
 procedure ShowCredits;
+var slide: byte;
+    ticks: word;
+{$ifdef VERIFY_CREDITS}
+    output: text;
+    i: word;
+{$endif}
 begin
-    ShowCutScene(CREDITS_BANK, 8);
+{$ifdef VERIFY_CREDITS}
+    Assign(output, 'CREDITS.TXT');
+    Rewrite(output);
+{$endif}
+    // Keep the title/outro music running, as in the A8 credits.
+    BlackAll;
+    ClearScreen(SCREEN_LOG);
+    ClearScreen(SCREEN_PHY);
+    WaitForStartKeyUp;
+    for slide := 0 to 6 do begin
+        LoadCutsceneSlide(slide, CREDITS_BANK);
+        // Credits are full-height images, not cropped intro slides with captions.
+        BlitterCopyData16(SCREEN_BKG, SCREEN_LOG, SCREEN_BYTES);
+        SwapScreen;
+        FadeIn;
+        ticks := 0;
+{$ifdef VERIFY_CREDITS}
+        for i := 0 to 15999 do
+            if SCREEN_PHY[i] <> SCREEN_BKG[i] then begin
+                Writeln(output, 'FAIL pixels slide=',slide,' word=',i);
+                Close(output); Halt(1);
+            end;
+        for i := 0 to 15 do
+            if (PWord(pointer(longword($FF8240)))[i] and $FFF) <> PWord(currentPal)[i] then begin
+                Writeln(output, 'FAIL palette slide=',slide,' index=',i);
+                Close(output); Halt(1);
+            end;
+        Writeln(output, 'PASS slide=',slide); Flush(output);
+        ticks := 199;
+{$endif}
+        repeat
+            WaitFrame;
+            Inc(ticks);
+        until (ticks = 200) or IsStartingButtonDown or CRT_HelpPressed;
+        FadeOut;
+        if IsStartingButtonDown or CRT_HelpPressed then break;
+    end;
+    WaitForStartKeyUp;
+{$ifdef VERIFY_CREDITS}
+    Writeln(output, 'PASS seven credits slides');
+    Writeln(output, 'DONE');
+    Close(output);
+{$endif}
 end;
 
 procedure ShowScene(scene: byte);
@@ -5283,6 +5736,14 @@ begin
     InitGame;
 
     worldCurrent := 0;
+
+{$ifdef VERIFY_CREDITS}
+    ShowCredits;
+    UnInstallInput;
+    DoneSound;
+    ScreenDone;
+    Halt;
+{$endif}
 
 {$ifdef VERIFY_GAMEPLAY}
     VerifyGameplay;

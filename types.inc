@@ -137,6 +137,12 @@ end;
 
 type PSteTile = ^TSteTile;
 
+// Not original 8-bit data: these tables are emitted as Pascal source by the
+// asset tools, so they need not be byte-packed. At 13 bytes every second frame
+// landed on an odd address, and FPC then copied every word field through a
+// byte loop -- two of those cost ~100 cycles in each QueueGeneratedSprite call.
+// 16 bytes keeps every field aligned and makes the frame index a single shift.
+{$PACKRECORDS 4}
 type TSteSpriteFrame = record
     widthPx: word;
     heightPx: word;
@@ -146,6 +152,8 @@ type TSteSpriteFrame = record
     paletteOffset: word; // Flob/slime with paletteCount=0: EMS mask word offset.
     paletteCount: byte;
 end;
+
+{$PACKRECORDS 1}
 
 type PSteSpriteFrame = ^TSteSpriteFrame;
 

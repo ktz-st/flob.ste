@@ -1,2 +1,3 @@
 PASS comparisons=400
-BENCH rects=32000 pascal_ticks=3533 asm_ticks=1071
+PASS prepared records, cache hits, changed rectangles and buffer bases
+BENCH rects=32000 pascal_ticks=3535 asm_ticks=647 prepared_only_ticks=585 cached_total_ticks=717 cold_total_ticks=809

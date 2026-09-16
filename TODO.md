@@ -38,6 +38,53 @@
 - [ ] Overlapping sprites, flip, teleport, reveal and explosion particles: no stale pixels or layering regression.
 - Report a problem with world/room (W/R), orientation, action and screenshot when useful; distinguish a steady slowdown from an occasional long frame.
 
+## W0 R11 Frame Budget
+
+- Measured with `profile_room.py`: R11 was 32.9 FPS idle / 29.5 moving, against R06's 49.9.
+  Per-frame work was 105%/116% of the 160,000-cycle PAL budget; R11 queues 16 sprites, R06 ~7.
+- [x] Swap the queued/rendered sprite lists by pointer instead of copying them with `Move`.
+- [x] Remove `fpc_mul_dword` from every per-frame path (shift pairs for constant strides,
+      `MulWord` assembler helper for variable products). FPC's m68k back end never emits MULU.W.
+- Now 41.9 FPS idle (92% of budget) / 34.4 moving (105%). See `reports/profile_w0_r11.md`.
+- [x] Pad `TSteSpriteFrame` (`{$PACKRECORDS 4}`): at 13 bytes FPC copied its word fields
+      through byte loops. Use `Inc(frame, idx)`, never a hand-written stride — the record is
+      14 bytes, not 16, and `shl 4` broke the flipped frame set.
+- [x] Hold the queued/rendered lists in locals in `RenderQueuedSprites` instead of indexing
+      through `screenLogIndex` and a global pointer on every access.
+- Measured worse and reverted: narrowing the expansion pass, `inline` on the dirty-rect
+  leaves, caching sprite edges in `SpriteIntersectsDirty`. Adding locals to small hot
+  routines costs more in spills than it saves here.
+- [x] Pad `TQueuedSprite` to 32 bytes: a 24-byte stride was four instructions at every
+      `list^[i]`, and the annotated disassembly charged RenderQueuedSprites' four hottest
+      instructions to exactly that. Costs 1,536 bytes of RAM.
+- Assembler rewrite of the queue/render path is NOT indicated: stack-frame traffic in
+  `RenderQueuedSprites` measures 0.0%, so there are no spills to recover. Use
+  `profile_disasm.py <capture> <symbol>` before considering it again.
+- [x] `STAGGER_SLIME` enabled: W1 R13's losses were periodic spikes, not steady load.
+      Note the controlled render benchmark says the opposite — it has no slack to exploit.
+- Two rooms, two different problems: W1 R13 is spike-bound (61% mean, 2-in-16 frames redraw
+  all 16 slime), W0 R11 is mean-bound (81%, load spread evenly). Diagnose before optimising.
+- [x] Reject slime collisions by bounding box in `CheckSlimeCollision` before calling
+      `GeneratedSpritesOverlap`: 15 full mask calls a frame became ~2. Largest single gain
+      of the exercise (W0 R11 moving 36.4 -> 44.2 FPS).
+- Now: W1 R13 49.7 FPS (51% of budget), W0 R11 46.8 idle / 44.2 moving (73%/83%).
+- [ ] Confirm in play that both rooms feel right; W0 R11 moving is the remaining gap to 50 Hz. Everything left scales with the 16 queued
+      sprites; needs fewer sprites per frame or an assembler queue/render path, not another
+      micro-optimisation.
+- [ ] Re-profile the other heavy rooms before assuming R11 was the worst case.
+
+## Double-Buffer Page Flip
+
+- [x] Program the shifter from the TOS VBL queue (`SAFE_FLIP_VBL`, on by default): the
+      three-byte video base write could be split by the shifter's address reload, showing
+      one frame from a mixed address. Proven 75-for-75 with a widened window; see
+      `reports/double_buffer_blink.md`.
+- [x] Write the video counter ($FFFF8205/07/09) as well as the base, or the VBL write
+      lands one frame late — the AGTools STE display service does the same.
+- [ ] Confirm in real play that the occasional blink is gone. The natural 28-cycle window
+      was never caught firing in ~9,400 recorded frames, so the link to the reported
+      symptom is strong but not proven.
+
 ## Further Performance Work
 
 - [ ] Profile full gameplay only where playtesting finds a remaining slowdown; include physics, hazards, pickup, messages, NPCs and audio.
@@ -186,6 +233,16 @@
   - Decide whether to add an explicit visual indicator on title/selector when cheat mode is active.
   - Decide whether to port original save-clear diagnostic combo or leave save reset as an external/dev action.
 - Do not port the original slime editor unless it becomes useful for STE-specific tooling.
+
+## Fixed-Step Gameplay Timing (Deferred, 2026-09-12)
+
+- User priority: Flob must not crawl more slowly when rendering takes longer in rooms with many slime. Implementation is deferred; discuss before changing gameplay timing.
+- Investigate separating gameplay updates from presentation using a 50 Hz fixed timestep driven by elapsed VBLs. If rendering takes two VBLs, run two normal simulation steps before presenting the next image, rather than doubling movement distance in one collision step.
+- Check collisions and interactions at every simulation step. Preserve held-direction input, but consume a FIRE press edge only once so catch-up cannot trigger duplicate flips.
+- Define timing consistently for gravity, NPCs, animations and gameplay timers; avoid advancing only Flob while interactions remain tied to render FPS. Preserve the original update order.
+- Bound catch-up work to avoid a backlog spiral. Reset/rebase timing after pause, room transitions, reveal and blocking flip effects so they do not produce unintended catch-up movement.
+- This maintains movement speed only while simulation can keep up; it does not guarantee 50 displayed FPS. Validate travel distance over elapsed time, collisions, input latency and room transitions in W1 R13 and a fast room.
+- Merely evaluating slime animation at 25 Hz is unlikely to solve this: it already changes frame once per 16 gameplay updates. Preshifted CPU drawing did not improve room FPS; one-tick staggering was slower with two page histories. See `reports/slime_cpu_preshift.md` and `reports/slime_stagger.md`.
 
 ## Validation Helpers
 

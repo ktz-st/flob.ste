@@ -1,3 +1,3 @@
 152 sprites, 1636 frames, 32720 comparisons.
-52352 draws per timing pass: Pascal 46770 ms, ASM 41725 ms; 10.8% less time.
+52352 draws per timing pass: Pascal 41955 ms, ASM 36910 ms; 12.0% less time.
 STE 8 MHz, EmuTOS, Hatari. Emulated HZ200 time. Not gameplay FPS.
