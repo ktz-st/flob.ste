@@ -5093,8 +5093,9 @@ begin
         FadeIn;
         visibleLines := 0;
         textFadeStep := CUTSCENE_TEXT_FADE_FRAMES;
-        if syncMusicTiming then slideDelay := 18
-        else slideDelay := 18;
+        // 50 frames before the first line appears, as on the 8-bit original
+        // (both branches were 18, holding every slide 0.64 s short of it).
+        slideDelay := 50;
         cutsceneHold := false;
         repeat
             if slideDelay = 0 then begin

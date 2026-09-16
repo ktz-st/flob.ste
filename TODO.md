@@ -97,8 +97,11 @@
       the equivalent `WaitForStartKeyUp`, which is why the credits behaved correctly.
 - Measured with `-dTEST_ENDING` (enters the completion path directly): untouched, the outro
   runs 8.6 / 16.3 / 8.6 s; with a key held it now skips cleanly instead of flying past.
-- [ ] Optional fidelity: the original starts each cutscene slide at `slideDelay := 50`, the
-      port at 18 — the port holds each slide 0.64 s less. Not changed.
+- [x] Start each cutscene slide at `slideDelay := 50`, as the original does; the port used 18
+      in both branches of a two-way test whose arms were identical. Outro slides measured
+      8.94 / 16.84 / 8.82 s against 8.64 / 16.34 / 8.62 s before — the right direction, though
+      the brightness-threshold measurement resolves to about ±0.3 s, so the constant matching
+      the original is the real guarantee, not the pixel timing.
 
 ## Further Performance Work
 
