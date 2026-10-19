@@ -1,0 +1,3 @@
+PASS CRC32 all bundles, two lifetime cycles, black palette for every read
+resident bytes=150578 peak resource bytes=294900
+largest free after resident=302972 reads=202

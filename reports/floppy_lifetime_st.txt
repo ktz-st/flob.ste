@@ -1,0 +1,24 @@
+PASS resident selector and title, cycle=0
+PASS world 0 render, music switch, release
+PASS world 1 render, music switch, release
+PASS world 2 render, music switch, release
+PASS world 3 render, music switch, release
+PASS world 4 render, music switch, release
+PASS world 5 render, music switch, release
+PASS scene bank 0 draw and release
+PASS scene bank 1 draw and release
+PASS scene bank 2 draw and release
+PASS resident selector and title, cycle=1
+PASS world 0 render, music switch, release
+PASS world 1 render, music switch, release
+PASS world 2 render, music switch, release
+PASS world 3 render, music switch, release
+PASS world 4 render, music switch, release
+PASS world 5 render, music switch, release
+PASS scene bank 0 draw and release
+PASS scene bank 1 draw and release
+PASS scene bank 2 draw and release
+peak resource bytes=304132 resident=150578
+peak with packed input=304132
+largest free with resident assets=301284
+DONE

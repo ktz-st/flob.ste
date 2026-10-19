@@ -66,6 +66,15 @@ TILE_OUT = \
 	worlds/world_00_tiles.inc worlds/world_01_tiles.inc worlds/world_02_tiles.inc \
 	worlds/world_03_tiles.inc worlds/world_04_tiles.inc worlds/world_05_tiles.inc
 PFLAGS = -Tatari -O2 -Si -Xs -dSTE -dSAFE_FLIP_VBL -dSTAGGER_SLIME -vw -vm -vi
+ifeq ($(DMA_SFX),1)
+PFLAGS += -dDMA_SFX
+endif
+ifneq ($(findstring -dDMA_SFX,$(PFLAGS)),)
+SOUND_EXTRA_OBJECTS = dmasound.o sfxsynth.o
+endif
+ifeq ($(CPU_RENDER),1)
+PFLAGS += -dCPU_RENDER
+endif
 
 SOURCES = \
 	$(MAIN) \
@@ -73,6 +82,8 @@ SOURCES = \
 	const.inc \
 	vnumber.inc \
 	types.inc \
+	text.inc \
+	fade.inc \
 	input.inc \
 	danger_expand.inc \
 	saving_routines.inc \
@@ -106,6 +117,26 @@ SOURCES = \
 .PHONY: all clean run sprite-sheets sprite-assets flob-sheet used-sprite-atlas game-sprite-sheet-init game-sprite-guide sprite-atlas-assets sprite-atlas-assets-only game-rooms-init room-assets game-tiles-init game-world-icons-init game-endworld-icons-init game-cutscenes-init game-title-init sfx-wav sfx-psg music-loops
 
 all: unapl.o $(TARGET)
+
+.PHONY: files files-floppy
+files-floppy:
+	python3 build_file_version.py --floppy
+
+files:
+	python3 build_file_version.py --build
+
+.PHONY: st
+.PHONY: dma-sfx
+dma-sfx:
+	$(MAKE) DMA_SFX=1 TARGET=flob-dma.prg all
+
+st:
+	$(MAKE) CPU_RENDER=1 TARGET=flob-st.prg all
+
+ifeq ($(CPU_RENDER),1)
+.PHONY: force-cpu-link
+$(TARGET): force-cpu-link
+endif
 
 $(PALETTE_INC) $(PALETTE_RGB): $(PALETTE_GEN) $(PALETTE_SOURCE)
 	python3 $(PALETTE_GEN)
@@ -186,6 +217,9 @@ endif
 ims.o: asm/ims.s
 	$(AS) -quiet -Faout -o ims.o asm/ims.s
 
+render_cpu.o: asm/render_cpu.s
+	$(AS) -quiet -Faout -o render_cpu.o asm/render_cpu.s
+
 restore.o: asm/restore.s
 	$(AS) -quiet -Faout -o restore.o asm/restore.s
 
@@ -201,11 +235,11 @@ sfxsynth.o: asm/sfxsynth.s
 psgsound.o: asm/psgsound.s
 	$(AS) -quiet -Faout -o psgsound.o asm/psgsound.s
 
-$(TARGET): unapl.o font.o ems.o ims.o restore.o ikbd.o dmasound.o sfxsynth.o psgsound.o $(SOURCES) Makefile
+$(TARGET): unapl.o font.o ems.o ims.o restore.o render_cpu.o ikbd.o $(SOUND_EXTRA_OBJECTS) psgsound.o $(SOURCES) Makefile
 	$(PPC) $(PFLAGS) -o$(TARGET) $(MAIN)
 
 clean:
-	rm -f $(TARGET) flob.o flob.s unapl.o font.o ems.o ims.o restore.o ikbd.o dmasound.o sfxsynth.o psgsound.o *.ppu *.map
+	rm -f $(TARGET) flob-st.prg flob-dma.prg flob.o flob.s unapl.o font.o ems.o ims.o restore.o render_cpu.o ikbd.o dmasound.o sfxsynth.o psgsound.o *.ppu *.map
 
 run: $(TARGET)
 	$(HATARI) -w --monitor rgb --machine ste --fast-boot true $(TARGET) &

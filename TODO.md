@@ -2,6 +2,15 @@
 
 ## Current Focus
 
+- [x] User completed a full playthrough (reported 2026-10-12). Do not assume this covers every hardware/media configuration.
+- [x] Document AI-agent workflow, Free Pascal setup from atari-st-builder, packaging tool sources/builds and tester reporting instructions (2026-10-19).
+- [ ] Collect comparison reports from testers familiar with A8 using TESTERZY.TXT; track world/room, hardware, reproduction steps and original behavior.
+
+- [x] First file-backed distribution in sibling `flob-files`: scene/world bundles, separate ST/STE PRGs and target CRC verification. See FILE_VERSION.md.
+- [x] Split SPRITES.BIN into COMMON Flob/slime/explosion data and six independent world bundles; shared families are duplicated per consuming world, with checked mapping coverage and hashes.
+- [x] File-backed residency: pin COMMON/TITLE, allocate only the active world, load/release intro/outro/credits and selected music. All resource reads require a black hardware palette; replace BSS arrays with typed pointers and group ownership. Use explicit 64 KiB stack/heap budget, target tests at 1 MB.
+- [ ] Playtest the entire file-backed edition at 1 MB on ST/STE, especially reveal, menu returns, skipping cutscenes, outro music through credits and slow media. Retain embedded edition independently.
+- [x] Compress external bundles with Apultra (FLB2, stored/expanded CRC), pack PRG with UPX and build a standard 720 KiB FAT12 image with save space. Verify actual floppy loading, CRC, resource lifetime and gameplay on ST/STE with 1 MiB and no HDD. See FILE_VERSION.md and reports/floppy_*.
 - Latest update: 2026-09-09. All five items from the latest CPU/render audit are implemented; remaining work is validation, not reimplementation.
 - Verify all worlds end-to-end on STE.
 - Fix gameplay regressions found during real playtesting.
@@ -10,8 +19,13 @@
 
 ## Planned Atari ST Version
 
-- [ ] Prepare a plain Atari ST build with preshifted sprite graphics and masks, rendered by the 68000 without requiring a blitter.
-- [ ] Generate preshift variants from the same canonical sprite atlas; measure their RAM cost and choose shifts according to actual movement/alignment requirements.
+- [x] Add a CPU-only graphics backend and `make st` / `flob-st.prg`; normal `flob.prg` auto-detects the blitter. Copy, clear, rectangles, dirty restore, masked sprites and card-flip have CPU paths with FPC register ABI.
+- [x] Retain the same atlas, explicit masks, occlusion and per-page history. Initial CPU sprites shift at runtime (AGT SVMC approach), so no preshift asset expansion is required.
+- [x] Speed up ST card-flip using precomputed row strides (Worms HUD approach), unrolled 160-byte MOVEM copies and direct in-place row exchange; retain four steps, page histories and independent regression/target timing tests.
+- [x] Specialize one-word CPU sprites (Flob/slime) and prepare Flob foreground opacity in shared ST/STE assembly; measured renderer gains in W0 R11 and W1 R13 (2026-10-12).
+- [x] Batch slime queue construction in assembly on both machines, retaining complete per-page lists and collision-frame updates; use MirrorPlayfieldCPU for STE BKG reversal too (audit items 3/4, 2026-10-12).
+- [ ] Profile busy rooms on ST 8 MHz without a blitter and playtest transitions, flip, HUD, messages, music/SFX and TOS exit on real hardware.
+- [ ] If measurements justify it, generate preshift variants from the same canonical sprite atlas; measure their RAM cost and choose shifts according to actual movement/alignment requirements.
 - [ ] Provide CPU background restore/copy/clear paths and audit STE-only hardware dependencies, while preserving the existing STE backend.
 
 ## Completed Optimization Batch
@@ -233,11 +247,12 @@
   - `SFX_INSECT`
   - aliases currently mapped in constants: `SFX_BEEP`, `SFX_TELEPORT`
 - Implement or deliberately map the remaining `SFX_SCRAPE` effect if its gameplay path is used.
-- Decide whether the alternate DMA backend should remain in the final release.
+- [x] Exclude alternate DMA synthesis code, POKEY SFX data and buffers from normal ST/STE builds; retain an explicit `make dma-sfx` / `flob-dma.prg` comparison build (2026-10-12).
 - Audit original `Sfx` / `FSfx` delay and priority behavior during final audio polish.
 
 ## Cleanup
 
+- [x] 2026-10-12: remove nine unused routines (debug hex helpers, WordToStr, DrawStr, ClearPlayfieldLog, PlaySoundFx, QueueSpriteRect and DmaPlayRaw), their declarations and unused Line-A pointers. Keep reachable CPU/STE, DMA synth and benchmark/reference variants.
 - Remove dead migration leftovers as soon as they are replaced.
 - Slime editor/dev flow from the original A8 version is intentionally not planned for this port.
 - Review unused constants only after asset/world conversion is stable.

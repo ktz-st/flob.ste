@@ -1,21 +1,5 @@
-// Legacy Line-A text helpers are kept here, but the main string rendering
-// path now uses the custom 8x8 font renderer through DrawTextTo().
-
-var
-    pParamblk: pointer = nil;
-    pFnthdr:   pointer = nil;
-    pFktadr:   pointer = nil;
-
-const CHAR_W = 8;   // pixel advance per glyph (ST system font ~8px wide)
-
-
-// ---------------------------------------------------------------------------
-// DrawStr – draw string left-to-right starting at (x,y).
-// ---------------------------------------------------------------------------
-procedure DrawStr(x, y, fg: word; const str: string);
-begin
-    DrawTextTo(SCREEN_LOG, x, y, fg, 0, str);
-end;
+// Text helpers use the custom 8x8 font renderer through DrawTextTo().
+const CHAR_W = 8;
 
 // ---------------------------------------------------------------------------
 // DrawStrCentered – center string horizontally on a 320-pixel wide screen.

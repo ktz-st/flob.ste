@@ -4,6 +4,22 @@ Port gry **Flob** z Atari 8-bit / MadPascal do Atari STE / Free Pascal.
 
 Oryginalne zrodla sa w `../flob`. Port STE jest w tym katalogu (`flob-ste`).
 
+Budowanie i zaleznosci: [BUILDING.md](BUILDING.md). Instrukcje dla agentow AI:
+[AGENTS.md](AGENTS.md). Instrukcja testerow: [TESTERZY.TXT](TESTERZY.TXT).
+
+Stan 2026-10-19: uzytkownik potwierdzil przejscie calej gry. Kolejny etap to
+testy porownawcze graczy znajacych oryginal A8. Paczka HDD `flob.zip` zawiera
+instrukcje testerow; zapis uzytkownika i testowy FLOBST.PRG sa pomijane.
+
+Wariant plikowy: `make files` generuje osobny `../flob-files/disk` z PRG i
+zasobami pogrupowanymi wedlug sceny/swiata. Menu jest rezydentne, zasoby swiata,
+scenek i muzyki sa ladowane/zwalniane na zadanie, zawsze na czarnym ekranie.
+Wariant ma testy pamieci i regresji na 1 MB; wymaga jeszcze pelnego ogrania.
+`make files-floppy` pakuje zasoby Apultra i PRG przez UPX, tworzac
+`../flob-files/FLOB720.ST` (720 KiB, obecnie 13 KiB wolne na zapis).
+Test obrazu na ST i STE 1 MB: `python3 verify_floppy.py --no-build`.
+Instrukcje i plan zarzadzania RAM: [FILE_VERSION.md](FILE_VERSION.md).
+
 ## Status
 
 Gra kompiluje sie do `flob.prg` i ma juz dzialajacy glowny przeplyw:
@@ -25,11 +41,84 @@ Gra kompiluje sie do `flob.prg` i ma juz dzialajacy glowny przeplyw:
 - dynamiczna aktualizacja kolizji po `PUT_TILE`, w tym gaz, kable i zapory,
 - wspolna paleta sprite atlasu dla pokojow gry,
 - level colors mapowane z danych A8 przez `STE_PAL`,
-- efekty SFX odtworzone z danych POKEY przez PSG lub syntezator DMA STE.
+- efekty SFX odtworzone z danych POKEY przez PSG (DMA tylko w opcjonalnym buildzie).
 
 Najwazniejsze braki sa w `TODO.md`. Muzyka i core SFX sa juz podpiete.
 Otwarte obszary to finalna grafika, pelna weryfikacja wszystkich swiatow,
 polish audio/UI oraz osobna optymalizacja pamieci pod 1 MB.
+
+### Backend CPU / ST Bez Blittera (2026-10-10)
+
+`make` buduje `flob.prg` z automatycznym wyborem renderera: XBIOS Blitmode
+(TOS >= 1.02) wykrywa blitter bez odczytu jego rejestrow. Gdy go nie ma,
+kopiowanie, zerowanie, sprajty i restore przechodza na CPU. `make st`
+buduje osobny `flob-st.prg` z `CPU_RENDER`, wymuszajacy CPU takze na STE.
+
+`asm/render_cpu.s` zawiera adaptery w ABI FPC `register`: wskazniki A0/A1,
+rozmiar D0, a wieksze zestawy parametrow jako wskaznik do zwartego rekordu.
+Kopiowanie/zerowanie wykorzystuje bloki MOVEM (podejscie GodLib), restore
+operuje na dotychczasowych dirty rectach i kopiuje wiersze blokami (AGT).
+Renderer sprajtow przesuwa bitplany podczas rysowania, jak rodzina AGT SVMC,
+ale zachowuje jawne maski Floba, szerokie obiekty i zaslanianie przez sciany.
+Nie wymaga nowego atlasu ani preshiftowanych kolorowych grafik.
+
+Od 2026-10-12 sprajty z jednym slowem zrodla na wiersz (do 16 px)
+korzystaja z `DrawNarrowSpriteCPU`: cztery plaszczyzny sa rozwiniete,
+przesuniecie daje od razu oba slowa docelowe, a puste wiersze sa pomijane.
+Szersze sprajty zachowuja ogolny renderer. Wspolny dla ST/STE
+`BuildFlobOpacityCPU` przygotowuje maske zaslaniania Floba przez indeksy
+tla 1/2, z przycieciem do playfieldu. Oba adaptery uzywaja ABI FPC register;
+format atlasu i rozmiar danych masek nie zmieniaja sie.
+W kontrolowanym tescie renderera ST W0 R11 i W1 R13 osiagaja 47.15 FPS
+(wczesniej 42.74/42.17), a STE utrzymuje 50 FPS z okolo 11% mniejszym
+czasem renderowania. To nie jest pomiar pelnej petli gry.
+Szczegoly: `reports/narrow_cpu_occlusion_20261012.md`.
+
+Kolejny krok tego audytu: `QueueSlimesCPU` buduje kompletna kolejke slime'ow
+jednym wywolaniem ASM na obu maszynach. Y jest wyliczane przyrostowo, a
+parametry orientacji i klatek sa przygotowane raz; nie ma cache wymagajacego
+uniewazniania po zmianie pokoju/pickupie. Aktualizacja klatki kolizji dziala
+takze przy pelnej kolejce i przycieciu. Historie obu stron oraz propagacja
+nakladania pozostaja bez zmian. W W0 R11/W1 R13 koszt fazy kolejki spadl
+o 37-53%, bez dalszej zmiany FPS (ST 47.15, STE 50 w tescie renderera).
+Szczegoly: `reports/slime_queue_ste_mirror_20261012.md`.
+
+Porzadki 2026-10-12: usunieto nieuzywane `HexDigit`/`HexByte`/`HexWord`,
+`WordToStr`, `DrawStr`, `ClearPlayfieldLog`, `PlaySoundFx`, `QueueSpriteRect`
+oraz jednorazowy odtwarzacz `DmaPlayRaw` (deklaracja i ASM). Usunieto tez
+martwe wskazniki Line-A. Petlowy backend DMA syntezatora, obsluga przerwan,
+warianty ST/STE i referencje do testow/benchmarkow pozostaja dostepne.
+
+Oba backendy zachowuja BKG/LOG/PHY i historie kazdej strony. Efekt card-flip
+na CPU uzywa gotowych krokow zrodla dla wysokosci 160/80/32/8 i
+`CopyFlipRowsCPU`: piec blokow MOVEM po 32 bajty na wiersz. Nie wykonuje
+dzielenia ani `Move` dla kazdej linii. Podejscie wzorowane na mapie wierszy
+panelu Worms (`worms-amiga/ste/port/wormste.cpp`, `hud_rows`); nie przenosi
+jego cache pojedynczego panelu, bo Flob ma dwie strony i zmienia BKG w polowie
+animacji. `MirrorPlayfieldCPU` zamienia pary wierszy bez bufora tymczasowego
+na ST i STE; STE najpierw czeka na zakonczenie blitu.
+Inne wysokosci zachowuja ogolny fallback. Palety nie zmieniono.
+Cookie `_MCH` ogranicza inicjalizacje zapasowego DMA i zapis dodatkowych
+rejestrow shiftera do maszyn z rozszerzeniami STE; ST korzysta z PSG i
+standardowych rejestrow bazy ekranu. Sam tryb CPU nie oznacza wersji 1 MB.
+
+Testy: `python3 verify_cpu_render.py` porownuje CPU z blitterem na STE oraz
+z niezaleznym rendererem pikselowym na ST bez blittera. Obejmuje caly katalog
+atlasu, wszystkie przesuniecia, krawedzie, copy/clear z wartownikami oraz
+prostokaty i restore. `python3 verify_cpu_render.py --gameplay` uruchamia
+istniejace regresje logiki i dirty-renderera z wymuszonym CPU.
+`--native-gameplay --machine ste` sprawdza te same regresje z aktywnym
+blitterem, lacznie z kolejka slime'ow i odwracaniem BKG. Domyslnie
+skrypt nie zmienia skonfigurowanego TOS; opcjonalnie przyjmuje `--tos`.
+Regresja flipu ma niezalezny sampler, sprawdza tez fallback, granice,
+odwrocenie BKG w obie strony oraz nienaruszone HUD/message. Linie `BENCH`
+mierza stary i nowy squash oraz mirror zegarem 200 Hz, bez oczekiwania VSync.
+Pomiar na ST 8 MHz: squash 9.50x, mirror 7.97x szybciej (same procedury,
+nie caly czas animacji). Szczegoly: `reports/card_flip_cpu_20261010.md`.
+Wydajnosc pelnej gry i zachowanie na fizycznym ST wymagaja osobnego pomiaru.
+Testy z 2026-10-10 przeszly na STE i ST bez blittera: po 32720 porownan
+atlasu oraz oba zestawy regresji gameplay (w tym 128 niezaleznych porownan
+occlusion Floba, 80 klatek dirty-renderera, flip i wspolne sterowanie).
 
 Build z 2026-09-09 ma `1106170 B` (okolo 1080 KiB). Dawne `994124 B`
 dotyczylo etapu migracji assetow, nie obecnej wersji. Rozmiar PRG nie jest
@@ -686,7 +775,11 @@ Kolory uwzgledniaja PAL DLI: logo i dolne napisy maja osobne indeksy w jednej
 palecie PNG (stan po 150 klatkach). Napisy to PRESS FIRE TO START,
 A FOR ACHIEVEMENTS i C FOR CREDITS. W title A otwiera achievements,
 C lub fizyczny klawisz HELP otwiera credits; FIRE/Return/spacja rozpoczyna gre.
-Korona jest nakladana przed skalowaniem, a normalny build tylko centruje gotowe
+Przy pierwotnym imporcie korona byla nakladana przed skalowaniem. Po recznym
+poprawieniu `title.png` mozna przeniesc poprawki do wersji z korona przez
+`python3 create_game_title.py --sync-crown`; skrypt naklada tylko piksele
+korony z oryginalu, zachowujac litery i palete z edytowanego PNG.
+Normalny build tylko centruje gotowe
 PNG w ekranie `320x200`, dodajac po 8 czarnych linii u gory i na dole.
 Konwerter zachowuje indeksy PNG, zapisuje palete z precyzja STE i pakuje
 bitplany apultra. Fade-in title uzywa tej palety bez mapowania kolorow pokoju.
@@ -847,7 +940,7 @@ Port STE:
 
 ## Flip Screen
 
-`FlipGameplayEffect` robi card-flip efekt dla playfieldu. Kazda skompresowana klatka jest kopiowana pojedynczym przebiegiem Blittera z odpowiednim `SrcIncY`; podczas zwezania czyszczone sa tylko nowo odsloniete pasy obu buforow. CPU pozostaje uzywany tylko jako fallback dla wysokosci niedzielacych 160 oraz do fizycznego odwrocenia linii `SCREEN_BKG`. `displayFlipped` pilnuje orientacji bufora tla. Po flipie:
+`FlipGameplayEffect` robi card-flip efekt dla playfieldu. Na STE kazda skompresowana klatka jest kopiowana pojedynczym przebiegiem Blittera z odpowiednim `SrcIncY`; na ST robi to `CopyFlipRowsCPU` z tym samym krokiem zrodla. Podczas zwezania czyszczone sa tylko nowo odsloniete pasy obu buforow. Fizyczne odwrocenie linii `SCREEN_BKG` na obu maszynach robi `MirrorPlayfieldCPU`; na STE poprzedza je oczekiwanie na zakonczenie blitu. `displayFlipped` pilnuje orientacji bufora tla. Po flipie:
 
 - `flipped` zmienia logike gry,
 - `flobY := 84 - flobY`,
@@ -904,7 +997,11 @@ Domyslny backend PSG:
 - zapisuje do PSG okres, noise, mixer i glosnosc przeliczone podczas buildu,
 - nie zatrzymuje petli gry i nie wykonuje kosztownej syntezy probek co klatke.
 
-Alternatywny backend DMA pozostaje do porownan. `asm/sfxsynth.s` renderuje
+Alternatywny backend DMA pozostaje w zrodlach do porownan, ale od 2026-10-12
+nie jest dolaczany do standardowych `flob.prg` ani `flob-st.prg`: brak obiektow
+`dmasound.o`/`sfxsynth.o`, danych POKEY, buforow i wywolania z `VSync`.
+`make dma-sfx` tworzy osobny `flob-dma.prg` z definicja `DMA_SFX` i aktywnym
+syntezatorem na STE (na ST zachowuje PSG). `asm/sfxsynth.s` renderuje
 przebieg POKEY do buforow 8-bit signed mono, a DMA STE odtwarza je w tle.
 Wariant PSG zostal wybrany jako domyslny, bo daje dobra responsywnosc i czytelne
 efekty. Wszystkie obecnie podpiete SFX korzystaja z jednego kanalu.

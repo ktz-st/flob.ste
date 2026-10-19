@@ -10,6 +10,44 @@ var output: text;
     tile: TSteTile;
     savedCollision: PByte;
     spr: PQueuedSprite;
+    intersectionSprite: TQueuedSprite;
+    intersectionRects: TDirtyRectArray;
+    intersectionCount, intersectionFirst: byte;
+    equalityA, equalityB: TQueuedSprite;
+    savedPage: byte;
+    swapSlots: PQueuedSpriteSlots;
+    startTick, referenceTicks, fastTicks: longword;
+    flipHeight: word;
+    referenceQueue: TQueuedSpriteSlots;
+    referenceFrames: array[0..19] of byte;
+    referenceCount, prefixCount, frameIndex: byte;
+
+    procedure ReferenceSquash(src, dst: PWord; height: word);
+    var row, sourceY, destY: word;
+    begin
+        if (height = 0) or (height > PLAYFIELD_HEIGHT) then exit;
+        destY := BG_IMAGE_OFFSET_Y + (PLAYFIELD_HEIGHT - height) div 2;
+        for row := 0 to height - 1 do begin
+            sourceY := BG_IMAGE_OFFSET_Y + word((longword(row) * PLAYFIELD_HEIGHT) div height);
+            Move(PByte(longword(src) + longword(sourceY) * SCREEN_LINE_BYTES)^,
+                 PByte(longword(dst) + longword(destY + row) * SCREEN_LINE_BYTES)^,
+                 SCREEN_LINE_BYTES);
+        end;
+    end;
+
+    procedure ReferenceMirror(buf: PWord);
+    var row: word;
+        top, bottom: PByte;
+        temp: array[0..SCREEN_LINE_BYTES-1] of byte;
+    begin
+        for row := 0 to PLAYFIELD_HEIGHT div 2 - 1 do begin
+            top := PByte(longword(buf) + longword(BG_IMAGE_OFFSET_Y + row) * SCREEN_LINE_BYTES);
+            bottom := PByte(longword(buf) + longword(BG_IMAGE_OFFSET_Y + PLAYFIELD_HEIGHT - 1 - row) * SCREEN_LINE_BYTES);
+            Move(top^, temp[0], SCREEN_LINE_BYTES);
+            Move(bottom^, top^, SCREEN_LINE_BYTES);
+            Move(temp[0], bottom^, SCREEN_LINE_BYTES);
+        end;
+    end;
 
     procedure Fail(const labelText: string; testNo: word);
     begin
@@ -75,6 +113,161 @@ var output: text;
 begin
     Assign(output, 'GAMEPLAY.TXT');
     Rewrite(output);
+    Writeln(output,'renderer_blitter=',useBlitter); Flush(output);
+    if (SizeOf(TQueuedSprite) <> 32) or
+       (PtrUInt(@equalityA.y)-PtrUInt(@equalityA) <> 2) or
+       (PtrUInt(@equalityA.widthPx)-PtrUInt(@equalityA) <> 4) or
+       (PtrUInt(@equalityA.heightPx)-PtrUInt(@equalityA) <> 6) or
+       (PtrUInt(@equalityA.palSlot)-PtrUInt(@equalityA) <> 20) or
+       (PtrUInt(@equalityA.stableId)-PtrUInt(@equalityA) <> 21) then
+        Fail('sprite equality layout',0);
+    // Every bit of every byte, including deliberately ignored ID/padding.
+    // Pointer bit patterns are compared only, never dereferenced.
+    for test := 0 to 15 do begin
+        FillChar(equalityA,SizeOf(equalityA),byte(test*17));
+        equalityB := equalityA;
+        if not QueuedSpritesEqual(@equalityA,@equalityB) then Fail('equal sprite',test);
+        for i := 0 to SizeOf(TQueuedSprite)-1 do
+            for j := 0 to 7 do begin
+                PByte(@equalityB)[i] := PByte(@equalityA)[i] xor byte(1 shl j);
+                actual := QueuedSpritesEqual(@equalityA,@equalityB);
+                ref := ReferenceQueuedSpritesEqual(@equalityA,@equalityB);
+                if (actual <> ref) or (actual <> (i >= 21)) then
+                    Fail('paired sprite equality',test*256+i*8+j);
+                PByte(@equalityB)[i] := PByte(@equalityA)[i];
+            end;
+    end;
+    Writeln(output,'PASS 4096 paired sprite equality comparisons, ID and padding ignored'); Flush(output);
+    if PtrUInt(@a.heightPx)-PtrUInt(@a) <> 2 then Fail('queue frame layout',0);
+    savedPage := screenLogIndex;
+    FillChar(a,SizeOf(a),0);
+    FillChar(b,SizeOf(b),0);
+    b.widthPx := 7; b.heightPx := 9;
+    for test := 0 to 7 do begin
+        screenLogIndex := test and 1;
+        queuedSpriteCount[screenLogIndex] := 0;
+        QueueGeneratedSprite(0,0,nil,@ma[0]);
+        if queuedSpriteCount[screenLogIndex] <> 0 then Fail('nil queue frame',test);
+        for i := 0 to MAX_QUEUED_SPRITES-1 do begin
+            // Reuse a frame address while changing dimensions, not just its ID.
+            a.widthPx := i+1; a.heightPx := test+1;
+            QueueGeneratedSprite(i*6,20+test,@a,@ma[0],byte(i));
+            spr := @queuedSprites[screenLogIndex]^[i];
+            if (spr^.widthPx <> i+1) or (spr^.heightPx <> test+1) or
+               (spr^.x <> i*6) or (spr^.y <> 20+test) or
+               (spr^.frame <> @a) or (spr^.wordsBase <> @ma[0]) or
+               (spr^.palBase <> nil) or (spr^.palSlot <> 0) then
+                Fail('queue metadata',test*48+i);
+            if i < 32 then n := i else n := 32+i;
+            if spr^.stableId <> n then Fail('queue stable ID',test*48+i);
+        end;
+        QueueGeneratedSprite(999,999,@b,@mb[0]);
+        if (queuedSpriteCount[screenLogIndex] <> MAX_QUEUED_SPRITES) or
+           (queuedSprites[screenLogIndex]^[47].x <> 282) then
+            Fail('queue capacity',test);
+        queuedSpriteCount[screenLogIndex] := 0;
+        QueueGeneratedSprite(5,6,@b,@mb[0]);
+        spr := @queuedSprites[screenLogIndex]^[0];
+        if (spr^.frame <> @b) or (spr^.wordsBase <> @mb[0]) or
+           (spr^.widthPx <> 7) or (spr^.heightPx <> 9) or
+           (spr^.stableId <> 32) or (spr^.palBase <> nil) or (spr^.palSlot <> 0) then
+            Fail('queue slot reused by sprite',test);
+        swapSlots := queuedSprites[screenLogIndex];
+        queuedSprites[screenLogIndex] := renderedSprites[screenLogIndex];
+        renderedSprites[screenLogIndex] := swapSlots;
+    end;
+    // Eight passes swap each page's lists four times, restoring original roles.
+    screenLogIndex := savedPage;
+    FillChar(queuedSpriteCount,SizeOf(queuedSpriteCount),0);
+    FillChar(spriteSlots,SizeOf(spriteSlots),0);
+    Writeln(output,'PASS queue reuse across four lists, dimensions, IDs, nil and full queue'); Flush(output);
+    // Independent old Pascal enqueue path, including clipping, full queues and
+    // inactive IDs whose last collision-animation frame must remain untouched.
+    for test := 0 to 511 do begin
+        screenLogIndex := test and 1;
+        if (test and 2) <> 0 then begin
+            swapSlots := queuedSprites[screenLogIndex];
+            queuedSprites[screenLogIndex] := renderedSprites[screenLogIndex];
+            renderedSprites[screenLogIndex] := swapSlots;
+        end;
+        flipped := (test and 4) <> 0;
+        sysframe := byte(test);
+        prefixCount := (test shr 3) mod (MAX_QUEUED_SPRITES+1);
+        FillChar(queuedSprites[screenLogIndex]^,SizeOf(referenceQueue),$A5);
+        FillChar(slimeDrawFrame,SizeOf(slimeDrawFrame),$5A);
+        queuedSpriteCount[screenLogIndex] := prefixCount;
+        for i := 0 to 19 do begin
+            slimeX[i] := byte(test*13+i*31);
+            if ((i+test) mod 5) = 0 then slimeX[i] := 0;
+            if slimeX[i] = 0 then continue;
+            frameIndex := (sysframe shr 4) and 1;
+{$ifdef STAGGER_SLIME}
+            if ((i and 1) <> 0) and ((sysframe and 15) = 0) then
+                frameIndex := frameIndex xor 1;
+{$endif}
+            slimeDrawFrame[i] := frameIndex;
+            SlimeScreenPosition(i,bx,by);
+            if (bx < 0) or (by < 0) then continue;
+            QueueGeneratedSprite(word(bx),word(by),@SPR_SLIME_FRAMES[frameIndex],
+                @SPR_SLIME_WORDS[0],i);
+        end;
+        referenceQueue := queuedSprites[screenLogIndex]^;
+        Move(slimeDrawFrame,referenceFrames,SizeOf(referenceFrames));
+        referenceCount := queuedSpriteCount[screenLogIndex];
+        FillChar(queuedSprites[screenLogIndex]^,SizeOf(referenceQueue),$A5);
+        FillChar(slimeDrawFrame,SizeOf(slimeDrawFrame),$5A);
+        queuedSpriteCount[screenLogIndex] := prefixCount;
+        DrawSlimes;
+        if queuedSpriteCount[screenLogIndex] <> referenceCount then Fail('batch slime count',test);
+        for i := 0 to SizeOf(referenceQueue)-1 do
+            if PByte(queuedSprites[screenLogIndex])[i] <> PByte(@referenceQueue)[i] then
+                Fail('batch slime descriptors and guards',test);
+        for i := 0 to 19 do
+            if slimeDrawFrame[i] <> referenceFrames[i] then Fail('batch collision frame',test);
+    end;
+    screenLogIndex := savedPage;
+    FillChar(queuedSpriteCount,SizeOf(queuedSpriteCount),0);
+    FillChar(spriteSlots,SizeOf(spriteSlots),0);
+    Writeln(output,'PASS 512 batch slime queues, four lists, clipping, capacity and collision frames'); Flush(output);
+    if (SizeOf(TDirtyRect) <> 8) or
+       (PtrUInt(@intersectionSprite.heightPx)-PtrUInt(@intersectionSprite) <> 6) then
+        Fail('dirty intersection ASM layout',0);
+    RandSeed := 67890;
+    for test := 0 to 3999 do begin
+        intersectionCount := Random(MAX_DIRTY_RECTS+1);
+        intersectionFirst := Random(MAX_DIRTY_RECTS+2);
+        intersectionSprite.x := Random(65536);
+        intersectionSprite.y := Random(65536);
+        intersectionSprite.widthPx := Random(65536);
+        intersectionSprite.heightPx := Random(65536);
+        if (test and 1) = 0 then begin
+            intersectionSprite.x := Random(340);
+            intersectionSprite.y := Random(220);
+            intersectionSprite.widthPx := Random(49);
+            intersectionSprite.heightPx := Random(49);
+        end;
+        // Reuse each random list for 32 different sprite/range probes; RNG
+        // on the target is much more expensive than the intersection itself.
+        if (test and 31) = 0 then
+        for i := 0 to MAX_DIRTY_RECTS-1 do begin
+            intersectionRects[i].x := Random(320);
+            intersectionRects[i].y := Random(200);
+            intersectionRects[i].widthPx := Random(49);
+            intersectionRects[i].heightPx := Random(49);
+            if (test and 32) <> 0 then begin
+                intersectionRects[i].x := Random(65536);
+                intersectionRects[i].y := Random(65536);
+                intersectionRects[i].widthPx := Random(65536);
+                intersectionRects[i].heightPx := Random(65536);
+            end;
+        end;
+        spr := @intersectionSprite;
+        if (test mod 19) = 0 then spr := nil;
+        ref := ReferenceSpriteIntersectsDirty(spr,intersectionRects,intersectionCount,intersectionFirst);
+        actual := SpriteIntersectsDirty(spr,intersectionRects,intersectionCount,intersectionFirst);
+        if ref <> actual then Fail('dirty intersection ASM',test);
+    end;
+    Writeln(output,'PASS 4000 dirty intersection ASM/Pascal comparisons'); Flush(output);
     RandSeed := 12345;
     FillChar(a,SizeOf(a),0);
     FillChar(b,SizeOf(b),0);
@@ -148,7 +341,7 @@ begin
             if test>=8 then begin x := x+(test mod 5)*2; y := 40+(i*3); end;
             if test>=32 then begin x := 80+i*4+(test mod 5)*2; y := 40+i; end;
             QueueGeneratedSprite(x,y,@SPR_SLIME_FRAMES[(test div 8) and 1],
-                @SPR_SLIME_WORDS[0],nil,0,i);
+                @SPR_SLIME_WORDS[0],i);
         end;
         BlitterCopyData16(SCREEN_BKG,expected,SCREEN_BYTES);
         for i := 0 to queuedSpriteCount[screenLogIndex]-1 do begin
@@ -177,14 +370,17 @@ begin
             y := 20+(i div 16)*40;
             if test >= 16 then begin
                 x := 48+i*4;
+                // Reverse spatial order too: propagation must revisit earlier
+                // queue entries after discovering dirty bounds later in a pass.
+                if (test and 16) <> 0 then x := 48+(11-i)*4;
                 y := 40+(i mod 3)*3;
                 if i = 0 then Inc(x, ((test div 2) mod 5)*2);
             end;
             if (i mod 3) = 0 then
-                QueueGeneratedSprite(x,y,@SPR_FLOB_FRAMES[0],@SPR_FLOB_WORDS[0],nil,0,i)
+                QueueGeneratedSprite(x,y,@SPR_FLOB_FRAMES[0],@SPR_FLOB_WORDS[0],i)
             else
                 QueueGeneratedSprite(x,y,@SPR_SLIME_FRAMES[(test div 16) and 1],
-                    @SPR_SLIME_WORDS[0],nil,0,i);
+                    @SPR_SLIME_WORDS[0],i);
         end;
         BlitterCopyData16(SCREEN_BKG,expected,SCREEN_BYTES);
         if queuedSpriteCount[screenLogIndex] > 0 then
@@ -261,16 +457,54 @@ begin
             if SCREEN_LOG[i] <> expected[i] then Fail('Flob background occlusion',test);
     end;
     Writeln(output,'PASS 128 Flob occlusion comparisons, all shifts, frames and playfield edges'); Flush(output);
-    for test := 0 to FLIP_STEPS-1 do begin
+    for test := 0 to FLIP_STEPS+2 do begin
+        if test < FLIP_STEPS then flipHeight := FLIP_H[test]
+        else case test-FLIP_STEPS of
+            0: flipHeight := 73;
+            1: flipHeight := 0;
+            2: flipHeight := PLAYFIELD_HEIGHT+1;
+        end;
+        for i := 0 to 15999 do expected[i] := $A55A;
+        ReferenceSquash(SCREEN_BKG,expected,flipHeight);
         for i := 0 to 15999 do SCREEN_LOG[i] := $A55A;
-        DrawSquashedPlayfieldCpu(SCREEN_BKG,FLIP_H[test]);
-        Move(SCREEN_LOG^,expected^,SCREEN_BYTES);
+        DrawSquashedPlayfieldCpu(SCREEN_BKG,flipHeight);
+        for i := 0 to 15999 do
+            if SCREEN_LOG[i] <> expected[i] then Fail('CPU flip rows',test);
         for i := 0 to 15999 do SCREEN_LOG[i] := $A55A;
-        DrawSquashedPlayfieldBlitter(SCREEN_BKG,FLIP_H[test]);
+        DrawSquashedPlayfieldBlitter(SCREEN_BKG,flipHeight);
         for i := 0 to 15999 do
             if SCREEN_LOG[i] <> expected[i] then Fail('precomputed flip parameters',test);
     end;
-    Writeln(output,'PASS flip table against CPU sampling, all nonzero FLIP_H heights'); Flush(output);
+    Writeln(output,'PASS flip rows against independent sampling, fixed heights, fallback and bounds'); Flush(output);
+    Move(SCREEN_BKG^,expected^,SCREEN_BYTES);
+    ReferenceMirror(expected);
+    FlipGameplayAreaInPlace(SCREEN_BKG);
+    for i := 0 to 15999 do
+        if SCREEN_BKG[i] <> expected[i] then Fail('CPU playfield mirror',i);
+    ReferenceMirror(expected);
+    FlipGameplayAreaInPlace(SCREEN_BKG);
+    for i := 0 to 15999 do
+        if SCREEN_BKG[i] <> expected[i] then Fail('CPU playfield mirror twice',i);
+    Writeln(output,'PASS in-place playfield mirror, both directions and untouched HUD/message'); Flush(output);
+    // Target 200 Hz clock, no VSync: compare rendering work, not fixed frame holds.
+    startTick := PLongWord(pointer(longword($4BA)))^;
+    for n := 0 to 63 do
+        for test := 0 to FLIP_STEPS-1 do
+            ReferenceSquash(SCREEN_BKG,SCREEN_LOG,FLIP_H[test]);
+    referenceTicks := PLongWord(pointer(longword($4BA)))^ - startTick;
+    startTick := PLongWord(pointer(longword($4BA)))^;
+    for n := 0 to 63 do
+        for test := 0 to FLIP_STEPS-1 do
+            DrawSquashedPlayfieldCpu(SCREEN_BKG,FLIP_H[test]);
+    fastTicks := PLongWord(pointer(longword($4BA)))^ - startTick;
+    Writeln(output,'BENCH squash 64x all heights: old_ticks=',referenceTicks,' new_ticks=',fastTicks); Flush(output);
+    startTick := PLongWord(pointer(longword($4BA)))^;
+    for n := 0 to 63 do ReferenceMirror(SCREEN_BKG);
+    referenceTicks := PLongWord(pointer(longword($4BA)))^ - startTick;
+    startTick := PLongWord(pointer(longword($4BA)))^;
+    for n := 0 to 63 do FlipGameplayAreaInPlace(SCREEN_BKG);
+    fastTicks := PLongWord(pointer(longword($4BA)))^ - startTick;
+    Writeln(output,'BENCH mirror 64x: old_ticks=',referenceTicks,' new_ticks=',fastTicks); Flush(output);
     FreeMem(expected,SCREEN_BYTES);
     Writeln(output,'PASS 80 dirty-render frames on both buffers'); Flush(output);
     Writeln(output,'PASS 96 overlap-chain, full-queue and empty-frame comparisons'); Flush(output);

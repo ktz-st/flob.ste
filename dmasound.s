@@ -1,7 +1,6 @@
 	export	DmaSoundInit
 	export	DmaSoundDone
 	export	DmaSoundStop
-	export	DmaPlayRaw
 	export	DmaPlayLoop
 
 	TEXT
@@ -29,39 +28,6 @@ DmaSoundStop:
 	ori.w	#$0700,sr
 	clr.b	$ffff8901.w
 	move.w	(sp)+,sr
-	rts
-
-DmaPlayRaw:
-	movem.l	d1/a0,-(sp)
-	move.l	a0,d1
-	beq.s	.playDone
-	tst.l	d0
-	beq.s	.playDone
-
-	move.w	sr,-(sp)
-	ori.w	#$0700,sr
-	clr.b	$ffff8901.w
-
-	move.b	d1,$ffff8907.w
-	lsr.l	#8,d1
-	move.b	d1,$ffff8905.w
-	lsr.l	#8,d1
-	move.b	d1,$ffff8903.w
-
-	move.l	a0,d1
-	add.l	d0,d1
-	move.b	d1,$ffff8913.w
-	lsr.l	#8,d1
-	move.b	d1,$ffff8911.w
-	lsr.l	#8,d1
-	move.b	d1,$ffff890f.w
-
-	move.b	#$81,$ffff8921.w		; 12517 Hz, 8-bit, mono
-	move.b	#1,$ffff8901.w		; play once
-
-	move.w	(sp)+,sr
-.playDone:
-	movem.l	(sp)+,d1/a0
 	rts
 
 DmaPlayLoop:

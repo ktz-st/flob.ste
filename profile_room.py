@@ -30,6 +30,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -74,7 +75,11 @@ def main():
     parser.add_argument('--seconds', type=float, default=10.0)
     parser.add_argument('--move', action='store_true',
                         help='drive left/right through the window')
+    parser.add_argument('--start-x', type=int, choices=range(160), metavar='0..159',
+                        help='override Flob X after room load (A8 coordinates)')
     parser.add_argument('--hatari', default='hatari-hrdb')
+    parser.add_argument('--rdb-port', type=int, default=56001,
+                        help='requires HATARI_RDB_PORT support for non-default ports')
     parser.add_argument('--tos', default=str(ROOT.parent / 'hatariB/emutos/etos1024k.img'))
     parser.add_argument('--skill-scripts', default=None)
     parser.add_argument('--out', default=None)
@@ -84,6 +89,16 @@ def main():
 
     HatariSession, Rdb, profile_lines = load_harness()
     import fpcmap
+
+    if not shutil.which('lsof'):
+        sys.exit('lsof is required to verify debugger ownership')
+    with socket.socket() as probe:
+        probe.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            probe.bind(('127.0.0.1', args.rdb_port))
+        except OSError as error:
+            sys.exit(f'Debugger port {args.rdb_port} unavailable: {error}')
+    os.environ['HATARI_RDB_PORT'] = str(args.rdb_port)
 
     with tempfile.TemporaryDirectory(prefix='flob-profile-') as directory:
         program = build(Path(directory), args.define)
@@ -110,6 +125,8 @@ def main():
                 at = address(name)
                 return session.mem(at, 1).u8(at)
 
+            # Boot key timing can miss CheckDiags. Unlock only this test process.
+            session.debug('w $%x 1' % address('CHEATMODE'))
             session.tap('SPACE', hold=0.2, after=0.6)      # title -> world selector
             session.wait(2)
             for _ in range(args.world):                   # cheatmode unlocks every world
@@ -128,8 +145,15 @@ def main():
             session.debug('w $%x 1' % address('ROOM_CHANGED'))
             session.wait(4)
             assert peek('LEVELNUM') == args.room, 'room did not load'
+            if args.start_x is not None:
+                session.debug('w $%x %d' % (address('FLOBX'), args.start_x))
 
-            rdb = Rdb()
+            owner = subprocess.run(['lsof', '-a', '-p', str(session.proc.pid),
+                                    f'-iTCP:{args.rdb_port}', '-sTCP:LISTEN', '-t'],
+                                   capture_output=True, text=True)
+            assert str(session.proc.pid) in owner.stdout.split(), \
+                'debugger listener is not owned by the test emulator; refusing connection'
+            rdb = Rdb(port=args.rdb_port)
             rdb.cmd('break', wait=2)
             rdb.cmd('profile 1')
             rdb.cmd('run', wait=0.5)
@@ -145,7 +169,18 @@ def main():
             rdb.cmd('profile 0')
             rdb.cmd('run')
 
-            assert peek('LEVELNUM') == args.room, 'left the room mid-capture'
+            swap = base + addresses['P$FLOB_$$_SWAPSCREEN']
+            assert any(a == swap and count > 1 for a, count, _ in lines), \
+                'profile has no gameplay frames; refusing invalid capture'
+            render = base + addresses['P$FLOB_$$_RENDERQUEUEDSPRITES']
+            assert any(a == render and count > 1 for a, count, _ in lines), \
+                'profile is not gameplay (possibly a menu); refusing invalid capture'
+            flip = base + addresses['P$FLOB_$$_FLIP']
+            assert not any(a == flip and count for a, count, _ in lines), \
+                'flip occurred during movement-only capture; refusing mixed workload'
+
+            actual_room = peek('LEVELNUM')
+            assert actual_room == args.room, f'left the room mid-capture: R{actual_room:02d}'
             shot = session.screenshot()
         finally:
             session.stop()
@@ -159,6 +194,9 @@ def main():
     symbols = fpcmap.text_symbols(ROOT / 'reports/flobsym.map')
     out.write_text(json.dumps({'base': base, 'world': args.world, 'room': args.room,
                                'move': args.move, 'seconds': args.seconds,
+                               'defines': args.define, 'start_x': args.start_x,
+                               'hatari': args.hatari, 'rdb_port': args.rdb_port,
+                               'start_x_phase': 'after_room_load',
                                'symbols': symbols, 'lines': lines}) + '\n')
     print(f'W{args.world} R{args.room:02d} {suffix}: {len(lines):,} addresses, '
           f'{sum(c for _, _, c in lines):,} cycles -> {out}')

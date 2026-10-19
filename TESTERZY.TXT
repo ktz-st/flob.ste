@@ -1,0 +1,52 @@
+FLOB ST/STE - INSTRUKCJA DLA TESTEROW
+==================================
+
+Celem testow jest porownanie portu z oryginalem na Atari 8-bit.
+Grafika zostala wygladzona, a muzyka i efekty przeniesione na YM,
+wiec nie musza wygladac i brzmiec identycznie.
+
+CO POROWNAC
+-----------
+
+- Ruch Floba: szybkosc chodzenia i spadania, reakcja na sterowanie,
+  flip i orientacja po odrodzeniu.
+- Kolizje: podlogi, sciany, niebezpieczne elementy, przeciwnicy
+  i zbieranie slime'ow. Zwroccie uwage na zgony bez widocznego kontaktu.
+- Interakcje: przelaczniki, zawory, bramki, telefony, przedmioty
+  i otwierane przejscia. Czy reaguja rowniez podczas spadania?
+- Postep gry: przejscia miedzy pokojami, sekrety, zagadki, wynik,
+  achievements i ukonczenie swiatow.
+- Prezentacja: pozycje i animacje obiektow, kolory pokojow, wiadomosci,
+  scenki reveal, intro, outro oraz pozostale ekrany.
+- Dzwiek i plynnosc: brakujace lub niewlasciwe SFX, zapetlenia muzyki,
+  spowolnienia, miganie i pozostajace fragmenty grafiki.
+
+W wersji dyskietkowej czarny ekran podczas doczytywania jest normalny.
+Zglaszajcie jednak sytuacje, gdy gra nie wraca do dzialania.
+
+JAK ZGLASZAC BLEDY
+-----------------
+
+Najlepiej jeden problem na zgloszenie, wedlug wzoru:
+
+Wersja gry / data paczki:
+Sprzet: ST lub STE, RAM, TOS; emulator i wersja, jesli uzywany
+Uruchomienie: dyskietka / HDD
+Miejsce: swiat i pokoj, np. W2 R07, albo nazwa ekranu
+
+Kroki odtworzenia:
+1.
+2.
+3.
+
+Co wydarzylo sie w porcie:
+Jak zachowuje sie oryginal A8:
+Powtarzalnosc: zawsze / czasami / jednorazowo
+
+Dolaczcie screenshot lub krotkie nagranie, najlepiej pokazujace takze
+chwile przed wystapieniem problemu. Jesli zachowanie A8 jest tylko
+z pamieci, zaznaczcie to. Zapis stanu emulatora tuz przed bledem
+tez bedzie pomocny.
+
+Nie trzeba konczyc calej gry. Dokladne porownanie kilku pokojow
+rowniez jest bardzo wartosciowe.

@@ -20,10 +20,16 @@ TARGET_SIZE = (320, 184)
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--force",
         action="store_true",
         help="Replace canonical title PNG files with fresh Scale2x imports",
+    )
+    mode.add_argument(
+        "--sync-crown",
+        action="store_true",
+        help="Apply the original crown to the edited canonical title PNG",
     )
     return parser.parse_args()
 
@@ -97,12 +103,37 @@ def validate(path: Path) -> list[int]:
     return used
 
 
+def sync_crown(title_path: Path, crown_path: Path) -> None:
+    validate(title_path)
+    title = Image.open(title_path)
+    original_title = scale2x(build_source(False))
+    original_crown = scale2x(build_source(True))
+    result = title.copy()
+    title_pixels = result.load()
+    base_pixels = original_title.load()
+    crown_pixels = original_crown.load()
+
+    for y in range(TARGET_SIZE[1]):
+        for x in range(TARGET_SIZE[0]):
+            if base_pixels[x, y] != crown_pixels[x, y]:
+                title_pixels[x, y] = crown_pixels[x, y]
+
+    result.save(crown_path, optimize=True)
+
+
 def main() -> None:
     args = parse_args()
     OUTPUT_ROOT.mkdir(parents=True, exist_ok=True)
     entries = []
     created = 0
     preserved = 0
+
+    if args.sync_crown:
+        title_path = OUTPUT_ROOT / "title.png"
+        if not title_path.exists():
+            raise FileNotFoundError(f"Canonical title source is missing: {title_path}")
+        sync_crown(title_path, OUTPUT_ROOT / "title_crown.png")
+        print("crowned variant synchronized with edited title")
 
     for name, crowned in (("title", False), ("title_crown", True)):
         output_path = OUTPUT_ROOT / f"{name}.png"
@@ -134,7 +165,7 @@ def main() -> None:
     print(f"canonical title images: {len(entries)}")
     print(f"artwork created: {created}, preserved: {preserved}")
     print(f"wrote {manifest_path}")
-    if preserved and not args.force:
+    if preserved and not args.force and not args.sync_crown:
         print("existing PNG files were preserved; use --force only to discard artist edits")
 
 
